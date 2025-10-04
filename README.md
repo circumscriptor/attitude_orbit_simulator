@@ -1,6 +1,6 @@
 # Attitude Orbit Simulator for Passive AOCS
 
-This project is a high-fidelity C++ simulator designed to predict the attitude dynamics of a spacecraft using a passive Attitude and Orbit Control System (AOCS). It models the interaction between a permanent magnet, hysteresis damping rods, and the Earth's geomagnetic field to simulate the detumble and final stabilization of a satellite in Low Earth Orbit (LEO).
+This project is a simulator designed to predict the attitude dynamics of a spacecraft using a passive Attitude and Orbit Control System (AOCS). It models the interaction between a permanent magnet, hysteresis damping rods, and the Earth's geomagnetic field to simulate the detumble and final stabilization of a satellite in Low Earth Orbit (LEO).
 
 ## Core Physics Models
 
