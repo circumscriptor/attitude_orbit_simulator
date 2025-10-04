@@ -1,55 +1,53 @@
 #pragma once
 
-#include "../components/spacecraft.hpp"
-#include "../core/state.hpp"
-#include "../environment/environment.hpp"
+#include "aos/components/spacecraft.hpp"
+#include "aos/core/state.hpp"
+#include "aos/core/types.hpp"
+#include "aos/environment/environment.hpp"
+
+#include <memory>
+#include <utility>
 
 namespace aos::simulation {
 
-using components::Spacecraft;
-using core::SystemState;
-using environment::Environment;
+// Use established type aliases for consistency
+using components::spacecraft;
+using core::quat;
+using core::system_state;
+using core::vec3;
+using environment::environment;
 
-class SpacecraftDynamics {
+/**
+ * @class spacecraft_dynamics
+ * @brief A functor that calculates the time derivative of the spacecraft's state.
+ *
+ * This class implements the core differential equations for the spacecraft's
+ * attitude and rotational motion, designed to be used by a numerical integrator
+ * like boost::odeint.
+ */
+class spacecraft_dynamics {
 public:
 
-    SpacecraftDynamics(const Spacecraft& spacecraft, const Environment& environment) : spacecraft_(spacecraft), environment_(environment) {}
+    /**
+     * @brief Constructs the dynamics model.
+     * @param spacecraft_model A const shared pointer to the spacecraft's physical properties.
+     * @param environment_model A const shared pointer to the environmental models (e.g., magnetic field).
+     */
+    spacecraft_dynamics(std::shared_ptr<const spacecraft> spacecraft_model, std::shared_ptr<const environment> environment_model)
+        : m_spacecraft(std::move(spacecraft_model)), m_environment(std::move(environment_model)) {}
 
-    // The operator now only deals with physics, not environment calculation
-    void operator()(const SystemState& x, SystemState& dxdt, double t) const {
-        // 1. Get Environment State
-        const auto b_inertial = environment_.inertial_magnetic_field_at(t);
-
-        // 2. Kinematics (unchanged)
-        // ...
-
-        // 3. Dynamics
-        const auto r_inertial_to_body = x.attitude.toRotationMatrix().transpose();
-        const auto b_body             = r_inertial_to_body * b_inertial;
-
-        core::Vector3d total_torque_body = core::Vector3d::Zero();
-
-        // Accumulate torques
-        for (const auto& magnet : spacecraft_.magnets()) {
-            total_torque_body += magnet.magnetic_moment().cross(b_body);
-        }
-        for (size_t i = 0; i < spacecraft_.rods().size(); ++i) {
-            total_torque_body += spacecraft_.rods()[i].magnetic_moment(x.rod_magnetizations(i)).cross(b_body);
-        }
-        total_torque_body -= x.angular_velocity.cross(spacecraft_.inertia_tensor() * x.angular_velocity);
-
-        dxdt.angular_velocity = spacecraft_.inertia_tensor_inverse() * total_torque_body;
-
-        // 4. Hysteresis
-        for (size_t i = 0; i < spacecraft_.rods().size(); ++i) {
-            dxdt.rod_magnetizations(i) = spacecraft_.rods()[i].magnetization_derivative(x.rod_magnetizations(i), b_body, x.angular_velocity);
-        }
-    }
+    /**
+     * @brief The main operator called by the ODE solver.
+     * @param current_state The current state vector (x) of the system.
+     * @param state_derivative The output state derivative vector (dxdt) to be calculated.
+     * @param t The current simulation time in seconds.
+     */
+    void operator()(const system_state& current_state, system_state& state_derivative, double t) const;
 
 private:
 
-    const Spacecraft&  spacecraft_;
-    const Environment& environment_;
+    std::shared_ptr<const spacecraft>  m_spacecraft;
+    std::shared_ptr<const environment> m_environment;
 };
 
 }  // namespace aos::simulation

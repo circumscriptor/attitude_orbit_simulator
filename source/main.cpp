@@ -15,8 +15,6 @@
 // #include <boost/numeric/odeint.hpp>
 // #include <iostream>
 
-// ... (init_logging function) ...
-
 #include "aos/components/hysteresis_rod.hpp"
 #include "aos/verify/hysteresis.hpp"
 

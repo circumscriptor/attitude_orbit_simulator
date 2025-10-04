@@ -44,6 +44,8 @@ target_sources(AttitudeOrbitSimulator PRIVATE
     "source/aos/core/types.hpp"
     "source/aos/environment/environment.cpp"
     "source/aos/environment/environment.hpp"
+    "source/aos/simulation/dynamics.cpp"
+    "source/aos/simulation/dynamics.hpp"
     "source/aos/verify/hysteresis.cpp"
     "source/aos/verify/hysteresis.hpp"
     "source/main.cpp"
