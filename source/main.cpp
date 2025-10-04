@@ -129,7 +129,12 @@ int main(int /*argc*/, char** /*argv*/) {
 
     properties.hysteresis_rod_volume       = rod_volume_m3;
     properties.hysteresis_params           = hymu80_params;
-    properties.hysteresis_rod_orientations = {{0.0, 1.0, 0.0}, {0.0, -1.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, -1.0, 0.0}};
+    properties.hysteresis_rod_orientations = {
+        {1.0, 0.0, 0.0},
+        {-1.0, 0.0, 0.0},  // One pair along the X-axis
+        {0.0, 1.0, 0.0},
+        {0.0, -1.0, 0.0}  // One pair along the Y-axis
+    };
 
     // Permanent Magnet: A Grade N35 NdFeB magnet
     properties.magnet_remanence   = 1.21;             // [T] for Grade N35
