@@ -80,8 +80,11 @@ target_link_libraries(attitude_orbit_simulator PRIVATE
 #
 
 add_executable(attitude_orbit_simulator_test
-    "tests/system_state_test.cpp"
+    "tests/environment_test.cpp"
+    "tests/hysteresis_rod_test.cpp"
+    "tests/permanent_magnet_test.cpp"
     "tests/simulation_test.cpp"
+    "tests/system_state_test.cpp"
 )
 
 set_target_properties(attitude_orbit_simulator_test PROPERTIES

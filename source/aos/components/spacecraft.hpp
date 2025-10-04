@@ -9,9 +9,6 @@
 
 namespace aos::components {
 
-using core::mat3x3;
-using core::vec3;
-
 class spacecraft {
 public:
 
@@ -30,21 +27,21 @@ public:
     spacecraft(double mass, double width, double height, double length, const properties& properties)
         : spacecraft(get_inertia_tensor(mass, width, height, length), properties) {}
 
-    explicit spacecraft(const mat3x3& inertia, const properties& properties);
+    spacecraft(const mat3x3& inertia, const properties& properties);
 
-    [[nodiscard]] const mat3x3&                   inertia_tensor() const { return m_inertia_tensor; }
-    [[nodiscard]] const mat3x3&                   inertia_tensor_inverse() const { return m_inertia_tensor_inverse; }
-    [[nodiscard]] const permanent_magnet&         magnet() const { return m_magnet; }
-    [[nodiscard]] std::span<const hysteresis_rod> rods() const { return m_rods; }
+    [[nodiscard]] const mat3x3&                   inertia_tensor() const { return _inertia_tensor; }
+    [[nodiscard]] const mat3x3&                   inertia_tensor_inverse() const { return _inertia_tensor_inverse; }
+    [[nodiscard]] const permanent_magnet&         magnet() const { return _magnet; }
+    [[nodiscard]] std::span<const hysteresis_rod> rods() const { return _rods; }
 
     static mat3x3 get_inertia_tensor(double m, double a, double b, double c);
 
 private:
 
-    mat3x3                      m_inertia_tensor;
-    mat3x3                      m_inertia_tensor_inverse;
-    permanent_magnet            m_magnet;
-    std::vector<hysteresis_rod> m_rods;
+    mat3x3                      _inertia_tensor;
+    mat3x3                      _inertia_tensor_inverse;
+    permanent_magnet            _magnet;
+    std::vector<hysteresis_rod> _rods;
 };
 
 }  // namespace aos::components

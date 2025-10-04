@@ -1,5 +1,8 @@
 #include "environment.hpp"
 
+#include "aos/core/constants.hpp"
+#include "aos/core/types.hpp"
+
 #include <GeographicLib/Constants.hpp>
 
 #include <cmath>
@@ -7,65 +10,106 @@
 
 aos::environment::environment::~environment() = default;
 
+aos::environment::wmm2020_environment::wmm2020_environment(const simulation_parameters& params)
+    : _orbit_altitude_m(params.orbit_altitude_km * km_to_m),
+      _orbit_inclination_rad(params.orbit_inclination_deg * deg_to_rad),
+      _orbit_radius_m(GeographicLib::Constants::WGS84_a() + _orbit_altitude_m),
+      _orbit_period_s(2.0 * std::numbers::pi * std::sqrt(std::pow(_orbit_radius_m, 3) / earth_mu_m3_s2)),
+      _magnetic_model("wmm2020") {}
+
 aos::environment::wmm2020_environment::~wmm2020_environment() = default;
 
-aos::environment::vec3 aos::environment::wmm2020_environment::inertial_magnetic_field_at(double t_sec) const {
-    // --- 1. Orbit Propagation ---
-    // This section implements a simple circular orbit propagator to find the
-    // spacecraft's position in the Earth-Centered, Earth-Fixed (ECEF) frame.
+aos::vec3 aos::environment::wmm2020_environment::inertial_magnetic_field_at(double t_sec) const {
+    // 1. Calculate spacecraft position in ECEF frame (lat, lon, alt)
+    const geodetic_coords coords_ecef = propagate_orbit_to_ecef(t_sec);
 
-    const double earth_radius_m            = GeographicLib::Constants::WGS84_a();
-    const double earth_mu                  = 3.986004418e14;  // Earth's gravitational parameter [m^3/s^2]
-    const double earth_rotation_rate_rad_s = 7.2921150e-5;    // [rad/s]
+    // 2. Get the magnetic field in the local North-East-Down (NED) frame.
+    // The NED frame is a local tangent frame where:
+    // +X (North) is tangent to the meridian, pointing towards the North Pole.
+    // +Y (East) is tangent to the parallel, pointing East.
+    // +Z (Down) is normal to the ellipsoid, pointing towards the Earth's center.
+    const vec3 b_ned = get_magnetic_field_in_ned(t_sec, coords_ecef);
 
-    const double alt_m          = m_orbit_altitude_km * 1000.0;
-    const double orbit_radius_m = earth_radius_m + alt_m;
+    // 3. Rotate the NED vector to the ECI frame to get the inertial field.
+    return rotate_ned_to_eci(b_ned, coords_ecef, t_sec);
+}
 
-    // Calculate the orbital period for a circular orbit
-    const double orbit_period_s = 2.0 * std::numbers::pi * std::sqrt(std::pow(orbit_radius_m, 3) / earth_mu);
+aos::environment::wmm2020_environment::geodetic_coords aos::environment::wmm2020_environment::propagate_orbit_to_ecef(double t_sec) const {
+    const double orbit_angle_rad = two_pi * t_sec / _orbit_period_s;
 
-    // The angle of the satellite in its orbital plane (mean anomaly)
-    const double orbit_angle_rad = 2.0 * std::numbers::pi * t_sec / orbit_period_s;
-
-    const double inclination_rad = m_orbit_inclination_deg * std::numbers::pi / 180.0;
-
-    // --- 2. Coordinate Conversion (Orbital to ECEF) ---
-    // Calculate position in the ECEF frame, which GeographicLib expects.
-    // This includes the effect of Earth's rotation.
-
-    // Latitude calculation for an inclined circular orbit
-    const double lat_rad = std::asin(std::sin(inclination_rad) * std::sin(orbit_angle_rad));
-    const double lat_deg = lat_rad * 180.0 / std::numbers::pi;
-
-    // Longitude calculation must account for both orbital motion and Earth's rotation
-    const double lon_orbital_rad  = std::atan2(std::cos(inclination_rad) * std::sin(orbit_angle_rad), std::cos(orbit_angle_rad));
+    // Note: For near-polar orbits, the asin() function can have numerical sensitivity
+    // at the poles (latitudes near +/- 90 deg). For this model, it is assumed to be acceptable.
+    const double lat_rad          = std::asin(std::sin(_orbit_inclination_rad) * std::sin(orbit_angle_rad));
+    const double lon_orbital_rad  = std::atan2(std::cos(_orbit_inclination_rad) * std::sin(orbit_angle_rad), std::cos(orbit_angle_rad));
     const double lon_rotation_rad = earth_rotation_rate_rad_s * t_sec;
 
+    const double lon_deg = (lon_orbital_rad - lon_rotation_rad) * rad_to_deg;
+
+    return {.lat_deg = lat_rad * rad_to_deg, .lon_deg = normalize_longitude_deg(lon_deg), .alt_m = _orbit_altitude_m};
+}
+
+aos::vec3 aos::environment::wmm2020_environment::get_magnetic_field_in_ned(double t_sec, const geodetic_coords& coords) const {
+    const double year_decimal = simulation_start_year + (t_sec / seconds_per_year);
+
+    // GeographicLib MagneticModel operator() returns components as:
+    // Bx = easterly component (East)
+    // By = northerly component (North)
+    // Bz = vertical (up) component (Up)
+    double bx_nt{};  // East component
+    double by_nt{};  // North component
+    double bz_nt{};  // Up component
+
+    // Call the magnetic model function
+    _magnetic_model(year_decimal, coords.lat_deg, coords.lon_deg, coords.alt_m, bx_nt, by_nt, bz_nt);
+
+    // Construct the NED vector: (North, East, Down).
+    // Note that the Down component is the negation of the Up component.
+    return {
+        by_nt * nt_to_t,   // North
+        bx_nt * nt_to_t,   // East
+        -bz_nt * nt_to_t,  // Down
+    };
+}
+
+aos::vec3 aos::environment::wmm2020_environment::rotate_ned_to_eci(const vec3& b_ned, const geodetic_coords& coords, double t_sec) {
+    // Step 1: Rotate from North-East-Down (NED) to Earth-Centered, Earth-Fixed (ECEF)
+    const double lat     = coords.lat_deg * deg_to_rad;
+    const double lon     = coords.lon_deg * deg_to_rad;
+    const double cos_lat = std::cos(lat);
+    const double sin_lat = std::sin(lat);
+    const double cos_lon = std::cos(lon);
+    const double sin_lon = std::sin(lon);
+
+    // The columns of the NED-to-ECEF matrix are the NED basis vectors expressed in ECEF coordinates.
+    vec3 north_vec = {-sin_lat * cos_lon, -sin_lat * sin_lon, cos_lat};
+    vec3 east_vec  = {-sin_lon, cos_lon, 0.0};
+    vec3 down_vec  = {-cos_lat * cos_lon, -cos_lat * sin_lon, -sin_lat};
+
+    // Construct the matrix from the column vectors. This is the robust Eigen way.
+    mat3x3 r_ned_to_ecef;
+    r_ned_to_ecef.col(0) = north_vec;
+    r_ned_to_ecef.col(1) = east_vec;
+    r_ned_to_ecef.col(2) = down_vec;
+
+    const vec3 b_ecef = r_ned_to_ecef * b_ned;
+
+    // Step 2: Rotate from ECEF to Earth-Centered Inertial (ECI)
+    const double earth_rotation_angle = earth_rotation_rate_rad_s * t_sec;
+    const double cos_rot              = std::cos(earth_rotation_angle);
+    const double sin_rot              = std::sin(earth_rotation_angle);
+
+    mat3x3 r_ecef_to_eci;
+    r_ecef_to_eci << cos_rot, -sin_rot, 0.0, sin_rot, cos_rot, 0.0, 0.0, 0.0, 1.0;
+
+    return r_ecef_to_eci * b_ecef;
+}
+
+double aos::environment::wmm2020_environment::normalize_longitude_deg(double lon_deg) {
     // NOLINTBEGIN(readability-magic-numbers)
-    // Combine and wrap longitude to the [-180, 180] degree range
-    double lon_deg = (lon_orbital_rad - lon_rotation_rad) * 180.0 / std::numbers::pi;
-    lon_deg        = std::fmod(lon_deg + 180.0, 360.0) - 180.0;
-    if (lon_deg < -180.0) {
-        lon_deg += 360.0;
+    double lon = std::fmod(lon_deg + 180.0, 360.0);
+    if (lon < 0) {
+        lon += 360.0;
     }
+    return lon - 180.0;
     // NOLINTEND(readability-magic-numbers)
-
-    // --- 3. Magnetic Field Calculation ---
-    // GeographicLib requires the year as a decimal.
-    // We'll use a fixed epoch for simplicity. A more advanced model could
-    // get this from the simulation start time.
-    const double year_decimal = 2025.0 + (t_sec / (365.25 * 24 * 3600));
-
-    double bx_nt{};
-    double by_nt{};
-    double bz_nt{};  // Output from the model is in nanoTeslas (nT)
-    m_magnetic_model(year_decimal, lat_deg, lon_deg, alt_m, bx_nt, by_nt, bz_nt);
-
-    // Convert from ECEF field (North, East, Down) to the standard ECI-like
-    // cartesian frame (X, Y, Z) and convert units from nT to T.
-    // NOTE: For this simplified orbit, we approximate the ECEF frame of the magnetic
-    // field model as being aligned with the ECI frame at t=0. A high-fidelity
-    // simulation would require a full ECI to ECEF rotation matrix.
-    const double nt_to_t = 1e-9;  // nanotesla to tesla
-    return {bx_nt * nt_to_t, by_nt * nt_to_t, bz_nt * nt_to_t};
 }

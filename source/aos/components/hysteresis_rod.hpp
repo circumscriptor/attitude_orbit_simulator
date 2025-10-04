@@ -4,8 +4,6 @@
 
 namespace aos::components {
 
-using core::vec3;
-
 class hysteresis_rod {
 public:
 
@@ -18,11 +16,11 @@ public:
     };
 
     hysteresis_rod(double volume, const vec3& orientation, const ja_parameters& ja_params)
-        : m_volume(volume), m_orientation_body(orientation.normalized()), m_params(ja_params) {}
+        : _volume(volume), _orientation_body(orientation.normalized()), _params(ja_params) {}
 
     [[nodiscard]]
     vec3 magnetic_moment(double m_scalar_am) const {
-        return m_scalar_am * m_volume * m_orientation_body;
+        return m_scalar_am * _volume * _orientation_body;
     }
 
     // Implementation of the J-A model
@@ -34,9 +32,9 @@ public:
 
 private:
 
-    double        m_volume;
-    vec3          m_orientation_body;
-    ja_parameters m_params;
+    double        _volume;
+    vec3          _orientation_body;
+    ja_parameters _params;
 };
 
 }  // namespace aos::components

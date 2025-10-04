@@ -2,7 +2,6 @@
 
 #include "aos/components/spacecraft.hpp"
 #include "aos/core/state.hpp"
-#include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
 
 #include <memory>
@@ -12,9 +11,6 @@ namespace aos::simulation {
 
 // Use established type aliases for consistency
 using components::spacecraft;
-using core::quat;
-using core::system_state;
-using core::vec3;
 using environment::environment;
 
 /**
@@ -34,7 +30,7 @@ public:
      * @param environment_model A const shared pointer to the environmental models (e.g., magnetic field).
      */
     spacecraft_dynamics(std::shared_ptr<const spacecraft> spacecraft_model, std::shared_ptr<const environment> environment_model)
-        : m_spacecraft(std::move(spacecraft_model)), m_environment(std::move(environment_model)) {}
+        : _spacecraft(std::move(spacecraft_model)), _environment(std::move(environment_model)) {}
 
     /**
      * @brief The main operator called by the ODE solver.
@@ -46,8 +42,8 @@ public:
 
 private:
 
-    std::shared_ptr<const spacecraft>  m_spacecraft;
-    std::shared_ptr<const environment> m_environment;
+    std::shared_ptr<const spacecraft>  _spacecraft;
+    std::shared_ptr<const environment> _environment;
 };
 
 }  // namespace aos::simulation

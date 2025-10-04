@@ -18,12 +18,10 @@ void aos::verify::hysteresis_loop_dynamics::operator()(const hysteresis_state_ty
     // Applied H-field and its time derivative
     const double h     = h_max * sin(2.0 * std::numbers::pi * frequency * t);
     const double dh_dt = h_max * 2.0 * std::numbers::pi * frequency * cos(2.0 * std::numbers::pi * frequency * t);
-    dm_dt              = m_rod->magnetization_derivative_from_h(m, h, dh_dt);
+    dm_dt              = _rod->magnetization_derivative_from_h(m, h, dh_dt);
 }
 
 void aos::verify::bh_observer::operator()(const hysteresis_state_type& m, double t) const {
-    using core::vacuum_permeability;
-
     const double h = hysteresis_loop_dynamics::h_max * sin(2.0 * std::numbers::pi * hysteresis_loop_dynamics::frequency * t);
     // Calculate B = μ₀ * (H + M)
     const double b = vacuum_permeability * (h + m);

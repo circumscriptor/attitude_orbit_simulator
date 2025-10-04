@@ -9,9 +9,6 @@
 
 namespace aos::simulation {
 
-// Use established type aliases for consistency
-using core::system_state;
-
 /**
  * @class csv_state_observer
  * @brief An observer functor that writes the simulation state to a CSV file.
@@ -40,8 +37,8 @@ public:
 
 private:
 
-    std::shared_ptr<std::ofstream> m_file;
-    size_t                         m_num_rods;
+    std::shared_ptr<std::ofstream> _file;
+    std::size_t                    _num_rods;
 };
 
 }  // namespace aos::simulation

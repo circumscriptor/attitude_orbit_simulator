@@ -2,7 +2,7 @@
 
 #include <Eigen/Dense>
 
-namespace aos::core {
+namespace aos {
 
 // NOLINTBEGIN
 using mat3x3 = Eigen::Matrix<double, 3, 3, Eigen::RowMajor>;
@@ -15,4 +15,4 @@ using inertia_t            = mat3x3;
 using velocity_t           = vec3;
 using rod_magnetizations_t = vecX;
 
-}  // namespace aos::core
+}  // namespace aos

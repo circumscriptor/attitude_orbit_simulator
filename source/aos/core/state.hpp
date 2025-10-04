@@ -10,49 +10,13 @@
 #include <boost/type_traits/integral_constant.hpp>
 
 #include <algorithm>
-#include <utility>
 
-namespace aos::core {
-
-// using system_state = vecX;
-
-// static constexpr int attitude_offset           = 0;
-// static constexpr int attitude_size             = 4;
-// static constexpr int angular_velocity_offset   = attitude_offset + attitude_size;
-// static constexpr int angular_velocity_size     = 3;
-// static constexpr int rod_magnetizations_offset = angular_velocity_offset + angular_velocity_size;
-// each rod magnetization has size 1
+namespace aos {
 
 struct system_state {
     quat attitude;
     vec3 angular_velocity;
     vecX rod_magnetizations;
-
-    // system_state() = default;
-
-    // system_state(quat attitude, vec3 angular_velocity, vecX rod_magnetizations)
-    //     : attitude(std::move(attitude)), angular_velocity(std::move(angular_velocity)), rod_magnetizations(std::move(rod_magnetizations)) {}
-
-    // system_state(const system_state& other) : attitude(other.attitude), angular_velocity(other.angular_velocity),
-    // rod_magnetizations(other.rod_magnetizations) {
-    //     rod_magnetizations.resize(other.rod_magnetizations.size());
-    // }
-
-    // system_state(system_state&&) = default;
-
-    // system_state& operator=(const system_state& other) {
-    //     attitude           = other.attitude;
-    //     angular_velocity   = other.angular_velocity;
-    //     rod_magnetizations = other.rod_magnetizations;
-    //     return *this;
-    // }
-
-    // system_state& operator=(system_state&& other) noexcept {
-    //     attitude           = other.attitude;
-    //     angular_velocity   = other.angular_velocity;
-    //     rod_magnetizations = other.rod_magnetizations;
-    //     return *this;
-    // }
 
     system_state& operator+=(const system_state& other) {
         attitude.coeffs() += other.attitude.coeffs();
@@ -110,8 +74,8 @@ inline system_state operator/(const system_state& lhs, const system_state& rhs) 
     return system_state{lhs} /= rhs;
 }
 
-inline aos::core::system_state abs(const aos::core::system_state& state) {
-    aos::core::system_state result;
+inline aos::system_state abs(const aos::system_state& state) {
+    aos::system_state result;
     result.rod_magnetizations.resize(state.rod_magnetizations.size());
     result.attitude.coeffs()  = state.attitude.coeffs().cwiseAbs();
     result.angular_velocity   = state.angular_velocity.cwiseAbs();
@@ -119,33 +83,31 @@ inline aos::core::system_state abs(const aos::core::system_state& state) {
     return result;
 }
 
-}  // namespace aos::core
+}  // namespace aos
 
 namespace boost::numeric::odeint {
 
 // Tell odeint that our struct is a valid state type
 template <>
-struct is_resizeable<aos::core::system_state> : boost::false_type {};
+struct is_resizeable<aos::system_state> : boost::false_type {};
 
 // Define how to check if two states have the same size
 template <>
-struct same_size_impl<aos::core::system_state, aos::core::system_state> {
-    static bool same_size(const aos::core::system_state& s1, const aos::core::system_state& s2) {
-        return s1.rod_magnetizations.size() == s2.rod_magnetizations.size();
-    }
+struct same_size_impl<aos::system_state, aos::system_state> {
+    static bool same_size(const aos::system_state& s1, const aos::system_state& s2) { return s1.rod_magnetizations.size() == s2.rod_magnetizations.size(); }
 };
 
 // Define how to resize one state to match another
 template <>
-struct resize_impl<aos::core::system_state, aos::core::system_state> {
-    static void resize(aos::core::system_state& s1, const aos::core::system_state& s2) { s1.rod_magnetizations.resize(s2.rod_magnetizations.size()); }
+struct resize_impl<aos::system_state, aos::system_state> {
+    static void resize(aos::system_state& s1, const aos::system_state& s2) { s1.rod_magnetizations.resize(s2.rod_magnetizations.size()); }
 };
 
 // Define the "norm" used by adaptive steppers for error control
 template <>
-struct vector_space_norm_inf<aos::core::system_state> {
+struct vector_space_norm_inf<aos::system_state> {
     using result_type = double;
-    double operator()(const aos::core::system_state& s) const {
+    double operator()(const aos::system_state& s) const {
         return std::max({s.attitude.coeffs().cwiseAbs().maxCoeff(), s.angular_velocity.cwiseAbs().maxCoeff(), s.rod_magnetizations.cwiseAbs().maxCoeff()});
     }
 };

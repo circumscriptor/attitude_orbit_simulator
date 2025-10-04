@@ -11,12 +11,12 @@
 #include <cstdlib>
 #include <memory>
 
+using aos::mat3x3;
+using aos::quat;
+using aos::system_state;
+using aos::vec3;
 using aos::components::permanent_magnet;
 using aos::components::spacecraft;
-using aos::core::mat3x3;
-using aos::core::quat;
-using aos::core::system_state;
-using aos::core::vec3;
 using aos::environment::environment;
 using aos::environment::wmm2020_environment;
 using aos::simulation::simulation_parameters;
@@ -43,7 +43,7 @@ public:
 
 // --- Test Cases ---
 
-TEST(PermanentMagnetTest, CorrectMomentCalculation) {
+TEST(SimulationPermanentMagnetTest, CorrectMomentCalculation) {
     // Grade N52 has Br = 1.45 T. M = Br / mu0. Moment = M * Volume.
     // Volume = pi * (0.005^2) * 0.05 = 3.927e-6 m^3
     // M = 1.45 / (1.256637e-6) = 1.154e6 A/m

@@ -8,8 +8,6 @@
 
 namespace aos::environment {
 
-using core::mat3x3;
-using core::vec3;
 using simulation::simulation_parameters;
 
 class environment {
@@ -38,6 +36,12 @@ public:
 class wmm2020_environment : public environment {
 public:
 
+    struct geodetic_coords {
+        double lat_deg;
+        double lon_deg;
+        double alt_m;
+    };
+
     wmm2020_environment(const wmm2020_environment&)            = delete;
     wmm2020_environment(wmm2020_environment&&)                 = delete;
     wmm2020_environment& operator=(const wmm2020_environment&) = delete;
@@ -47,8 +51,7 @@ public:
      * @brief Constructs the wmm2020_environment model.
      * @param params The simulation_parameters struct containing configuration.
      */
-    explicit wmm2020_environment(const simulation_parameters& params)
-        : m_orbit_altitude_km(params.orbit_altitude_km), m_orbit_inclination_deg(params.orbit_inclination_deg), m_magnetic_model("wmm2020") {}
+    explicit wmm2020_environment(const simulation_parameters& params);
 
     ~wmm2020_environment() override;
 
@@ -60,11 +63,26 @@ public:
     [[nodiscard]]
     vec3 inertial_magnetic_field_at(double t_sec) const override;
 
+protected:
+
+    [[nodiscard]]
+    geodetic_coords propagate_orbit_to_ecef(double t_sec) const;
+
+    [[nodiscard]]
+    vec3 get_magnetic_field_in_ned(double t_sec, const geodetic_coords& coords) const;
+
+    [[nodiscard]]
+    static vec3 rotate_ned_to_eci(const vec3& b_ned, const geodetic_coords& coords, double t_sec);
+
+    static double normalize_longitude_deg(double lon_deg);
+
 private:
 
-    double                       m_orbit_altitude_km{};
-    double                       m_orbit_inclination_deg{};
-    GeographicLib::MagneticModel m_magnetic_model;
+    double                       _orbit_altitude_m;
+    double                       _orbit_inclination_rad;
+    double                       _orbit_radius_m;
+    double                       _orbit_period_s;
+    GeographicLib::MagneticModel _magnetic_model;
 };
 
 }  // namespace aos::environment

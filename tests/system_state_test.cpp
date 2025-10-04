@@ -3,8 +3,8 @@
 
 #include <gtest/gtest.h>
 
-using aos::core::quat;
-using aos::core::system_state;
+using aos::quat;
+using aos::system_state;
 
 // Test fixture to set up a reusable state object
 class SystemStateTest : public ::testing::Test {
