@@ -9,3 +9,20 @@ EmptyLineBeforeAccessModifier: Always
 IndentWidth: 4
 InsertNewlineAtEOF: true
 TabWidth: 4
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^\"[[:alnum:]\_]+\.(h|hpp)\"'
+    Priority: 0
+  - Regex: '^\"[[:alnum:]\_\/]+\.(h|hpp)\"'
+    Priority: 1
+  - Regex: '^\<wsgs\/[[:alnum:]\_\/]+\.(h|hpp)\>'
+    Priority: 2
+  - Regex: '^\<windows\.h\>'
+    Priority: 3
+    SortPriority: 1
+    CaseSensitive: false
+  - Regex: '^\<.*\.(h|hpp|hxx)\>'
+    Priority: 3
+    SortPriority: 2
+  - Regex: '^\<[[:alnum:]\_]+\>'
+    Priority: 4

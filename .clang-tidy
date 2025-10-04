@@ -24,8 +24,8 @@ CheckOptions:
     misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
     readability-identifier-length.IgnoredVariableNames: \_
     readability-identifier-length.MinimumLoopCounterNameLength: 1
-    readability-identifier-length.MinimumParameterNameLength: 2
-    readability-identifier-length.MinimumVariableNameLength: 2
+    readability-identifier-length.MinimumParameterNameLength: 1
+    readability-identifier-length.MinimumVariableNameLength: 1
     readability-magic-numbers.IgnoredFloatingPointValues: "0.0;0.5;1.0;2.0"
     readability-magic-numbers.IgnorePowersOf2IntegerValues: true
     readability-identifier-naming.ClassCase: lower_case

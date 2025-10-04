@@ -29,5 +29,9 @@ target_link_libraries(AttitudeOrbitSimulator PRIVATE
 )
 
 target_sources(AttitudeOrbitSimulator PRIVATE
+    aos/components/hysteresis_rod.cpp
+    aos/components/hysteresis_rod.hpp
+    aos/verify/hysteresis.cpp
+    aos/verify/hysteresis.hpp
     main.cpp
 )
