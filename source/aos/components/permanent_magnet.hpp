@@ -11,7 +11,7 @@ public:
 
     permanent_magnet(double remanence, double length_m, double diameter_m, const core::vec3& orientation);
 
-    [[nodiscard]] vec3 get_magnetic_moment() const { return m_magnetic_moment_body; }
+    [[nodiscard]] vec3 magnetic_moment() const { return m_magnetic_moment_body; }
 
 private:
 

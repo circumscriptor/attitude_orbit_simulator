@@ -1,37 +1,47 @@
 #pragma once
+
+#include "aos/core/types.hpp"
+#include "aos/simulation/config.hpp"
+
 #include <GeographicLib/Constants.hpp>
 #include <GeographicLib/MagneticModel.hpp>
 
-#include "../core/types.hpp"
-
-#include "../simulation/config.hpp"
-
 namespace aos::environment {
 
+using core::mat3x3;
 using core::vec3;
-using simulation::SimulationParameters;
+using simulation::simulation_parameters;
 
-// Holds all external environmental models
+/**
+ * @class Environment
+ * @brief Manages all external environmental models for the simulation.
+ *
+ * This class is responsible for calculating time-dependent environmental
+ * factors, such as the spacecraft's orbital position and the Earth's
+ * magnetic field at that location.
+ */
 class environment {
 public:
 
-    explicit environment(const SimulationParameters& params) : params_(params), m_magnetic_model("wmm2020") {}
+    /**
+     * @brief Constructs the environment model.
+     * @param params The simulation_parameters struct containing configuration.
+     */
+    explicit environment(const simulation_parameters& params)
+        : m_orbit_altitude_km(params.orbit_altitude_km), m_orbit_inclination_deg(params.orbit_inclination_deg), m_magnetic_model("wmm2020") {}
 
-    // Calculate the state of the environment at a given time
+    /**
+     * @brief Calculates the Earth's magnetic field in the inertial frame (ECI).
+     * @param t_sec The current simulation time in seconds.
+     * @return The magnetic field vector in Teslas.
+     */
     [[nodiscard]]
-    vec3 inertial_magnetic_field_at(double t_sec) const {
-        // ... (Orbit propagation logic from the old dynamics class is moved here) ...
-        double alt_m = params_.orbit_altitude_km * 1000.0;
-        // ... calculation of lat, lon ...
-
-        double bx, by, bz;  // nT
-        m_magnetic_model(t_sec / 31536000.0 + 2025.0, lat, lon, alt_m, bx, by, bz);
-        return vec3(bx * 1e-9, by * 1e-9, bz * 1e-9);  // Return in Tesla
-    }
+    vec3 inertial_magnetic_field_at(double t_sec) const;
 
 private:
 
-    const SimulationParameters&  params_;
+    double                       m_orbit_altitude_km{};
+    double                       m_orbit_inclination_deg{};
     GeographicLib::MagneticModel m_magnetic_model;
 };
 

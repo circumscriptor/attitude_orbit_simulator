@@ -9,6 +9,10 @@ find_package(Boost CONFIG REQUIRED COMPONENTS
 
 add_executable(AttitudeOrbitSimulator)
 
+set_target_properties(AttitudeOrbitSimulator PROPERTIES
+    CXX_SCAN_FOR_MODULES OFF
+)
+
 target_compile_features(AttitudeOrbitSimulator PRIVATE
     cxx_std_23
 )
@@ -33,9 +37,13 @@ target_sources(AttitudeOrbitSimulator PRIVATE
     "source/aos/components/hysteresis_rod.hpp"
     "source/aos/components/permanent_magnet.cpp"
     "source/aos/components/permanent_magnet.hpp"
+    "source/aos/components/spacecraft.cpp"
+    "source/aos/components/spacecraft.hpp"
     "source/aos/core/constants.hpp"
     "source/aos/core/state.hpp"
     "source/aos/core/types.hpp"
+    "source/aos/environment/environment.cpp"
+    "source/aos/environment/environment.hpp"
     "source/aos/verify/hysteresis.cpp"
     "source/aos/verify/hysteresis.hpp"
     "source/main.cpp"
