@@ -19,7 +19,7 @@ target_compile_options(AttitudeOrbitSimulator PRIVATE
 )
 
 target_include_directories(AttitudeOrbitSimulator PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/source"
 )
 
 target_link_libraries(AttitudeOrbitSimulator PRIVATE
@@ -29,9 +29,9 @@ target_link_libraries(AttitudeOrbitSimulator PRIVATE
 )
 
 target_sources(AttitudeOrbitSimulator PRIVATE
-    aos/components/hysteresis_rod.cpp
-    aos/components/hysteresis_rod.hpp
-    aos/verify/hysteresis.cpp
-    aos/verify/hysteresis.hpp
-    main.cpp
+    "source/aos/components/hysteresis_rod.cpp"
+    "source/aos/components/hysteresis_rod.hpp"
+    "source/aos/verify/hysteresis.cpp"
+    "source/aos/verify/hysteresis.hpp"
+    "source/main.cpp"
 )
