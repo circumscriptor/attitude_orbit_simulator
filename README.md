@@ -64,12 +64,16 @@ This data is used to generate plots for analysis and verification.
 
 The plot below shows the result of a 2-week simulation of a 1U CubeSat with an initial tumble.
 
-![Final Detumble Simulation Results](results/dynamics.png)
+![Simulation Results](results/dynamics.png)
+
+The plot below shows the result of a calculation of a sample material hysteresis curve:
+
+![HyMu-80 Hysteresis Curve](results/hymu80_hysteresis_curve.png)
 
 **Conclusion:**
 
 The simulation successfully models the complete behavior of the passive AOCS.
 
-1.  **Detumble Phase:** The initial chaotic tumble (high angular velocity) is effectively damped by the hysteresis rods, with the majority of the rotational energy dissipated within the first week.
+1.  **Detumble Phase:** The initial high angular velocity is effectively damped by the hysteresis rods, with the majority of the rotational energy dissipated within the first week.
 2.  **Stabilization Phase:** As the angular velocity approaches zero, the permanent magnet aligns the spacecraft with the local geomagnetic field.
 3.  **Final State:** The spacecraft's permanent magnet continuously tracks the changing direction of the Earth's magnetic field as it orbits, resulting in small, periodic oscillations in attitude and angular velocity.
