@@ -14,21 +14,23 @@
 #include <numbers>
 #include <string>
 
-void aos::verify::hysteresis_loop_dynamics::operator()(const hysteresis_state_type& m, hysteresis_state_type& dm_dt, double t) const {
+namespace aos::verify {
+
+void hysteresis_loop_dynamics::operator()(const hysteresis_state_type& m, hysteresis_state_type& dm_dt, double t) const {
     // Applied H-field and its time derivative
     const double h     = h_max * sin(2.0 * std::numbers::pi * frequency * t);
     const double dh_dt = h_max * 2.0 * std::numbers::pi * frequency * cos(2.0 * std::numbers::pi * frequency * t);
     dm_dt              = _rod->magnetization_derivative_from_h(m, h, dh_dt);
 }
 
-void aos::verify::bh_observer::operator()(const hysteresis_state_type& m, double t) const {
+void bh_observer::operator()(const hysteresis_state_type& m, double t) const {
     const double h = hysteresis_loop_dynamics::h_max * sin(2.0 * std::numbers::pi * hysteresis_loop_dynamics::frequency * t);
     // Calculate B = μ₀ * (H + M)
     const double b = vacuum_permeability * (h + m);
     (*output) << t << "," << h << "," << m << "," << b << "\n";
 }
 
-int aos::verify::verify_hysteresis(const std::string& output_filename, const hysteresis_rod::ja_parameters& params) {
+int verify_hysteresis(const std::string& output_filename, const hysteresis_rod::ja_parameters& params) {
     using boost::numeric::odeint::integrate_adaptive;
     using boost::numeric::odeint::make_controlled;
     using boost::numeric::odeint::runge_kutta_dopri5;
@@ -63,3 +65,5 @@ int aos::verify::verify_hysteresis(const std::string& output_filename, const hys
     std::cout << "Verification finished. Data saved to " << output_filename << '\n';
     return 0;
 }
+
+}  // namespace aos::verify

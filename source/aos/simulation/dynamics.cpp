@@ -5,7 +5,9 @@
 
 #include <cstddef>
 
-void aos::simulation::spacecraft_dynamics::operator()(const system_state& current_state, system_state& state_derivative, double t) const {
+namespace aos::simulation {
+
+void spacecraft_dynamics::operator()(const system_state& current_state, system_state& state_derivative, double t) const {
     // --- 1. Get Environment State ---
     // Calculate the Earth's magnetic field in the inertial frame at the current time.
     const vec3 b_inertial = _environment->inertial_magnetic_field_at(t);
@@ -51,3 +53,5 @@ void aos::simulation::spacecraft_dynamics::operator()(const system_state& curren
         state_derivative.rod_magnetizations(j) = _spacecraft->rods()[i].magnetization_derivative(current_state.rod_magnetizations(j), b_body, omega);
     }
 }
+
+}  // namespace aos::simulation

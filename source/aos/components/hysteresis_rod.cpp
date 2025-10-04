@@ -6,7 +6,9 @@
 #include <cmath>
 #include <cstdlib>
 
-double aos::components::hysteresis_rod::magnetization_derivative(double m_scalar_am, const vec3& b_body_t, const vec3& omega_rad_s) const {
+namespace aos::components {
+
+double hysteresis_rod::magnetization_derivative(double m_scalar_am, const vec3& b_body_t, const vec3& omega_rad_s) const {
     static constexpr double absolute_error      = 1e-6;
     static constexpr double denominator_epsilon = 1e-9;
 
@@ -53,7 +55,7 @@ double aos::components::hysteresis_rod::magnetization_derivative(double m_scalar
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-double aos::components::hysteresis_rod::magnetization_derivative_from_h(double m_scalar_am, double h_along_rod, double dh_dt) const {
+double hysteresis_rod::magnetization_derivative_from_h(double m_scalar_am, double h_along_rod, double dh_dt) const {
     static constexpr double absolute_error      = 1e-6;
     static constexpr double denominator_epsilon = 1e-9;
 
@@ -93,3 +95,5 @@ double aos::components::hysteresis_rod::magnetization_derivative_from_h(double m
     // 3. Return dM/dt using the chain rule
     return dm_dh * dh_dt;
 }
+
+}  // namespace aos::components

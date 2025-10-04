@@ -23,7 +23,7 @@
 #include "aos/simulation/config.hpp"
 #include "aos/simulation/dynamics.hpp"
 #include "aos/simulation/observer.hpp"
-// #include "aos/verify/hysteresis.hpp"
+#include "aos/verify/hysteresis.hpp"
 
 #include <boost/numeric/odeint.hpp>
 #include <boost/numeric/odeint/algebra/vector_space_algebra.hpp>
@@ -159,6 +159,7 @@ int main(int /*argc*/, char** /*argv*/) {
     auto stepper       = make_controlled<stepper_type>(epsilon, epsilon);
     integrate_adaptive(stepper, dynamics, initial, params.t_start, params.t_end, params.dt_initial, observer);
 
-    // return aos::verify::verify_hysteresis("hymu80_hysteresis.csv", hymu80_params);
     return 0;
+    // make this an option to generate hysteresis curve for the rod material
+    // return aos::verify::verify_hysteresis("hymu80_hysteresis.csv", hymu80_params);
 }

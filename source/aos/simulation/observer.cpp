@@ -13,7 +13,9 @@
 #include <stdexcept>
 #include <string>
 
-aos::simulation::csv_state_observer::csv_state_observer(const std::string& filename, std::size_t num_rods) : _num_rods(num_rods) {
+namespace aos::simulation {
+
+csv_state_observer::csv_state_observer(const std::string& filename, std::size_t num_rods) : _num_rods(num_rods) {
     // Use Boost.Filesystem to ensure the output directory exists
     boost::filesystem::path file_path(filename);
     if (file_path.has_parent_path()) {
@@ -35,7 +37,7 @@ aos::simulation::csv_state_observer::csv_state_observer(const std::string& filen
     *_file << "\n";
 }
 
-void aos::simulation::csv_state_observer::operator()(const system_state& state, double time) const {
+void csv_state_observer::operator()(const system_state& state, double time) const {
     *_file << time << ','                         //
            << state.attitude.coeffs().w() << ','  //
            << state.attitude.coeffs().x() << ','  //
@@ -50,3 +52,5 @@ void aos::simulation::csv_state_observer::operator()(const system_state& state, 
     }
     *_file << '\n';
 }
+
+}  // namespace aos::simulation
