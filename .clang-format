@@ -1,0 +1,11 @@
+BasedOnStyle: Chromium
+AccessModifierOffset: -4
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveBitFields: Consecutive
+AlignConsecutiveDeclarations: Consecutive
+ColumnLimit: 160
+EmptyLineAfterAccessModifier: Always
+EmptyLineBeforeAccessModifier: Always
+IndentWidth: 4
+InsertNewlineAtEOF: true
+TabWidth: 4

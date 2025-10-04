@@ -1,0 +1,57 @@
+---
+Checks: >
+    *,
+    -abseil-*,
+    -altera-*,
+    -android-*,
+    -cppcoreguidelines-avoid-magic-numbers,
+    -cppcoreguidelines-pro-type-union-access,
+    -cppcoreguidelines-pro-type-vararg,
+    -fuchsia-*,
+    -google-readability-todo,
+    -hicpp-explicit-conversions,
+    -hicpp-vararg,
+    -llvm-*,
+    -llvmlibc-*,
+    -modernize-use-trailing-return-type,
+    -objc-*,
+    -readability-use-anyofallof,
+    -zircon-*
+CheckOptions:
+    bugprone-misplaced-widening-cast.CheckImplicitCasts: true
+    bugprone-suspicious-string-compare.WarnOnLogicalNotComparison: true
+    cppcoreguidelines-init-variables.MathHeader: <cmath>
+    misc-non-private-member-variables-in-classes.IgnoreClassesWithAllMemberVariablesBeingPublic: true
+    readability-identifier-length.IgnoredVariableNames: \_
+    readability-identifier-length.MinimumLoopCounterNameLength: 1
+    readability-identifier-length.MinimumParameterNameLength: 2
+    readability-identifier-length.MinimumVariableNameLength: 2
+    readability-magic-numbers.IgnoredFloatingPointValues: "0.0;0.5;1.0;2.0"
+    readability-magic-numbers.IgnorePowersOf2IntegerValues: true
+    readability-identifier-naming.ClassCase: lower_case
+    readability-identifier-naming.ClassConstantCase: lower_case
+    readability-identifier-naming.ConstexprFunctionCase: lower_case
+    readability-identifier-naming.EnumCase: lower_case
+    readability-identifier-naming.EnumConstantCase: lower_case
+    readability-identifier-naming.FunctionCase: lower_case
+    readability-identifier-naming.GlobalConstantCase: lower_case
+    readability-identifier-naming.GlobalConstantPointerCase: lower_case
+    readability-identifier-naming.GlobalConstantPointerPrefix: g_
+    readability-identifier-naming.GlobalFunctionCase: lower_case
+    readability-identifier-naming.GlobalVariableCase: camelBack
+    readability-identifier-naming.GlobalVariablePrefix: g_
+    readability-identifier-naming.MethodCase: lower_case
+    readability-identifier-naming.NamespaceCase: lower_case
+    readability-identifier-naming.ParameterCase: lower_case
+    readability-identifier-naming.PrivateMemberCase: lower_case
+    readability-identifier-naming.PrivateMemberPrefix: m_
+    readability-identifier-naming.PublicMemberCase: lower_case
+    readability-identifier-naming.StaticConstantCase: lower_case
+    readability-identifier-naming.StaticVariableCase: lower_case
+    readability-identifier-naming.StaticVariablePrefix: s_
+    readability-identifier-naming.TemplateParameterCase: lower_case
+    readability-identifier-naming.TypeAliasCase: lower_case
+    readability-identifier-naming.TypedefCase: lower_case
+    readability-identifier-naming.UnionCase: lower_case
+    readability-identifier-naming.VariableCase: lower_case
+...
