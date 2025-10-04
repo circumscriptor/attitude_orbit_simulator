@@ -2,37 +2,46 @@ cmake_minimum_required(VERSION 3.30)
 project(AttitudeOrbitSimulator)
 
 find_package(Eigen3 CONFIG REQUIRED)
+find_package(GTest CONFIG REQUIRED)
 find_package(GeographicLib CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS
     program_options
+    filesystem
 )
 
-add_executable(AttitudeOrbitSimulator)
+#
+# Library
+#
 
-set_target_properties(AttitudeOrbitSimulator PROPERTIES
+add_library(attitude_orbit_simulator_core STATIC)
+
+set_target_properties(attitude_orbit_simulator_core PROPERTIES
     CXX_SCAN_FOR_MODULES OFF
 )
 
-target_compile_features(AttitudeOrbitSimulator PRIVATE
+target_compile_features(attitude_orbit_simulator_core PUBLIC
     cxx_std_23
 )
 
-target_compile_options(AttitudeOrbitSimulator PRIVATE
+target_compile_options(attitude_orbit_simulator_core PUBLIC
     -Wall
     -Wextra
 )
 
-target_include_directories(AttitudeOrbitSimulator PRIVATE
+target_include_directories(attitude_orbit_simulator_core PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/source"
 )
 
-target_link_libraries(AttitudeOrbitSimulator PRIVATE
-    Eigen3::Eigen
+target_link_libraries(attitude_orbit_simulator_core PRIVATE
+    Boost::filesystem
     Boost::program_options
+PUBLIC
+    Boost::boost
+    Eigen3::Eigen
     GeographicLib::GeographicLib
 )
 
-target_sources(AttitudeOrbitSimulator PRIVATE
+target_sources(attitude_orbit_simulator_core PRIVATE
     "source/aos/components/hysteresis_rod.cpp"
     "source/aos/components/hysteresis_rod.hpp"
     "source/aos/components/permanent_magnet.cpp"
@@ -46,7 +55,44 @@ target_sources(AttitudeOrbitSimulator PRIVATE
     "source/aos/environment/environment.hpp"
     "source/aos/simulation/dynamics.cpp"
     "source/aos/simulation/dynamics.hpp"
+    "source/aos/simulation/observer.cpp"
+    "source/aos/simulation/observer.hpp"
     "source/aos/verify/hysteresis.cpp"
     "source/aos/verify/hysteresis.hpp"
-    "source/main.cpp"
 )
+
+#
+# Executable
+#
+
+add_executable(attitude_orbit_simulator "source/main.cpp")
+
+set_target_properties(attitude_orbit_simulator PROPERTIES
+    CXX_SCAN_FOR_MODULES OFF
+)
+
+target_link_libraries(attitude_orbit_simulator PRIVATE
+    attitude_orbit_simulator_core
+)
+
+#
+# Tests
+#
+
+add_executable(attitude_orbit_simulator_test
+    "tests/system_state_test.cpp"
+    "tests/simulation_test.cpp"
+)
+
+set_target_properties(attitude_orbit_simulator_test PROPERTIES
+    CXX_SCAN_FOR_MODULES OFF
+)
+
+target_link_libraries(attitude_orbit_simulator_test PRIVATE
+    attitude_orbit_simulator_core
+    GTest::gtest
+    GTest::gtest_main
+)
+
+include(GoogleTest)
+gtest_discover_tests(attitude_orbit_simulator_test)

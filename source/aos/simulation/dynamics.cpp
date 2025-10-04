@@ -11,7 +11,7 @@ void aos::simulation::spacecraft_dynamics::operator()(const system_state& curren
     // Calculate the rate of change of the attitude quaternion (dq/dt).
     // This is based on the equation: q_dot = 0.5 * q * omega_q
     const auto& q     = current_state.attitude;
-    const auto& omega = current_state.angular_velocity;
+    const vec3& omega = current_state.angular_velocity;
 
     // Represent angular velocity as a pure quaternion [0, ωx, ωy, ωz]
     quat omega_q(0, omega.x(), omega.y(), omega.z());
@@ -21,7 +21,7 @@ void aos::simulation::spacecraft_dynamics::operator()(const system_state& curren
 
     // --- 3. Rotational Dynamics ---
     // Calculate the angular acceleration (dω/dt) by summing all torques.
-    const auto r_inertial_to_body = current_state.attitude.toRotationMatrix().transpose();
+    const auto r_inertial_to_body = q.toRotationMatrix().transpose();
     const auto b_body             = r_inertial_to_body * b_inertial;
 
     vec3 total_torque_body = vec3::Zero();
@@ -37,12 +37,14 @@ void aos::simulation::spacecraft_dynamics::operator()(const system_state& curren
     // c) Gyroscopic torque (always present for a rotating body)
     total_torque_body -= omega.cross(m_spacecraft->inertia_tensor() * omega);
 
+    // Store angular velocity derivative
     state_derivative.angular_velocity = m_spacecraft->inertia_tensor_inverse() * total_torque_body;
 
     // --- 4. Hysteresis Rod Dynamics ---
     // Calculate the rate of change of each rod's internal magnetization state (dM/dt).
+    state_derivative.rod_magnetizations.resize(static_cast<int>(m_spacecraft->rods().size()));
     for (std::size_t i = 0; i < m_spacecraft->rods().size(); ++i) {
-        state_derivative.rod_magnetizations(static_cast<int>(i)) =
-            m_spacecraft->rods()[i].magnetization_derivative(current_state.rod_magnetizations(static_cast<int>(i)), b_body, current_state.angular_velocity);
+        const auto j{static_cast<int>(i)};
+        state_derivative.rod_magnetizations(j) = m_spacecraft->rods()[i].magnetization_derivative(current_state.rod_magnetizations(j), b_body, omega);
     }
 }

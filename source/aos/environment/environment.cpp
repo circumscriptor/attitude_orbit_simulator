@@ -5,7 +5,11 @@
 #include <cmath>
 #include <numbers>
 
-aos::environment::vec3 aos::environment::environment::inertial_magnetic_field_at(double t_sec) const {
+aos::environment::environment::~environment() = default;
+
+aos::environment::wmm2020_environment::~wmm2020_environment() = default;
+
+aos::environment::vec3 aos::environment::wmm2020_environment::inertial_magnetic_field_at(double t_sec) const {
     // --- 1. Orbit Propagation ---
     // This section implements a simple circular orbit propagator to find the
     // spacecraft's position in the Earth-Centered, Earth-Fixed (ECEF) frame.

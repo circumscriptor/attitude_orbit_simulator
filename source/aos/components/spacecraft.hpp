@@ -37,8 +37,6 @@ public:
     [[nodiscard]] const permanent_magnet&         magnet() const { return m_magnet; }
     [[nodiscard]] std::span<const hysteresis_rod> rods() const { return m_rods; }
 
-protected:
-
     static mat3x3 get_inertia_tensor(double m, double a, double b, double c);
 
 private:
