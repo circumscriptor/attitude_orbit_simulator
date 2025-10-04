@@ -1,6 +1,7 @@
 #include "hysteresis.hpp"
 
 #include "aos/components/hysteresis_rod.hpp"
+#include "aos/core/constants.hpp"
 
 #include <boost/numeric/odeint.hpp>
 #include <boost/numeric/odeint/integrate/integrate_adaptive.hpp>
@@ -21,9 +22,11 @@ void aos::verify::hysteresis_loop_dynamics::operator()(const hysteresis_state_ty
 }
 
 void aos::verify::bh_observer::operator()(const hysteresis_state_type& m, double t) const {
+    using core::vacuum_permeability;
+
     const double h = hysteresis_loop_dynamics::h_max * sin(2.0 * std::numbers::pi * hysteresis_loop_dynamics::frequency * t);
     // Calculate B = μ₀ * (H + M)
-    const double b = hysteresis_rod::vacuum_permeability * (h + m);
+    const double b = vacuum_permeability * (h + m);
     (*output) << t << "," << h << "," << m << "," << b << "\n";
 }
 

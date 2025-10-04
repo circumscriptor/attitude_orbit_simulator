@@ -9,8 +9,6 @@ using core::vec3;
 class hysteresis_rod {
 public:
 
-    static constexpr double vacuum_permeability = 1.25663706212e-6;
-
     struct ja_parameters {
         double ms;     // Saturation Magnetization [A/m]
         double a;      // Anhysteretic shape parameter [A/m]

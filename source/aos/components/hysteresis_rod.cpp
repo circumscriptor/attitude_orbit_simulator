@@ -1,9 +1,13 @@
 #include "hysteresis_rod.hpp"
 
+#include "aos/core/constants.hpp"
+
 #include <cmath>
 #include <cstdlib>
 
 double aos::components::hysteresis_rod::magnetization_derivative(double m_scalar_am, const vec3& b_body_t, const vec3& omega_rad_s) const {
+    using aos::core::vacuum_permeability;
+
     static constexpr double absolute_error      = 1e-6;
     static constexpr double denominator_epsilon = 1e-9;
 

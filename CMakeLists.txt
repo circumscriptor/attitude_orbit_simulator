@@ -31,6 +31,11 @@ target_link_libraries(AttitudeOrbitSimulator PRIVATE
 target_sources(AttitudeOrbitSimulator PRIVATE
     "source/aos/components/hysteresis_rod.cpp"
     "source/aos/components/hysteresis_rod.hpp"
+    "source/aos/components/permanent_magnet.cpp"
+    "source/aos/components/permanent_magnet.hpp"
+    "source/aos/core/constants.hpp"
+    "source/aos/core/state.hpp"
+    "source/aos/core/types.hpp"
     "source/aos/verify/hysteresis.cpp"
     "source/aos/verify/hysteresis.hpp"
     "source/main.cpp"
