@@ -13,6 +13,8 @@ class spacecraft {
 public:
 
     struct properties {
+        double                        mass_g{};
+        vec3                          dim_m;
         vec3                          magnet_orientation;
         double                        magnet_remanence{};
         double                        magnet_length{};
@@ -22,10 +24,8 @@ public:
         hysteresis_rod::ja_parameters hysteresis_params;
     };
 
-    spacecraft(double mass, double size, const properties& properties) : spacecraft(mass, size, size, size, properties) {}
-
-    spacecraft(double mass, double width, double height, double length, const properties& properties)
-        : spacecraft(get_inertia_tensor(mass, width, height, length), properties) {}
+    explicit spacecraft(const properties& properties)
+        : spacecraft(get_inertia_tensor(properties.mass_g, properties.dim_m.x(), properties.dim_m.y(), properties.dim_m.z()), properties) {}
 
     spacecraft(const mat3x3& inertia, const properties& properties);
 

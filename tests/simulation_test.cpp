@@ -3,7 +3,6 @@
 #include "aos/core/state.hpp"
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
-#include "aos/simulation/config.hpp"
 #include "aos/simulation/dynamics.hpp"
 
 #include <gtest/gtest.h>
@@ -19,7 +18,6 @@ using aos::components::permanent_magnet;
 using aos::components::spacecraft;
 using aos::environment::environment;
 using aos::environment::wmm2020_environment;
-using aos::simulation::simulation_parameters;
 using aos::simulation::spacecraft_dynamics;
 
 // --- Mock Environments for Isolated Testing ---
@@ -64,10 +62,10 @@ TEST(SpacecraftTest, InertiaTensorCalculation) {
 }
 
 TEST(EnvironmentTest, MagneticFieldPlausibility) {
-    simulation_parameters params;
-    params.orbit_altitude_km     = 500.0;
-    params.orbit_inclination_deg = 51.6;
-    wmm2020_environment env(params);  // Use the base environment class
+    wmm2020_environment::properties props{};
+    props.orbit_altitude_km     = 500.0;
+    props.orbit_inclination_deg = 51.6;
+    wmm2020_environment env(props);  // Use the base environment class
 
     vec3 b0   = env.inertial_magnetic_field_at(0.0);
     vec3 b100 = env.inertial_magnetic_field_at(100.0);

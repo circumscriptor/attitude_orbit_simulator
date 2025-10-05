@@ -8,6 +8,18 @@
 
 namespace aos::components {
 
+hysteresis_rod::ja_parameters hysteresis_rod::ja_parameters::hymu80() {
+    // NOLINTBEGIN(readability-magic-numbers)
+    return {
+        .ms    = 6.0e5,   // Saturation Magnetization [A/m]
+        .a     = 6.5,     // Anhysteretic shape parameter [A/m]
+        .k     = 4.0,     // Pinning energy density (coercivity) [A/m]
+        .c     = 0.05,    // Reversibility coefficient
+        .alpha = 1.0e-5,  // Inter-domain coupling
+    };
+    // NOLINTEND(readability-magic-numbers)
+}
+
 double hysteresis_rod::magnetization_derivative(double m_scalar_am, const vec3& b_body_t, const vec3& omega_rad_s) const {
     static constexpr double absolute_error      = 1e-6;
     static constexpr double denominator_epsilon = 1e-9;

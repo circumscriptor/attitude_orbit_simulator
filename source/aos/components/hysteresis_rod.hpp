@@ -13,6 +13,8 @@ public:
         double k;      // Pinning energy density [A/m]
         double c;      // Reversibility coefficient [0-1]
         double alpha;  // Inter-domain coupling
+
+        static ja_parameters hymu80();
     };
 
     hysteresis_rod(double volume, const vec3& orientation, const ja_parameters& ja_params)

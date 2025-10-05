@@ -16,7 +16,6 @@
 namespace aos::simulation {
 
 csv_state_observer::csv_state_observer(const std::string& filename, std::size_t num_rods) : _num_rods(num_rods) {
-    // Use Boost.Filesystem to ensure the output directory exists
     boost::filesystem::path file_path(filename);
     if (file_path.has_parent_path()) {
         boost::filesystem::create_directories(file_path.parent_path());

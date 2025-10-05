@@ -1,14 +1,11 @@
 #pragma once
 
 #include "aos/core/types.hpp"
-#include "aos/simulation/config.hpp"
 
 #include <GeographicLib/Constants.hpp>
 #include <GeographicLib/MagneticModel.hpp>
 
 namespace aos::environment {
-
-using simulation::simulation_parameters;
 
 class environment {
 public:
@@ -37,9 +34,14 @@ class wmm2020_environment : public environment {
 public:
 
     struct geodetic_coords {
-        double lat_deg;
-        double lon_deg;
-        double alt_m;
+        double lat_deg{};
+        double lon_deg{};
+        double alt_m{};
+    };
+
+    struct properties {
+        double orbit_altitude_km{};
+        double orbit_inclination_deg{};
     };
 
     wmm2020_environment(const wmm2020_environment&)            = delete;
@@ -49,9 +51,9 @@ public:
 
     /**
      * @brief Constructs the wmm2020_environment model.
-     * @param params The simulation_parameters struct containing configuration.
+     * @param props The properties struct containing configuration.
      */
-    explicit wmm2020_environment(const simulation_parameters& params);
+    explicit wmm2020_environment(const properties& props);
 
     ~wmm2020_environment() override;
 

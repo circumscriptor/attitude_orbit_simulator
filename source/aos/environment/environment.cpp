@@ -12,9 +12,9 @@ namespace aos::environment {
 
 environment::~environment() = default;
 
-wmm2020_environment::wmm2020_environment(const simulation_parameters& params)
-    : _orbit_altitude_m(params.orbit_altitude_km * km_to_m),
-      _orbit_inclination_rad(params.orbit_inclination_deg * deg_to_rad),
+wmm2020_environment::wmm2020_environment(const properties& props)
+    : _orbit_altitude_m(props.orbit_altitude_km * km_to_m),
+      _orbit_inclination_rad(props.orbit_inclination_deg * deg_to_rad),
       _orbit_radius_m(GeographicLib::Constants::WGS84_a() + _orbit_altitude_m),
       _orbit_period_s(2.0 * std::numbers::pi * std::sqrt(std::pow(_orbit_radius_m, 3) / earth_mu_m3_s2)),
       _magnetic_model("wmm2020") {}

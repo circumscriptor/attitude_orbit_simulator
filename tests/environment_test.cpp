@@ -1,14 +1,12 @@
 #include "aos/environment/environment.hpp"
 
 #include "aos/core/types.hpp"
-#include "aos/simulation/config.hpp"
 #include "gtest/gtest.h"
 
 #include <cmath>
 #include <numbers>
 
 using aos::vec3;
-using aos::environment::simulation_parameters;
 using aos::environment::wmm2020_environment;
 
 // Test fixture for the wmm2020_environment class
@@ -16,24 +14,24 @@ class Wmm2020EnvironmentTest : public ::testing::Test {
 protected:
 
     void SetUp() override {
-        params                       = {};
-        params.orbit_altitude_km     = 500.0;
-        params.orbit_inclination_deg = 45.0;
+        props                       = {};
+        props.orbit_altitude_km     = 500.0;
+        props.orbit_inclination_deg = 45.0;
     }
 
-    simulation_parameters params{};
+    wmm2020_environment::properties props{};
 };
 
 TEST_F(Wmm2020EnvironmentTest, ConstructorInitializesProperties) {
     // This test primarily ensures that the constructor does not throw
     // an exception and can be instantiated.
-    wmm2020_environment env(params);
+    wmm2020_environment env(props);
     SUCCEED();
 }
 
 TEST_F(Wmm2020EnvironmentTest, EquatorialOrbitAtTimeZero) {
-    params.orbit_inclination_deg = 0.0;
-    wmm2020_environment env(params);
+    props.orbit_inclination_deg = 0.0;
+    wmm2020_environment env(props);
 
     vec3 b_inertial = env.inertial_magnetic_field_at(0.0);
 
@@ -48,8 +46,8 @@ TEST_F(Wmm2020EnvironmentTest, EquatorialOrbitAtTimeZero) {
 }
 
 TEST_F(Wmm2020EnvironmentTest, PolarOrbitAtTimeZero) {
-    params.orbit_inclination_deg = 90.0;
-    wmm2020_environment env(params);
+    props.orbit_inclination_deg = 90.0;
+    wmm2020_environment env(props);
 
     // At t=0, the satellite is at (lat=0, lon=0), so the result should be identical.
     vec3 b_inertial_t0          = env.inertial_magnetic_field_at(0.0);
@@ -61,7 +59,7 @@ TEST_F(Wmm2020EnvironmentTest, PolarOrbitAtTimeZero) {
 
     // Check that the field is different at a later time (over the pole)
     const double earth_radius_m = 6378137.0;
-    const double alt_m          = params.orbit_altitude_km * 1000.0;
+    const double alt_m          = props.orbit_altitude_km * 1000.0;
     const double orbit_radius_m = earth_radius_m + alt_m;
     const double orbit_period_s = 2.0 * std::numbers::pi * std::sqrt(std::pow(orbit_radius_m, 3) / 3.986004418e14);
 
@@ -70,7 +68,7 @@ TEST_F(Wmm2020EnvironmentTest, PolarOrbitAtTimeZero) {
 }
 
 TEST_F(Wmm2020EnvironmentTest, FieldVariesWithTime) {
-    wmm2020_environment env(params);
+    wmm2020_environment env(props);
 
     vec3 b_t0   = env.inertial_magnetic_field_at(0.0);
     vec3 b_t100 = env.inertial_magnetic_field_at(100.0);
