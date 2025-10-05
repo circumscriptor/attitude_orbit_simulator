@@ -2,7 +2,28 @@
 
 #include "aos/core/types.hpp"
 
+#include <iostream>
+
 namespace aos::components {
+
+void spacecraft::properties::debug_print() const {
+    std::cout << "--  spacecraft properties  --"                                                                                                            //
+              << "\nmass:                                    " << mass_g                                                                                    //
+              << "\ndimensions:                              " << dim_m.x() << ' ' << dim_m.y() << ' ' << dim_m.z()                                         //
+              << "\nmagnet orientation:                      " << magnet_orientation.x() << ' ' << magnet_orientation.y() << ' ' << magnet_orientation.z()  //
+              << "\nmagnet remanence:                        " << magnet_remanence                                                                          //
+              << "\nmagnet length:                           " << magnet_length                                                                             //
+              << "\nmagnet diameter:                         " << magnet_diameter                                                                           //
+              << "\nhysteresis rod volume:                   " << hysteresis_rod_volume                                                                     //
+              << "\nhysteresis rod orientations:             ";                                                                                             //
+
+    for (const auto& orientation : hysteresis_rod_orientations) {
+        std::cout << '[' << orientation.x() << ' ' << orientation.y() << ' ' << orientation.z() << "] ";
+    }
+    std::cout << '\n';
+
+    hysteresis_params.debug_print();
+}
 
 spacecraft::spacecraft(const mat3x3& inertia, const properties& properties)
     : _inertia_tensor(inertia),

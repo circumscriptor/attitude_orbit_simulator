@@ -3,6 +3,7 @@
 #include "aos/components/hysteresis_rod.hpp"
 #include "aos/core/constants.hpp"
 
+#include <iostream>
 #include <numbers>
 
 namespace aos::simulation {
@@ -11,6 +12,16 @@ namespace aos::simulation {
 //  {"N42", 1.32},
 //  {"N52", 1.45},
 //  {"N35SH", 1.19}};
+
+void simulation_parameters::debug_print() const {
+    spacecraft.debug_print();
+
+    std::cout << "-- simulation properties --";
+    std::cout << "\nangular velocity:                        " << angular_velocity.x() << ' ' << angular_velocity.y() << ' ' << angular_velocity.z()  //
+              << "\nt start:                                 " << t_start                                                                             //
+              << "\nt end:                                   " << t_end                                                                               //
+              << "\ninitial dt:                              " << dt_initial << '\n';
+}
 
 simulation_parameters simulation_parameters::get_default() {
     // NOLINTBEGIN(readability-magic-numbers)
@@ -38,10 +49,10 @@ simulation_parameters simulation_parameters::get_default() {
                 .orbit_altitude_km     = earth_radius_km + 650.,  // 650 km above surface
                 .orbit_inclination_deg = 51.,                     // 51 degree inclicanation
             },
-        .initial_angular_velocity = {0.1, -0.05, 0.08},              // rad/s
-        .t_start                  = 0.0,                             //
-        .t_end                    = 2.0 * 7.0 * 24.0 * 60.0 * 60.0,  // 2 weeks
-        .dt_initial               = 0.1,                             //
+        .angular_velocity = {0.1, -0.05, 0.08},              // rad/s
+        .t_start          = 0.0,                             //
+        .t_end            = 2.0 * 7.0 * 24.0 * 60.0 * 60.0,  // 2 weeks
+        .dt_initial       = 0.1,                             //
     };
     // NOLINTEND(readability-magic-numbers)
 }

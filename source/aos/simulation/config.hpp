@@ -13,11 +13,12 @@ struct simulation_parameters {
     spacecraft::properties          spacecraft;
     wmm2020_environment::properties environment;
 
-    vec3 initial_angular_velocity;
-    // vec3   permanent_magnet_moment;
+    vec3   angular_velocity;
     double t_start{};
     double t_end{};
     double dt_initial{};
+
+    void debug_print() const;
 
     static simulation_parameters get_default();
 };

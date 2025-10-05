@@ -40,7 +40,7 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
     csv_state_observer  observer(output_filename, satellite->rods().size());
     system_state        initial;
     initial.attitude         = aos::quat::Identity();
-    initial.angular_velocity = params.initial_angular_velocity;
+    initial.angular_velocity = params.angular_velocity;
     initial.rod_magnetizations.resize(4);
     initial.rod_magnetizations.setZero();
 

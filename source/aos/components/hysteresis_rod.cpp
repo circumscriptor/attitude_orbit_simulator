@@ -5,8 +5,19 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <iostream>
 
 namespace aos::components {
+
+void hysteresis_rod::ja_parameters::debug_print() const {
+    std::cout << "-- hysteresis properties --"                           //
+              << "\nhysteresis saturation magnetization:     " << ms     //
+              << "\nhysteresis anhysteretic shape parameter: " << a      //
+              << "\nhysteresis pinning energy density:       " << k      //
+              << "\nhysteresis reversibility coefficient:    " << c      //
+              << "\nhysteresis inter-domain coupling:        " << alpha  //
+              << '\n';
+}
 
 hysteresis_rod::ja_parameters hysteresis_rod::ja_parameters::hymu80() {
     // NOLINTBEGIN(readability-magic-numbers)

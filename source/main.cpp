@@ -1,69 +1,162 @@
-// #include "aos/components/hysteresis_rod.hpp"
-// #include "aos/components/permanent_magnet.hpp"
-// #include "aos/components/spacecraft.hpp"
-// #include "aos/core/state.hpp"
-// #include "aos/environment/environment.hpp"
-// #include "aos/simulation/config.hpp"
-// #include "aos/simulation/dynamics.hpp"
-// #include "aos/simulation/observer.hpp"
-
-// #include <boost/log/core.hpp>
-// #include <boost/log/expressions.hpp>
-// #include <boost/log/trivial.hpp>
-// #include <boost/log/utility/setup/common_attributes.hpp>
-// #include <boost/log/utility/setup/file.hpp>
-// #include <boost/numeric/odeint.hpp>
-// #include <iostream>
-
+#include "aos/core/types.hpp"
 #include "aos/simulation/config.hpp"
 #include "aos/simulation/simulation.hpp"
+#include "aos/verify/hysteresis.hpp"
 
-int main(int /*argc*/, char** /*argv*/) {
-    // init_logging();
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/constants.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/program_options.hpp>
+#include <boost/program_options/detail/parsers.hpp>
+#include <boost/program_options/errors.hpp>
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/value_semantic.hpp>
+#include <boost/program_options/variables_map.hpp>
 
-    // try {
-    //     // Use the namespace for all project types
-    //     using namespace aos;
+#include <exception>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
-    //     simulation::SimulationParameters params;
-    //     if (!simulation::load_parameters(argc, argv, params)) {
-    //         return 1;
-    //     }
+namespace {
 
-    //     BOOST_LOG_TRIVIAL(info) << "Configuration loaded successfully.";
+void parse_option_vec3(std::vector<std::string>& tokens, const std::string& input, aos::vec3& output) {
+    tokens.clear();
+    tokens.reserve(3);
 
-    //     // Initialize models
-    //     environment::Environment env(params);
+    boost::split(tokens, input, boost::is_any_of(","), boost::token_compress_on);
+    if (tokens.size() != 3) {
+        throw std::runtime_error("Invalid option size, expceted 3");
+    }
 
-    //     components::Spacecraft my_satellite(params.inertia_tensor);
-    //     // ... (initialize satellite components with HyMu-80 as before) ...
+    output <<                                    //
+        boost::lexical_cast<double>(tokens[0]),  //
+        boost::lexical_cast<double>(tokens[1]),  //
+        boost::lexical_cast<double>(tokens[2]);  //
+}
 
-    //     simulation::SpacecraftDynamics dynamics(my_satellite, env);
+}  // namespace
 
-    //     // ... (set initial conditions as before) ...
+int main(int argc, char** argv) {
+    using boost::program_options::bool_switch;
+    using boost::program_options::error;
+    using boost::program_options::notify;
+    using boost::program_options::options_description;
+    using boost::program_options::parse_command_line;
+    using boost::program_options::store;
+    using boost::program_options::value;
+    using boost::program_options::variables_map;
 
-    //     simulation::CsvStateObserver observer(params.output_filename);
+    static const unsigned help_line_width = 40;
 
-    //     BOOST_LOG_TRIVIAL(info) << "Starting simulation...";
+    auto params = aos::simulation::simulation_parameters::get_default();
 
-    //     // --- odeint integration ---
-    //     // The stepper type definition is now more explicit
-    //     using stepper_type =
-    //         boost::numeric::odeint::runge_kutta_dopri5<core::SystemState, double, core::SystemState, double, boost::numeric::odeint::vector_space_algebra>;
+    options_description generic("Generic options");
+    generic.add_options()                                                                //
+        ("help,h", "Print this help message")                                            //
+        ("output,o", value<std::string>()->default_value("output.csv"), "Output file");  //
 
-    //     auto stepper = boost::numeric::odeint::make_controlled<stepper_type>(1.0e-6, 1.0e-6);
+    options_description simulation_parameters("Simulation parameters");
+    simulation_parameters.add_options()                                                                              //
+        ("mass", value<double>(&params.spacecraft.mass_g), "Spacecraft mass [g]")                                    //
+        ("width", value<double>(), "Spacecraft width [m]")                                                           //
+        ("height", value<double>(), "Spacecraft height [m]")                                                         //
+        ("length", value<double>(), "Spacecraft length [m]")                                                         //
+        ("magnet-remanence", value<double>(&params.spacecraft.magnet_remanence), "Permanent magnet remanence")       //
+        ("magnet-length", value<double>(&params.spacecraft.magnet_length), "Permanent magnet length [m]")            //
+        ("magnet-diameter", value<double>(&params.spacecraft.magnet_diameter), "Permanent magnet diameter [m]")      //
+        ("rod-volume", value<double>(&params.spacecraft.hysteresis_rod_volume), "Volume of hysteresis rod in [m3]")  //
+        ("rod-orientation", value<std::vector<std::string>>(), "Hysteresis rod orientation (multiple)")              //
+        ("altitude", value<double>(&params.environment.orbit_altitude_km), "Orbit altitude [km]")                    //
+        ("inclination", value<double>(&params.environment.orbit_inclination_deg), "Orbit inclination [deg]")         //
+        ("angular-velocity", value<std::string>(), "Initial angular velocity xyz [rad/s]")                           //
+        ("t-start", value<double>(&params.t_start), "Simulation start time [s]")                                     //
+        ("t-end", value<double>(&params.t_end), "Simulation end time [s]")                                           //
+        ("dt", value<double>(&params.dt_initial), "Initial simulation time step [s]");                               //
 
-    //     boost::numeric::odeint::integrate_adaptive(stepper, dynamics, initial_state, params.t_start, params.t_end, params.dt_initial, observer);
+    options_description hysteresis_parameters("Hysteresis parameters");
+    hysteresis_parameters.add_options()("hysteresis-ms", value<double>(&params.spacecraft.hysteresis_params.ms), "Saturation Magnetization [A/m]")  //
+        ("hysteresis-a", value<double>(&params.spacecraft.hysteresis_params.a), "Anhysteretic shape parameter [A/m]")                               //
+        ("hysteresis-k", value<double>(&params.spacecraft.hysteresis_params.k), "Pinning energy density [A/m]")                                     //
+        ("hysteresis-c", value<double>(&params.spacecraft.hysteresis_params.c), "Reversibility coefficient [0-1]")                                  //
+        ("hysteresis-alpha", value<double>(&params.spacecraft.hysteresis_params.alpha), "Inter-domain coupling");                                   //
 
-    //     BOOST_LOG_TRIVIAL(info) << "Simulation finished successfully.";
+    options_description other("Other options");
+    other.add_options()                                                                                                                        //
+        ("verify-hysteresis", "Calculate hysteresis curve for the given material instead of simulation")                                       //
+        ("hysteresis-material", value<std::string>()->default_value("hymu80"), "The material for hysteresis generation (not supported yet)");  //
 
-    // } catch (const std::exception& e) {
-    //     BOOST_LOG_TRIVIAL(fatal) << "An unrecoverable error occurred: " << e.what();
-    //     return 1;
-    // }
+    options_description options(help_line_width);
+    options.add(generic).add(simulation_parameters).add(hysteresis_parameters).add(other);
 
-    aos::simulation::run_simulation("dynamics.csv", aos::simulation::simulation_parameters::get_default());
+    variables_map vm;
+    try {
+        store(parse_command_line(argc, argv, options), vm);
+        notify(vm);
+    } catch (const error& err) {
+        std::cerr << "Could not parse command line options: " << err.what() << '\n';
+        return 1;
+    } catch (const std::exception& ex) {
+        std::cerr << "Could not parse command line options: " << ex.what() << '\n';
+        return 1;
+    }
+
+    if (vm.contains("help")) {
+        std::cout << "Attitude Orbit Simulator for Passive AOCS\n";
+        std::cout << options << '\n';
+        return 0;
+    }
+
+    // Parse remaining params here
+    try {
+        std::vector<std::string> tokens;
+
+        if (vm.contains("width")) {
+            params.spacecraft.dim_m.x() = vm["width"].as<double>();
+        }
+
+        if (vm.contains("height")) {
+            params.spacecraft.dim_m.y() = vm["height"].as<double>();
+        }
+
+        if (vm.contains("length")) {
+            params.spacecraft.dim_m.z() = vm["length"].as<double>();
+        }
+
+        if (vm.contains("rod-orientation")) {
+            params.spacecraft.hysteresis_rod_orientations.clear();
+
+            const auto& orientations = vm["rod-orientation"].as<std::vector<std::string>>();
+            for (const auto& orientation : orientations) {
+                parse_option_vec3(tokens, orientation, params.spacecraft.hysteresis_rod_orientations.emplace_back());
+            }
+        }
+
+        if (vm.contains("angular-velocity")) {
+            const auto& angular_velocity = vm["angular-velocity"].as<std::string>();
+            parse_option_vec3(tokens, angular_velocity, params.angular_velocity);
+        }
+    } catch (const error& err) {
+        std::cerr << "Could not parse parameters: " << err.what() << '\n';
+        return 1;
+    } catch (const std::exception& ex) {
+        std::cerr << "Could not parse parameters: " << ex.what() << '\n';
+        return 1;
+    }
+
+    try {
+        if (vm.contains("verify-hysteresis")) {
+            params.spacecraft.hysteresis_params.debug_print();
+            aos::verify::verify_hysteresis(vm["output"].as<std::string>(), params.spacecraft.hysteresis_params);
+        } else {
+            params.debug_print();
+            aos::simulation::run_simulation(vm["output"].as<std::string>(), params);
+        }
+    } catch (const std::exception& ex) {
+        std::cerr << "Error: " << ex.what() << '\n';
+        return 1;
+    }
     return 0;
-    // make this an option to generate hysteresis curve for the rod material
-    // return aos::verify::verify_hysteresis("hymu80_hysteresis.csv", hymu80_params);
 }

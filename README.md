@@ -31,19 +31,15 @@ $$
 
 ## Inputs & Configuration
 
-```
-THIS SECTION IS TODO
-```
-
-The simulation is configured via a `.ini` file, allowing for easy modification of the scenario. Key inputs include:
+The simulation is configured via a command-line interface, allowing for easy modification of the scenario. Key inputs include:
 
 *   **Spacecraft Physical Properties:**
     *   Mass and dimensions (for inertia tensor calculation).
-    *   Permanent magnet properties (material grade, dimensions, body-fixed orientation).
+    *   Permanent magnet properties (remanence, dimensions, body-fixed orientation).
     *   Hysteresis rod properties (material, volume, body-fixed orientations).
 *   **Initial Conditions:**
-    *   Initial angular velocity (the "tumble").
-    *   Initial attitude quaternion.
+    *   Initial angular velocity.
+    *   Initial attitude quaternion. (TODO)
 *   **Orbital Parameters:**
     *   Circular orbit altitude and inclination.
 *   **Simulation Control:**

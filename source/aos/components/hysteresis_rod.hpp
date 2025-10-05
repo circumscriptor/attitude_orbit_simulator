@@ -14,6 +14,8 @@ public:
         double c;      // Reversibility coefficient [0-1]
         double alpha;  // Inter-domain coupling
 
+        void debug_print() const;
+
         static ja_parameters hymu80();
     };
 

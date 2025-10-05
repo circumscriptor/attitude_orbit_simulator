@@ -22,6 +22,8 @@ public:
         double                        hysteresis_rod_volume{};
         std::vector<vec3>             hysteresis_rod_orientations;
         hysteresis_rod::ja_parameters hysteresis_params;
+
+        void debug_print() const;
     };
 
     explicit spacecraft(const properties& properties)
