@@ -29,6 +29,44 @@ $$
 \end{bmatrix}
 $$
 
+### Hysteresis Damping Model
+
+The energy dissipation from the hysteresis rods is the key to passive damping. This is modeled using the Jiles–Atherton model.
+
+#### Hysteresis Rod Magnetisation
+
+The Jiles-Atherton model is defined in terms of the magnetic field ($H$), while the simulation's ODE solver operates in time ($t$). The chain rule is used to connect the two, providing the time derivative of magnetization required by the solver.
+
+$$
+\frac{dM}{dt} = \frac{dM}{dH} \cdot \frac{dH}{dt}
+$$
+
+#### Jiles–Atherton Model
+
+The model describes the rate of change of magnetization ($M$) with respect to the applied magnetic field ($H$). This is an implicit differential equation that combines the ideal, anhysteretic magnetization with terms for irreversible domain wall motion.
+
+$$
+\frac{dM}{dH} = \frac{c \frac{dM_{an}}{dH} + \frac{M_{an} - M}{k \delta}}{1 - \alpha \left( c \frac{dM_{an}}{dH} + \frac{M_{an} - M}{k \delta} \right)}
+$$
+
+The **effective magnetic field** ($H_e$) includes inter-domain coupling:
+
+$$
+H_e = H + \alpha M
+$$
+
+The **anhysteretic (ideal) magnetization** ($M_{an}$) is given by the Langevin function:
+
+$$
+M_{an}(H_e) = M_s \left( \coth\left(\frac{H_e}{a}\right) - \frac{a}{H_e} \right)
+$$
+
+The **derivative of anhysteretic magnetization** is also required:
+
+$$
+\frac{dM_{an}}{dH} = \frac{M_s}{a} \left(1 - \coth^2 \left(\frac{H_e}{a}\right) + \frac{a^2}{H_e^2}\right) \left(1 + \alpha \frac{dM}{dH}\right)
+$$
+
 ## Inputs & Configuration
 
 The simulation is configured via a command-line interface, allowing for easy modification of the scenario. Key inputs include:
