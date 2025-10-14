@@ -77,11 +77,12 @@ int main(int argc, char** argv) {
         ("dt", value<double>(&params.dt_initial), "Initial simulation time step [s]");                               //
 
     options_description hysteresis_parameters("Hysteresis parameters");
-    hysteresis_parameters.add_options()("hysteresis-ms", value<double>(&params.spacecraft.hysteresis_params.ms), "Saturation Magnetization [A/m]")  //
-        ("hysteresis-a", value<double>(&params.spacecraft.hysteresis_params.a), "Anhysteretic shape parameter [A/m]")                               //
-        ("hysteresis-k", value<double>(&params.spacecraft.hysteresis_params.k), "Pinning energy density [A/m]")                                     //
-        ("hysteresis-c", value<double>(&params.spacecraft.hysteresis_params.c), "Reversibility coefficient [0-1]")                                  //
-        ("hysteresis-alpha", value<double>(&params.spacecraft.hysteresis_params.alpha), "Inter-domain coupling");                                   //
+    hysteresis_parameters.add_options()                                                                                //
+        ("hysteresis-ms", value<double>(&params.spacecraft.hysteresis_params.ms), "Saturation Magnetization [A/m]")    //
+        ("hysteresis-a", value<double>(&params.spacecraft.hysteresis_params.a), "Anhysteretic shape parameter [A/m]")  //
+        ("hysteresis-k", value<double>(&params.spacecraft.hysteresis_params.k), "Pinning energy density [A/m]")        //
+        ("hysteresis-c", value<double>(&params.spacecraft.hysteresis_params.c), "Reversibility coefficient [0-1]")     //
+        ("hysteresis-alpha", value<double>(&params.spacecraft.hysteresis_params.alpha), "Inter-domain coupling");      //
 
     options_description other("Other options");
     other.add_options()                                                                                                                        //

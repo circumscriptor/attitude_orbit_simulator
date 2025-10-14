@@ -1,3 +1,6 @@
+# Directories
 .cache/
 build/
-*.ini
+
+# Default output (testing)
+output.csv

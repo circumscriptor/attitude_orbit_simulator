@@ -3,7 +3,6 @@ project(AttitudeOrbitSimulator)
 
 include(CTest)
 
-# find_package(ftxui CONFIG REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(GeographicLib CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS
