@@ -30,7 +30,7 @@ public:
  * factors, such as the spacecraft's orbital position and the Earth's
  * magnetic field at that location.
  */
-class wmm2020_environment : public environment {
+class wmm2025_environment : public environment {
 public:
 
     struct geodetic_coords {
@@ -44,18 +44,18 @@ public:
         double orbit_inclination_deg{};
     };
 
-    wmm2020_environment(const wmm2020_environment&)            = delete;
-    wmm2020_environment(wmm2020_environment&&)                 = delete;
-    wmm2020_environment& operator=(const wmm2020_environment&) = delete;
-    wmm2020_environment& operator=(wmm2020_environment&&)      = delete;
+    wmm2025_environment(const wmm2025_environment&)            = delete;
+    wmm2025_environment(wmm2025_environment&&)                 = delete;
+    wmm2025_environment& operator=(const wmm2025_environment&) = delete;
+    wmm2025_environment& operator=(wmm2025_environment&&)      = delete;
 
     /**
      * @brief Constructs the wmm2020_environment model.
      * @param props The properties struct containing configuration.
      */
-    explicit wmm2020_environment(const properties& props);
+    explicit wmm2025_environment(const properties& props);
 
-    ~wmm2020_environment() override;
+    ~wmm2025_environment() override;
 
     /**
      * @brief Calculates the Earth's magnetic field in the inertial frame (ECI).

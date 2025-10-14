@@ -8,7 +8,7 @@ namespace aos {
 
 struct simulation_parameters {
     spacecraft::properties          spacecraft;
-    wmm2020_environment::properties environment;
+    wmm2025_environment::properties environment;
 
     vec3   angular_velocity;
     double t_start{};

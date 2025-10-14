@@ -18,7 +18,7 @@ using aos::spacecraft;
 using aos::spacecraft_dynamics;
 using aos::system_state;
 using aos::vec3;
-using aos::wmm2020_environment;
+using aos::wmm2025_environment;
 
 // --- Mock Environments for Isolated Testing ---
 
@@ -67,10 +67,10 @@ TEST(SpacecraftTest, InertiaTensorCalculation) {
 }
 
 TEST(EnvironmentTest, MagneticFieldPlausibility) {
-    wmm2020_environment::properties props{};
+    wmm2025_environment::properties props{};
     props.orbit_altitude_km     = 500.0;
     props.orbit_inclination_deg = 51.6;
-    wmm2020_environment env(props);  // Use the base environment class
+    wmm2025_environment env(props);  // Use the base environment class
 
     vec3 b0   = env.inertial_magnetic_field_at(0.0);
     vec3 b100 = env.inertial_magnetic_field_at(100.0);

@@ -7,9 +7,9 @@
 #include <numbers>
 
 using aos::vec3;
-using aos::wmm2020_environment;
+using aos::wmm2025_environment;
 
-// Test fixture for the wmm2020_environment class
+// Test fixture for the wmm2025_environment class
 class Wmm2020EnvironmentTest : public ::testing::Test {
 protected:
 
@@ -19,19 +19,19 @@ protected:
         props.orbit_inclination_deg = 45.0;
     }
 
-    wmm2020_environment::properties props{};
+    wmm2025_environment::properties props{};
 };
 
 TEST_F(Wmm2020EnvironmentTest, ConstructorInitializesProperties) {
     // This test primarily ensures that the constructor does not throw
     // an exception and can be instantiated.
-    wmm2020_environment env(props);
+    wmm2025_environment env(props);
     SUCCEED();
 }
 
 TEST_F(Wmm2020EnvironmentTest, EquatorialOrbitAtTimeZero) {
     props.orbit_inclination_deg = 0.0;
-    wmm2020_environment env(props);
+    wmm2025_environment env(props);
 
     vec3 b_inertial = env.inertial_magnetic_field_at(0.0);
 
@@ -47,7 +47,7 @@ TEST_F(Wmm2020EnvironmentTest, EquatorialOrbitAtTimeZero) {
 
 TEST_F(Wmm2020EnvironmentTest, PolarOrbitAtTimeZero) {
     props.orbit_inclination_deg = 90.0;
-    wmm2020_environment env(props);
+    wmm2025_environment env(props);
 
     // At t=0, the satellite is at (lat=0, lon=0), so the result should be identical.
     vec3 b_inertial_t0          = env.inertial_magnetic_field_at(0.0);
@@ -68,7 +68,7 @@ TEST_F(Wmm2020EnvironmentTest, PolarOrbitAtTimeZero) {
 }
 
 TEST_F(Wmm2020EnvironmentTest, FieldVariesWithTime) {
-    wmm2020_environment env(props);
+    wmm2025_environment env(props);
 
     vec3 b_t0   = env.inertial_magnetic_field_at(0.0);
     vec3 b_t100 = env.inertial_magnetic_field_at(100.0);
