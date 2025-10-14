@@ -14,6 +14,9 @@ struct simulation_parameters {
     double t_start{};
     double t_end{};
     double dt_initial{};
+    double absolute_error{};
+    double relative_error{};
+    bool   higher_order{};  // Use higher order solver
 
     void debug_print() const;
 

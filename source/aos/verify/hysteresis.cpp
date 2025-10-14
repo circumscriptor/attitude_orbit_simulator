@@ -30,7 +30,7 @@ void verify_hysteresis(const std::string& output_filename, const hysteresis_rod:
     hysteresis_state_type m_initial{0.0};
 
     using stepper_type = runge_kutta_dopri5<hysteresis_state_type>;
-    auto stepper       = make_controlled<stepper_type>(epsilon, epsilon, stepper_type{});
+    auto stepper       = make_controlled<stepper_type>(default_absolute_error, default_relative_error);
     integrate_adaptive(stepper, dynamics, m_initial, t_start, t_end, dt, observer);
 }
 

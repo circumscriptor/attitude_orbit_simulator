@@ -87,6 +87,9 @@ int main(int argc, char** argv) {
 
     options_description other("Other options");
     other.add_options()                                                                                                                        //
+        ("higher-order", "Use higher order solver")                                                                                            //
+        ("absolute-error", "Integration solver's absolute error")                                                                              //
+        ("relative-error", "Integration solver's relative error")                                                                              //
         ("verify-hysteresis", "Calculate hysteresis curve for the given material instead of simulation")                                       //
         ("hysteresis-material", value<std::string>()->default_value("hymu80"), "The material for hysteresis generation (not supported yet)");  //
 
