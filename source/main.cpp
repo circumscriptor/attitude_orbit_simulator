@@ -67,6 +67,7 @@ int main(int argc, char** argv) {
         ("magnet-remanence", value<double>(&params.spacecraft.magnet_remanence), "Permanent magnet remanence")       //
         ("magnet-length", value<double>(&params.spacecraft.magnet_length), "Permanent magnet length [m]")            //
         ("magnet-diameter", value<double>(&params.spacecraft.magnet_diameter), "Permanent magnet diameter [m]")      //
+        ("no-rods", "Do not use hysteresis rods")                                                                    //
         ("rod-volume", value<double>(&params.spacecraft.hysteresis_rod_volume), "Volume of hysteresis rod in [m3]")  //
         ("rod-orientation", value<std::vector<std::string>>(), "Hysteresis rod orientation (multiple)")              //
         ("altitude", value<double>(&params.environment.orbit_altitude_km), "Orbit altitude [km]")                    //
@@ -126,7 +127,9 @@ int main(int argc, char** argv) {
             params.spacecraft.dim_m.z() = vm["length"].as<double>();
         }
 
-        if (vm.contains("rod-orientation")) {
+        if (vm.contains("no-rods")) {
+            params.spacecraft.hysteresis_rod_orientations.clear();
+        } else if (vm.contains("rod-orientation")) {
             params.spacecraft.hysteresis_rod_orientations.clear();
 
             const auto& orientations = vm["rod-orientation"].as<std::vector<std::string>>();

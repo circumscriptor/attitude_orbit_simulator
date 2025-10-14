@@ -1,21 +1,21 @@
-### 1. The State Vector (Y)
+### 1. The State Vector $\mathbf{Y}$
 
 First, define the complete state of your system as a single vector $Y$. This vector contains all the quantities that change over time and that you need to solve for.
 
 $$
 \begin{equation}
-Y = [r,v,q,\omega,M_{irr}]
+\mathbf{Y} = [\mathbf{r},\mathbf{v},\mathbf{q},\boldsymbol{\omega},M_{irr}]
 \end{equation}
 $$
 
 Where:
-*   $r$: Position vector of the spacecraft in an inertial frame (ECI). (3x1 vector)
-*   $v$: Velocity vector of the spacecraft in an inertial frame (ECI). (3x1 vector)
-*   $q$: Attitude quaternion, representing the rotation from the inertial frame to the spacecraft's body frame. (4x1 vector, $[w, x, y, z]$)
-*   $\omega$: Angular velocity vector of the spacecraft in its own body frame. (3x1 vector)
-*   $M_{irr}$: A vector containing the scalar irreversible magnetization for *each* of the $N$ hysteresis rods. ($[M_irr,1, M_irr,2, ..., M_irr,N]$)
+*   $\mathbf{r}$ - Position vector of the spacecraft in an inertial frame (ECI). ($3 \times 1$ vector)
+*   $\mathbf{v}$ - Velocity vector of the spacecraft in an inertial frame (ECI). ($3 \times 1$ vector)
+*   $\mathbf{q}$ - Attitude quaternion, representing the rotation from the inertial frame to the spacecraft's body frame. ($4 \times 1$ vector, $[w, x, y, z]$)
+*   $\boldsymbol{\omega}$ - Angular velocity vector of the spacecraft in its own body frame. ($3 \times 1$ vector)
+*   $M_{irr}$ - A vector containing the scalar irreversible magnetization for *each* of the $N$ hysteresis rods. ($[M_irr,1, M_irr,2, ..., M_irr,N]$)
 
-### 2. The System of First-Order Differential Equations $\left(\frac{dY}{dt}\right)$
+### 2. The System of First-Order Differential Equations $\frac{d\mathbf{Y}}{dt}$
 
 Function that takes the current time $t$ and the current state vector $Y$ as input and returns the time derivative of every component of $Y$.
 
@@ -37,34 +37,41 @@ $$
 \end{equation}
 $$
 
-### 3. Calculation Workflow (The $f(t, Y)$ function)
+### 3. Calculation Workflow $f(t, \mathbf{Y})$
 
 Perform a sequence of calculations using the current state $Y$ and system parameters.
 
 **Step 1: Unpack the State Vector $Y$**
-   *   Extract $r$, $v$, $q$, $\omega$, and the array of $M_{irr,i}$ values.
-   *   Normalize the quaternion $q$ to ensure it remains a unit quaternion: $q = \frac{q}{||q||}$.
-
-**Step 2: Calculate Intermediate Environmental Variables**
-*   **$B_{body}$ (Magnetic Field in Body Frame):**
-    1.  Use $r$ and $t$ to call a geomagnetic model (e.g., WMM) to get the B-field in an Earth-fixed frame ($B_{ECEF}$).
-    2.  Perform the coordinate transformation from the Earth-fixed frame to the inertial frame ($B_{ECI}$).
-    3.  Use the attitude quaternion $q$ to rotate $B_{ECI}$ into the spacecraft's body frame to get $B_{body}$.
-* **$\frac{dH_i}{dt}$ (Rate of change of field along each rod $i$):**
+   *   Extract $\mathbf{r}$, $\mathbf{v}$, $\mathbf{q}$, $\boldsymbol{\omega}$, and the array of $M_{irr,i}$ values.
+   *   Normalize the quaternion $\mathbf{q}$ to ensure it remains a unit quaternion:
 
 $$
 \begin{equation}
-\left(\frac{dB}{dt}\right)_{rot} = \omega \times B_{body}
+\mathbf{q} = \frac{\mathbf{q}}{\lVert\mathbf{q}\rVert}
 \end{equation}
 $$
 
+**Step 2: Calculate Intermediate Environmental Variables**
+*   **$B_{body}$ (Magnetic Field in Body Frame):**
+    1.  Use $\mathbf{r}$ and $t$ to call a geomagnetic model (e.g., WMM) to get the B-field in an Earth-fixed frame ($B_{ECEF}$).
+    2.  Perform the coordinate transformation from the Earth-fixed frame to the inertial frame ($B_{ECI}$).
+    3.  Use the attitude quaternion $\mathbf{q}$ to rotate $B_{ECI}$ into the spacecraft's body frame to get $B_{body}$.
+* **$\frac{dH_i}{dt}$ (Rate of change of field along each rod $i$):**
+
 $$
-\left(\frac{d\mathbf{B}}{dt}\right)_{orb} = (\mathbf{v}_{eci} \cdot \nabla)\mathbf{B} \approx \frac{\mathbf{B}(\mathbf{r}(t) + \mathbf{v}(t)\delta t) - \mathbf{B}(\mathbf{r}(t))}{\delta t}
+\begin{align}
+\left(\frac{dB}{dt}\right)_{rot,body} &= \omega \times B_{body} \\
+\left(\frac{d\mathbf{B}}{dt}\right)_{orb,eci} &= (\mathbf{v}_{eci} \cdot \nabla)\mathbf{B}_{eci} \approx \frac{\mathbf{B}_{eci}(\mathbf{r}(t) + \mathbf{v}(t)\delta t) - \mathbf{B}_{eci}(\mathbf{r}(t))}{\delta t} \\
+\left(\frac{d\mathbf{B}}{dt}\right)_{orb,body} &= C(\mathbf{q}) \left(\frac{d\mathbf{B}}{dt}\right)_{orb,eci} \\
+\frac{dH_i}{dt} &= \frac{1}{\mu_0} \left[ \left( \left(\frac{d\mathbf{B}}{dt}\right)_{orb, body} + \left(\frac{d\mathbf{B}}{dt}\right)_{rot,body} \right) \cdot \mathbf{b}_i \right]
+\end{align}
+$$
+
+$$
 $$
 
 $$
 \begin{equation}
-\frac{dH_i}{dt} = \frac{1}{\mu_0} \left[ \left( \left(\frac{dB}{dt}\right)_{orb} + \left(\frac{dB}{dt}\right)_{rot} \right) ⋅ b_i \right]
 \end{equation}
 $$
 
@@ -96,7 +103,7 @@ $$
 $$
 \begin{align}
     \frac{d\mathbf{r}}{dt} &= \mathbf{v} \\
-    \frac{d\mathbf{v}}{dt} &= -\frac{G M_{earth}}{||\mathbf{r}||^3} \mathbf{r} \\
+    \frac{d\mathbf{v}}{dt} &= -\frac{G M_{earth}}{\lVert\mathbf{r}\rVert^3} \mathbf{r} \\
     \frac{d\mathbf{q}}{dt} &= \frac{1}{2} \mathbf{q} \otimes [0, \boldsymbol{\omega}] \\
     \frac{d\boldsymbol{\omega}}{dt} &= \mathbf{I}^{-1} (\boldsymbol{\tau}_{total} - \boldsymbol{\omega} \times (\mathbf{I}\boldsymbol{\omega})) \\
     \frac{d\mathbf{M}_{irr}}{dt} &= \text{The vector of } \frac{dM_{irr,i}}{dt} \text{ calculated in Step 3.}
