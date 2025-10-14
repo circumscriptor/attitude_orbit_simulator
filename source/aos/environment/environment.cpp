@@ -8,7 +8,7 @@
 #include <cmath>
 #include <numbers>
 
-namespace aos::environment {
+namespace aos {
 
 environment::~environment() = default;
 
@@ -116,4 +116,4 @@ double wmm2020_environment::normalize_longitude_deg(double lon_deg) {
     // NOLINTEND(readability-magic-numbers)
 }
 
-}  // namespace aos::environment
+}  // namespace aos

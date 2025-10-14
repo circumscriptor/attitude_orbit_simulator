@@ -4,10 +4,7 @@
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
 
-namespace aos::simulation {
-
-using components::spacecraft;
-using environment::wmm2020_environment;
+namespace aos {
 
 struct simulation_parameters {
     spacecraft::properties          spacecraft;
@@ -23,4 +20,4 @@ struct simulation_parameters {
     static simulation_parameters get_default();
 };
 
-}  // namespace aos::simulation
+}  // namespace aos

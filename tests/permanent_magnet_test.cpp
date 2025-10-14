@@ -8,9 +8,9 @@
 #include <numbers>
 
 // Test fixture for permanent_magnet
+using aos::permanent_magnet;
 using aos::vacuum_permeability;
 using aos::vec3;
-using aos::components::permanent_magnet;
 
 class PermanentMagnetTest : public ::testing::Test {
 protected:

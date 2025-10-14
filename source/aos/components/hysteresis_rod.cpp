@@ -9,7 +9,7 @@
 #include <iostream>
 #include <stdexcept>
 
-namespace aos::components {
+namespace aos {
 
 void hysteresis_rod::ja_parameters::debug_print() const {
     std::cout << "-- hysteresis properties --"                           //
@@ -148,4 +148,4 @@ double hysteresis_rod::magnetization_derivative_from_h(double m_scalar_am, doubl
     return dm_dh * dh_dt;  // Return dM/dt using the chain rule
 }
 
-}  // namespace aos::components
+}  // namespace aos

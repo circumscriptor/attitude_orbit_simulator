@@ -7,11 +7,7 @@
 #include <memory>
 #include <utility>
 
-namespace aos::simulation {
-
-// Use established type aliases for consistency
-using components::spacecraft;
-using environment::environment;
+namespace aos {
 
 /**
  * @class spacecraft_dynamics
@@ -46,4 +42,4 @@ private:
     std::shared_ptr<const environment> _environment;
 };
 
-}  // namespace aos::simulation
+}  // namespace aos

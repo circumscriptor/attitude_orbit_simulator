@@ -51,7 +51,7 @@ int main(int argc, char** argv) {
 
     static const unsigned help_line_width = 40;
 
-    auto params = aos::simulation::simulation_parameters::get_default();
+    auto params = aos::simulation_parameters::get_default();
 
     options_description generic("Generic options");
     generic.add_options()                                                                //
@@ -153,10 +153,10 @@ int main(int argc, char** argv) {
     try {
         if (vm.contains("verify-hysteresis")) {
             params.spacecraft.hysteresis_params.debug_print();
-            aos::verify::verify_hysteresis(vm["output"].as<std::string>(), params.spacecraft.hysteresis_params);
+            aos::verify_hysteresis(vm["output"].as<std::string>(), params.spacecraft.hysteresis_params);
         } else {
             params.debug_print();
-            aos::simulation::run_simulation(vm["output"].as<std::string>(), params);
+            aos::run_simulation(vm["output"].as<std::string>(), params);
         }
     } catch (const std::exception& ex) {
         std::cerr << "Error: " << ex.what() << '\n';

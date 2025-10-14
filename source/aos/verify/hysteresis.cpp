@@ -12,7 +12,7 @@
 
 #include <string>
 
-namespace aos::verify {
+namespace aos {
 
 void verify_hysteresis(const std::string& output_filename, const hysteresis_rod::ja_parameters& params) {
     using boost::numeric::odeint::integrate_adaptive;
@@ -34,4 +34,4 @@ void verify_hysteresis(const std::string& output_filename, const hysteresis_rod:
     integrate_adaptive(stepper, dynamics, m_initial, t_start, t_end, dt, observer);
 }
 
-}  // namespace aos::verify
+}  // namespace aos

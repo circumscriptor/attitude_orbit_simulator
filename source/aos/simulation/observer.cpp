@@ -13,7 +13,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace aos::simulation {
+namespace aos {
 
 csv_state_observer::csv_state_observer(const std::string& filename, std::size_t num_rods) : _num_rods(num_rods) {
     boost::filesystem::path file_path(filename);
@@ -52,4 +52,4 @@ void csv_state_observer::operator()(const system_state& state, double time) cons
     *_file << '\n';
 }
 
-}  // namespace aos::simulation
+}  // namespace aos

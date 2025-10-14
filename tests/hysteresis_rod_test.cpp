@@ -7,8 +7,8 @@
 #include <cmath>
 #include <memory>
 
+using aos::hysteresis_rod;
 using aos::vec3;
-using aos::components::hysteresis_rod;
 
 class HysteresisRodTest : public ::testing::Test {
 protected:

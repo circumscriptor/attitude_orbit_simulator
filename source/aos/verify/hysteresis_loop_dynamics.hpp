@@ -2,9 +2,8 @@
 
 #include "aos/components/hysteresis_rod.hpp"
 
-namespace aos::verify {
+namespace aos {
 
-using components::hysteresis_rod;
 using hysteresis_state_type = double;
 
 // Dynamics functor for the B-H loop test
@@ -23,4 +22,4 @@ private:
     const hysteresis_rod* _rod;
 };
 
-}  // namespace aos::verify
+}  // namespace aos

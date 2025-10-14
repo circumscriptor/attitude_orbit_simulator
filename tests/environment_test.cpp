@@ -7,7 +7,7 @@
 #include <numbers>
 
 using aos::vec3;
-using aos::environment::wmm2020_environment;
+using aos::wmm2020_environment;
 
 // Test fixture for the wmm2020_environment class
 class Wmm2020EnvironmentTest : public ::testing::Test {

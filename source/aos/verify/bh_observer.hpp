@@ -6,7 +6,7 @@
 #include <memory>
 #include <string>
 
-namespace aos::verify {
+namespace aos {
 
 // Observer to write H, M, and B data to a file
 struct bh_observer {
@@ -21,4 +21,4 @@ private:
     std::shared_ptr<std::ofstream> _file;
 };
 
-}  // namespace aos::verify
+}  // namespace aos

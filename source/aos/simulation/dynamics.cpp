@@ -5,7 +5,7 @@
 
 #include <cstddef>
 
-namespace aos::simulation {
+namespace aos {
 
 void spacecraft_dynamics::operator()(const system_state& current_state, system_state& state_derivative, double t) const {
     // --- 1. Get Environment State ---
@@ -54,4 +54,4 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
     }
 }
 
-}  // namespace aos::simulation
+}  // namespace aos

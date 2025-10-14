@@ -7,7 +7,7 @@
 #include <span>
 #include <vector>
 
-namespace aos::components {
+namespace aos {
 
 class spacecraft {
 public:
@@ -46,4 +46,4 @@ private:
     std::vector<hysteresis_rod> _rods;
 };
 
-}  // namespace aos::components
+}  // namespace aos

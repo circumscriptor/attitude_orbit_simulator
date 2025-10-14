@@ -4,10 +4,8 @@
 
 #include <string>
 
-namespace aos::verify {
-
-using components::hysteresis_rod;
+namespace aos {
 
 void verify_hysteresis(const std::string& output_filename, const hysteresis_rod::ja_parameters& params);
 
-}  // namespace aos::verify
+}  // namespace aos

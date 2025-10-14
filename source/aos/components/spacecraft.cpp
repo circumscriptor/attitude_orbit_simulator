@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-namespace aos::components {
+namespace aos {
 
 void spacecraft::properties::debug_print() const {
     std::cout << "--  spacecraft properties  --"                                                                                                            //
@@ -47,4 +47,4 @@ mat3x3 spacecraft::get_inertia_tensor(double m, double a, double b, double c) {
     return tensor;
 }
 
-}  // namespace aos::components
+}  // namespace aos

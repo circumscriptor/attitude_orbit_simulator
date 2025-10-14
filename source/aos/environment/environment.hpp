@@ -5,7 +5,7 @@
 #include <GeographicLib/Constants.hpp>
 #include <GeographicLib/MagneticModel.hpp>
 
-namespace aos::environment {
+namespace aos {
 
 class environment {
 public:
@@ -87,4 +87,4 @@ private:
     GeographicLib::MagneticModel _magnetic_model;
 };
 
-}  // namespace aos::environment
+}  // namespace aos

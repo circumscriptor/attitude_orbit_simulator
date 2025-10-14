@@ -2,7 +2,7 @@
 
 #include "aos/core/types.hpp"
 
-namespace aos::components {
+namespace aos {
 
 class permanent_magnet {
 public:
@@ -17,4 +17,4 @@ private:
     vec3 _magnetic_moment_body;  // [A·m^2]
 };
 
-}  // namespace aos::components
+}  // namespace aos

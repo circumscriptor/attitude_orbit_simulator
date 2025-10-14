@@ -4,8 +4,8 @@
 
 #include <string>
 
-namespace aos::simulation {
+namespace aos {
 
 void run_simulation(const std::string& output_filename, const simulation_parameters& params);
 
-}  // namespace aos::simulation
+}  // namespace aos

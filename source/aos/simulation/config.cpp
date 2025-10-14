@@ -6,7 +6,7 @@
 #include <iostream>
 #include <numbers>
 
-namespace aos::simulation {
+namespace aos {
 
 // {{"N35", 1.21},  // Using nominal Br in Tesla
 //  {"N42", 1.32},
@@ -42,7 +42,7 @@ simulation_parameters simulation_parameters::get_default() {
                         {0.0, 1.0, 0.0},
                         {0.0, -1.0, 0.0}  // One pair along the Y-axis
                     },
-                .hysteresis_params = components::hysteresis_rod::ja_parameters::hymu80(),
+                .hysteresis_params = hysteresis_rod::ja_parameters::hymu80(),
             },
         .environment =
             {
@@ -57,4 +57,4 @@ simulation_parameters simulation_parameters::get_default() {
     // NOLINTEND(readability-magic-numbers)
 }
 
-}  // namespace aos::simulation
+}  // namespace aos

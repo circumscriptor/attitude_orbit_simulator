@@ -15,7 +15,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace aos::verify {
+namespace aos {
 
 bh_observer::bh_observer(const std::string& filename) {
     boost::filesystem::path file_path(filename);
@@ -41,4 +41,4 @@ void bh_observer::operator()(const hysteresis_state_type& m, double t) const {
     (*_file) << t << "," << h << "," << m << "," << b << "\n";
 }
 
-}  // namespace aos::verify
+}  // namespace aos

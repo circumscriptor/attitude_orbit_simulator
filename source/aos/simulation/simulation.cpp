@@ -19,15 +19,10 @@
 #include <memory>
 #include <string>
 
-namespace aos::simulation {
+namespace aos {
 
 void run_simulation(const std::string& output_filename, const simulation_parameters& params) {
     using aos::abs;
-    using aos::components::spacecraft;
-    using aos::environment::wmm2020_environment;
-    using aos::simulation::csv_state_observer;
-    using aos::simulation::simulation_parameters;
-    using aos::simulation::spacecraft_dynamics;
     using boost::numeric::odeint::integrate_adaptive;
     using boost::numeric::odeint::make_controlled;
     using boost::numeric::odeint::runge_kutta_dopri5;
@@ -49,4 +44,4 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
     integrate_adaptive(stepper, dynamics, initial, params.t_start, params.t_end, params.dt_initial, observer);
 }
 
-}  // namespace aos::simulation
+}  // namespace aos

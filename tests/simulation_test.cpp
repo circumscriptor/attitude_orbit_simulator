@@ -10,15 +10,15 @@
 #include <cstdlib>
 #include <memory>
 
+using aos::environment;
 using aos::mat3x3;
+using aos::permanent_magnet;
 using aos::quat;
+using aos::spacecraft;
+using aos::spacecraft_dynamics;
 using aos::system_state;
 using aos::vec3;
-using aos::components::permanent_magnet;
-using aos::components::spacecraft;
-using aos::environment::environment;
-using aos::environment::wmm2020_environment;
-using aos::simulation::spacecraft_dynamics;
+using aos::wmm2020_environment;
 
 // --- Mock Environments for Isolated Testing ---
 
@@ -26,15 +26,20 @@ class ZeroFieldEnvironment : public environment {
 public:
 
     ZeroFieldEnvironment() = default;
-    // REFINEMENT: Use [[maybe_unused]] and override for safety and clarity
-    [[nodiscard]] vec3 inertial_magnetic_field_at([[maybe_unused]] double t_sec) const override { return {0, 0, 0}; }
+
+    [[nodiscard]]
+    vec3 inertial_magnetic_field_at([[maybe_unused]] double t_sec) const override {
+        return {0, 0, 0};
+    }
 };
 
 class ConstantFieldEnvironment : public environment {
 public:
 
     ConstantFieldEnvironment() = default;
-    [[nodiscard]] vec3 inertial_magnetic_field_at([[maybe_unused]] double t_sec) const override {
+
+    [[nodiscard]]
+    vec3 inertial_magnetic_field_at([[maybe_unused]] double t_sec) const override {
         return {0.0, 3e-5, 0.0};  // B field along Y-axis
     }
 };

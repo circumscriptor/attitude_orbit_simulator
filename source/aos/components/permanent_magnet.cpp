@@ -6,7 +6,7 @@
 #include <cmath>
 #include <numbers>
 
-namespace aos::components {
+namespace aos {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 permanent_magnet::permanent_magnet(double remanence, double length_m, double diameter_m, const vec3& orientation)
@@ -19,4 +19,4 @@ permanent_magnet::permanent_magnet(double br_t, double volume_m3, const vec3& or
     _magnetic_moment_body         = moment_magnitude * orientation.normalized();
 }
 
-}  // namespace aos::components
+}  // namespace aos

@@ -3,7 +3,7 @@
 #include <cmath>
 #include <numbers>
 
-namespace aos::verify {
+namespace aos {
 
 void hysteresis_loop_dynamics::operator()(const hysteresis_state_type& m, hysteresis_state_type& dm_dt, double t) const {
     // Applied H-field and its time derivative
@@ -12,4 +12,4 @@ void hysteresis_loop_dynamics::operator()(const hysteresis_state_type& m, hyster
     dm_dt              = _rod->magnetization_derivative_from_h(m, h, dh_dt);
 }
 
-}  // namespace aos::verify
+}  // namespace aos

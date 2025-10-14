@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 
-namespace aos::simulation {
+namespace aos {
 
 /**
  * @class csv_state_observer
@@ -41,4 +41,4 @@ private:
     std::size_t                    _num_rods;
 };
 
-}  // namespace aos::simulation
+}  // namespace aos

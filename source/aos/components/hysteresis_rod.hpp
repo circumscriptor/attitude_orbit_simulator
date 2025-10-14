@@ -2,7 +2,7 @@
 
 #include "aos/core/types.hpp"
 
-namespace aos::components {
+namespace aos {
 
 class hysteresis_rod {
 public:
@@ -60,4 +60,4 @@ private:
     ja_parameters _params;
 };
 
-}  // namespace aos::components
+}  // namespace aos
