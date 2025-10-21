@@ -25,7 +25,7 @@ public:
      * @param spacecraft_model A const shared pointer to the spacecraft's physical properties.
      * @param environment_model A const shared pointer to the environmental models (e.g., magnetic field).
      */
-    spacecraft_dynamics(std::shared_ptr<const spacecraft> spacecraft_model, std::shared_ptr<const environment> environment_model)
+    spacecraft_dynamics(std::shared_ptr<const spacecraft> spacecraft_model, std::shared_ptr<const magnetic_model> environment_model)
         : _spacecraft(std::move(spacecraft_model)), _environment(std::move(environment_model)) {}
 
     /**
@@ -38,8 +38,8 @@ public:
 
 private:
 
-    std::shared_ptr<const spacecraft>  _spacecraft;
-    std::shared_ptr<const environment> _environment;
+    std::shared_ptr<const spacecraft>     _spacecraft;
+    std::shared_ptr<const magnetic_model> _environment;
 };
 
 }  // namespace aos

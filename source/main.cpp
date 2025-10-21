@@ -87,10 +87,12 @@ int main(int argc, char** argv) {
 
     options_description other("Other options");
     other.add_options()                                                                                                                        //
-        ("higher-order", "Use higher order solver")                                                                                            //
-        ("absolute-error", "Integration solver's absolute error")                                                                              //
-        ("relative-error", "Integration solver's relative error")                                                                              //
+        ("higher-order", bool_switch(&params.higher_order), "Use higher order solver")                                                         //
+        ("absolute-error", value<double>(&params.absolute_error), "Integration solver's absolute error")                                       //
+        ("relative-error", value<double>(&params.relative_error), "Integration solver's relative error")                                       //
         ("verify-hysteresis", "Calculate hysteresis curve for the given material instead of simulation")                                       //
+        ("no-observe-element", bool_switch(&params.observer.exclude_elements), "Exclude per-element values from output")                       //
+        ("no-observe-magnitude", bool_switch(&params.observer.exclude_magnitudes), "Exclude magnitude values from output")                     //
         ("hysteresis-material", value<std::string>()->default_value("hymu80"), "The material for hysteresis generation (not supported yet)");  //
 
     options_description options(help_line_width);

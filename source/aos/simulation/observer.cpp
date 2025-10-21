@@ -15,7 +15,8 @@
 
 namespace aos {
 
-csv_state_observer::csv_state_observer(const std::string& filename, std::size_t num_rods) : _num_rods(num_rods) {
+csv_state_observer::csv_state_observer(const std::string& filename, std::size_t num_rods, const properties& props)
+    : _num_rods(num_rods), _include_elements(not props.exclude_elements), _include_magnitudes(not props.exclude_magnitudes) {
     boost::filesystem::path file_path(filename);
     if (file_path.has_parent_path()) {
         boost::filesystem::create_directories(file_path.parent_path());
@@ -29,7 +30,18 @@ csv_state_observer::csv_state_observer(const std::string& filename, std::size_t 
     *_file << std::fixed << std::setprecision(3);
 
     // --- Write the CSV Header ---
-    *_file << "time,q_w,q_x,q_y,q_z,w_x,w_y,w_z";
+    *_file << "time";
+    if (_include_magnitudes) {
+        *_file
+            // << ",q"  // always norm() == 1
+            << ",w";
+    }
+
+    if (_include_elements) {
+        *_file << ",q_w,q_x,q_y,q_z"
+               << ",w_x,w_y,w_z";
+    }
+
     for (std::size_t i = 0; i < _num_rods; ++i) {
         *_file << ",M_" << (i + 1);
     }
@@ -37,14 +49,24 @@ csv_state_observer::csv_state_observer(const std::string& filename, std::size_t 
 }
 
 void csv_state_observer::operator()(const system_state& state, double time) const {
-    *_file << time << ','                         //
-           << state.attitude.coeffs().w() << ','  //
-           << state.attitude.coeffs().x() << ','  //
-           << state.attitude.coeffs().y() << ','  //
-           << state.attitude.coeffs().z() << ','  //
-           << state.angular_velocity.x() << ','   //
-           << state.angular_velocity.y() << ','   //
-           << state.angular_velocity.z();
+    *_file << time;
+
+    if (_include_magnitudes) {
+        *_file                                        //
+                                                      // << ',' << state.attitude.norm() // ignore
+            << ',' << state.angular_velocity.norm();  //
+    }
+
+    if (_include_elements) {
+        *_file                                     //
+            << ',' << state.attitude.coeffs().w()  //
+            << ',' << state.attitude.coeffs().x()  //
+            << ',' << state.attitude.coeffs().y()  //
+            << ',' << state.attitude.coeffs().z()  //
+            << ',' << state.angular_velocity.x()   //
+            << ',' << state.angular_velocity.y()   //
+            << ',' << state.angular_velocity.z();
+    }
 
     for (std::size_t i = 0; i < _num_rods; ++i) {
         *_file << ',' << state.rod_magnetizations(static_cast<int>(i));

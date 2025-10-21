@@ -10,18 +10,18 @@
 
 namespace aos {
 
-environment::~environment() = default;
+magnetic_model::~magnetic_model() = default;
 
-wmm2025_environment::wmm2025_environment(const properties& props)
+wmm2025_magnetic_model::wmm2025_magnetic_model(const properties& props)
     : _orbit_altitude_m(props.orbit_altitude_km * km_to_m),
       _orbit_inclination_rad(props.orbit_inclination_deg * deg_to_rad),
       _orbit_radius_m(GeographicLib::Constants::WGS84_a() + _orbit_altitude_m),
       _orbit_period_s(2.0 * std::numbers::pi * std::sqrt(std::pow(_orbit_radius_m, 3) / earth_mu_m3_s2)),
       _magnetic_model("wmm2025") {}
 
-wmm2025_environment::~wmm2025_environment() = default;
+wmm2025_magnetic_model::~wmm2025_magnetic_model() = default;
 
-vec3 wmm2025_environment::inertial_magnetic_field_at(double t_sec) const {
+vec3 wmm2025_magnetic_model::inertial_magnetic_field_at(double t_sec) const {
     // 1. Calculate spacecraft position in ECEF frame (lat, lon, alt)
     const geodetic_coords coords_ecef = propagate_orbit_to_ecef(t_sec);
 
@@ -36,7 +36,7 @@ vec3 wmm2025_environment::inertial_magnetic_field_at(double t_sec) const {
     return rotate_ned_to_eci(b_ned, coords_ecef, t_sec);
 }
 
-wmm2025_environment::geodetic_coords wmm2025_environment::propagate_orbit_to_ecef(double t_sec) const {
+wmm2025_magnetic_model::geodetic_coords wmm2025_magnetic_model::propagate_orbit_to_ecef(double t_sec) const {
     const double orbit_angle_rad = two_pi * t_sec / _orbit_period_s;
 
     // Note: For near-polar orbits, the asin() function can have numerical sensitivity
@@ -50,7 +50,7 @@ wmm2025_environment::geodetic_coords wmm2025_environment::propagate_orbit_to_ece
     return {.lat_deg = lat_rad * rad_to_deg, .lon_deg = normalize_longitude_deg(lon_deg), .alt_m = _orbit_altitude_m};
 }
 
-vec3 wmm2025_environment::get_magnetic_field_in_ned(double t_sec, const geodetic_coords& coords) const {
+vec3 wmm2025_magnetic_model::get_magnetic_field_in_ned(double t_sec, const geodetic_coords& coords) const {
     const double year_decimal = simulation_start_year + (t_sec / seconds_per_year);
 
     // GeographicLib MagneticModel operator() returns components as:
@@ -73,7 +73,7 @@ vec3 wmm2025_environment::get_magnetic_field_in_ned(double t_sec, const geodetic
     };
 }
 
-vec3 wmm2025_environment::rotate_ned_to_eci(const vec3& b_ned, const geodetic_coords& coords, double t_sec) {
+vec3 wmm2025_magnetic_model::rotate_ned_to_eci(const vec3& b_ned, const geodetic_coords& coords, double t_sec) {
     // Step 1: Rotate from North-East-Down (NED) to Earth-Centered, Earth-Fixed (ECEF)
     const double lat     = coords.lat_deg * deg_to_rad;
     const double lon     = coords.lon_deg * deg_to_rad;
@@ -106,7 +106,7 @@ vec3 wmm2025_environment::rotate_ned_to_eci(const vec3& b_ned, const geodetic_co
     return r_ecef_to_eci * b_ecef;
 }
 
-double wmm2025_environment::normalize_longitude_deg(double lon_deg) {
+double wmm2025_magnetic_model::normalize_longitude_deg(double lon_deg) {
     // NOLINTBEGIN(readability-magic-numbers)
     double lon = std::fmod(lon_deg + 180.0, 360.0);
     if (lon < 0) {

@@ -44,10 +44,11 @@ simulation_parameters simulation_parameters::get_default() {
                 .hysteresis_params           = hysteresis_rod::ja_parameters::hymu80(),
             },
         .environment      = {.orbit_altitude_km = 440., .orbit_inclination_deg = 80.},  // 440 km above surface, 80 degree inclicanation
-        .angular_velocity = {0.1, -0.05, 0.08},                                         // rad/s
-        .t_start          = 0.0,                                                        //
-        .t_end            = 2.0 * 7.0 * 24.0 * 60.0 * 60.0,                             // 2 weeks
-        .dt_initial       = 0.1,                                                        //
+        .observer         = {.exclude_elements = false, .exclude_magnitudes = false},
+        .angular_velocity = {0.1, -0.05, 0.08},              // rad/s
+        .t_start          = 0.0,                             //
+        .t_end            = 2.0 * 7.0 * 24.0 * 60.0 * 60.0,  // 2 weeks
+        .dt_initial       = 0.1,                             //
         .absolute_error   = default_absolute_error,
         .relative_error   = default_relative_error,
         .higher_order     = false,

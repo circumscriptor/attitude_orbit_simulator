@@ -31,10 +31,10 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
     using stepper_type_dp5 = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
 
     auto satellite   = std::make_shared<spacecraft>(params.spacecraft);
-    auto environment = std::make_shared<wmm2025_environment>(params.environment);
+    auto environment = std::make_shared<wmm2025_magnetic_model>(params.environment);
 
     spacecraft_dynamics dynamics{satellite, environment};
-    csv_state_observer  observer(output_filename, satellite->rods().size());
+    csv_state_observer  observer(output_filename, satellite->rods().size(), params.observer);
     system_state        initial;
     initial.attitude         = aos::quat::Identity();
     initial.angular_velocity = params.angular_velocity;

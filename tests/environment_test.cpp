@@ -7,7 +7,7 @@
 #include <numbers>
 
 using aos::vec3;
-using aos::wmm2025_environment;
+using aos::wmm2025_magnetic_model;
 
 // Test fixture for the wmm2025_environment class
 class Wmm2020EnvironmentTest : public ::testing::Test {

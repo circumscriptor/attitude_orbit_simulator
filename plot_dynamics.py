@@ -33,6 +33,7 @@ axs[0].set_title('Attitude Quaternion Components')
 axs[0].legend()
 
 # 2. Plot angular velocity components vs time
+# axs[1].plot(data['time'], data['w'], label='w')
 axs[1].plot(data['time'], data['w_x'], label='w_x')
 axs[1].plot(data['time'], data['w_y'], label='w_y')
 axs[1].plot(data['time'], data['w_z'], label='w_z')

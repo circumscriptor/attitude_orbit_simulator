@@ -96,7 +96,18 @@ This data is used to generate plots for analysis and verification.
 
 ## Example Result & Conclusion
 
-The plot below shows the result of a 2-week simulation of a 1U CubeSat with an initial tumble.
+Input:
+
+```sh
+attitude_orbit_simulator --inclination 80 \
+                         --altitude 440 \
+                         --magnet-length 0.015 \
+                         --magnet-diameter 0.03 \
+                         --angular-velocity 1.57,0,0 \
+                         --rod-volume 3.078e-6
+```
+
+The plot below shows the result of a 2-week simulation of a 1U CubeSat with an initial tumble ().
 
 ![Simulation Results](results/dynamics.png)
 
@@ -105,8 +116,6 @@ The plot below shows the result of a calculation of a sample material hysteresis
 ![HyMu-80 Hysteresis Curve](results/hymu80_hysteresis_curve.png)
 
 **Conclusion:**
-
-The simulation successfully models the complete behavior of the passive AOCS.
 
 1.  **Detumble Phase:** The initial high angular velocity is effectively damped by the hysteresis rods, with the majority of the rotational energy dissipated within the first week.
 2.  **Stabilization Phase:** As the angular velocity approaches zero, the permanent magnet aligns the spacecraft with the local geomagnetic field.

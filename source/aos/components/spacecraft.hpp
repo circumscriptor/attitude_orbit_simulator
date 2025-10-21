@@ -40,8 +40,8 @@ public:
 
 private:
 
-    mat3x3                      _inertia_tensor;
-    mat3x3                      _inertia_tensor_inverse;
+    mat3x3                      _inertia_tensor;          // I
+    mat3x3                      _inertia_tensor_inverse;  // I^(-1)
     permanent_magnet            _magnet;
     std::vector<hysteresis_rod> _rods;
 };

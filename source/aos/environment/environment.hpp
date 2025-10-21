@@ -3,20 +3,21 @@
 #include "aos/core/types.hpp"
 
 #include <GeographicLib/Constants.hpp>
+#include <GeographicLib/Geocentric.hpp>
 #include <GeographicLib/MagneticModel.hpp>
 
 namespace aos {
 
-class environment {
+class magnetic_model {
 public:
 
-    environment()                              = default;
-    environment(const environment&)            = delete;
-    environment(environment&&)                 = delete;
-    environment& operator=(const environment&) = delete;
-    environment& operator=(environment&&)      = delete;
+    magnetic_model()                                 = default;
+    magnetic_model(const magnetic_model&)            = delete;
+    magnetic_model(magnetic_model&&)                 = delete;
+    magnetic_model& operator=(const magnetic_model&) = delete;
+    magnetic_model& operator=(magnetic_model&&)      = delete;
 
-    virtual ~environment();
+    virtual ~magnetic_model();
 
     [[nodiscard]]
     virtual vec3 inertial_magnetic_field_at(double t_sec) const = 0;
@@ -30,7 +31,7 @@ public:
  * factors, such as the spacecraft's orbital position and the Earth's
  * magnetic field at that location.
  */
-class wmm2025_environment : public environment {
+class wmm2025_magnetic_model : public magnetic_model {
 public:
 
     struct geodetic_coords {
@@ -44,18 +45,18 @@ public:
         double orbit_inclination_deg{};
     };
 
-    wmm2025_environment(const wmm2025_environment&)            = delete;
-    wmm2025_environment(wmm2025_environment&&)                 = delete;
-    wmm2025_environment& operator=(const wmm2025_environment&) = delete;
-    wmm2025_environment& operator=(wmm2025_environment&&)      = delete;
+    wmm2025_magnetic_model(const wmm2025_magnetic_model&)            = delete;
+    wmm2025_magnetic_model(wmm2025_magnetic_model&&)                 = delete;
+    wmm2025_magnetic_model& operator=(const wmm2025_magnetic_model&) = delete;
+    wmm2025_magnetic_model& operator=(wmm2025_magnetic_model&&)      = delete;
 
     /**
      * @brief Constructs the wmm2020_environment model.
      * @param props The properties struct containing configuration.
      */
-    explicit wmm2025_environment(const properties& props);
+    explicit wmm2025_magnetic_model(const properties& props);
 
-    ~wmm2025_environment() override;
+    ~wmm2025_magnetic_model() override;
 
     /**
      * @brief Calculates the Earth's magnetic field in the inertial frame (ECI).

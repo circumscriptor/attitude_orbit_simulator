@@ -10,7 +10,7 @@
 #include <cstdlib>
 #include <memory>
 
-using aos::environment;
+using aos::magnetic_model;
 using aos::mat3x3;
 using aos::permanent_magnet;
 using aos::quat;
@@ -18,7 +18,7 @@ using aos::spacecraft;
 using aos::spacecraft_dynamics;
 using aos::system_state;
 using aos::vec3;
-using aos::wmm2025_environment;
+using aos::wmm2025_magnetic_model;
 
 // --- Mock Environments for Isolated Testing ---
 
