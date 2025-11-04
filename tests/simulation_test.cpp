@@ -22,7 +22,7 @@ using aos::wmm2025_magnetic_model;
 
 // --- Mock Environments for Isolated Testing ---
 
-class ZeroFieldEnvironment : public environment {
+class ZeroFieldEnvironment : public magnetic_model {
 public:
 
     ZeroFieldEnvironment() = default;
@@ -33,7 +33,7 @@ public:
     }
 };
 
-class ConstantFieldEnvironment : public environment {
+class ConstantFieldEnvironment : public magnetic_model {
 public:
 
     ConstantFieldEnvironment() = default;
@@ -67,10 +67,10 @@ TEST(SpacecraftTest, InertiaTensorCalculation) {
 }
 
 TEST(EnvironmentTest, MagneticFieldPlausibility) {
-    wmm2025_environment::properties props{};
+    wmm2025_magnetic_model::properties props{};
     props.orbit_altitude_km     = 500.0;
     props.orbit_inclination_deg = 51.6;
-    wmm2025_environment env(props);  // Use the base environment class
+    wmm2025_magnetic_model env(props);  // Use the base environment class
 
     vec3 b0   = env.inertial_magnetic_field_at(0.0);
     vec3 b100 = env.inertial_magnetic_field_at(100.0);

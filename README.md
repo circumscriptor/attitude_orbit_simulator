@@ -107,13 +107,34 @@ attitude_orbit_simulator --inclination 80 \
                          --rod-volume 3.078e-6
 ```
 
-The plot below shows the result of a 2-week simulation of a 1U CubeSat with an initial tumble ().
+Input with custom hysteresis parameters:
+
+```sh
+./build/attitude_orbit_simulator --inclination 80 \
+                                --altitude 440 \
+                                --magnet-length 0.015 \
+                                --magnet-diameter 0.03 \
+                                --angular-velocity 0.23,-0.23,0 \
+                                --rod-volume 3.078e-6 \
+                                --hysteresis-ms 1470000 \
+                                --hysteresis-a 40 \
+                                --hysteresis-alpha 0.00008 \
+                                --hysteresis-k 60 \
+                                --hysteresis-c 0.55 \
+                                --t-end 345600
+```
+
+The plot below shows the result of a 2-week simulation of a 1U CubeSat with an initial tumble (and 4 day simulation with custom hysteresis parameters).
 
 ![Simulation Results](results/dynamics.png)
+
+![Simulation Results](results/dynamics2.png)
 
 The plot below shows the result of a calculation of a sample material hysteresis curve:
 
 ![HyMu-80 Hysteresis Curve](results/hymu80_hysteresis_curve.png)
+
+![HyMu-80 Hysteresis Curve 2](results/hymu80_hysteresis_curve_2.png)
 
 **Conclusion:**
 
