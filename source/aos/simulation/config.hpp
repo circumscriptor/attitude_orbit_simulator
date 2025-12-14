@@ -22,6 +22,7 @@ struct simulation_parameters {
     double absolute_error{};
     double relative_error{};
     bool   higher_order{};  // Use higher order solver
+    double checkpoint_interval{};
 
     void debug_print() const;
 

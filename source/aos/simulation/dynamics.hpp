@@ -39,6 +39,8 @@ public:
      */
     void operator()(const system_state& current_state, system_state& state_derivative, double t) const;
 
+    void set_global_time_offset(double offset_s) { _global_time_offset = offset_s; }
+
 protected:
 
     // -mu*r/r^3 + perturbations
@@ -61,6 +63,7 @@ private:
 
     std::shared_ptr<const spacecraft>        _spacecraft;
     std::shared_ptr<const environment_model> _environment;
+    double                                   _global_time_offset{};
 };
 
 }  // namespace aos

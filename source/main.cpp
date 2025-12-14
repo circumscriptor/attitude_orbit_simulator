@@ -92,14 +92,15 @@ int main(int argc, char** argv) {
         ("hysteresis-alpha", value<double>(&params.spacecraft.hysteresis_params.alpha), "Inter-domain coupling");      //
 
     options_description other("Other options");
-    other.add_options()                                                                                                                        //
-        ("higher-order", bool_switch(&params.higher_order), "Use higher order solver (Runge-Kutta-Fehlberg 7/8)")                              //
-        ("absolute-error", value<double>(&params.absolute_error), "Integration solver's absolute error tolerance")                             //
-        ("relative-error", value<double>(&params.relative_error), "Integration solver's relative error tolerance")                             //
-        ("verify-hysteresis", "Calculate hysteresis curve for the given material instead of simulation")                                       //
-        ("no-observe-element", bool_switch(&params.observer.exclude_elements), "Exclude per-element values from output")                       //
-        ("no-observe-magnitude", bool_switch(&params.observer.exclude_magnitudes), "Exclude magnitude values from output")                     //
-        ("hysteresis-material", value<std::string>()->default_value("hymu80"), "The material for hysteresis generation (not supported yet)");  //
+    other.add_options()                                                                                                                            //
+        ("higher-order", bool_switch(&params.higher_order), "Use higher order solver (Runge-Kutta-Fehlberg 7/8)")                                  //
+        ("absolute-error", value<double>(&params.absolute_error), "Integration solver's absolute error tolerance")                                 //
+        ("relative-error", value<double>(&params.relative_error), "Integration solver's relative error tolerance")                                 //
+        ("verify-hysteresis", "Calculate hysteresis curve for the given material instead of simulation")                                           //
+        ("no-observe-element", bool_switch(&params.observer.exclude_elements), "Exclude per-element values from output")                           //
+        ("no-observe-magnitude", bool_switch(&params.observer.exclude_magnitudes), "Exclude magnitude values from output")                         //
+        ("hysteresis-material", value<std::string>()->default_value("hymu80"), "The material for hysteresis generation (not supported yet)")       //
+        ("checkpoint-interval", value<double>(&params.checkpoint_interval), "Checkpoint interval instead of full simulation [s] (at least 1.0)");  //
 
     options_description options(help_line_width);
     options.add(generic).add(simulation_parameters).add(hysteresis_parameters).add(other);

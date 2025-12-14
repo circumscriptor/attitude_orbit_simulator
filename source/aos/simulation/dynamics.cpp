@@ -9,11 +9,12 @@
 namespace aos {
 
 void spacecraft_dynamics::operator()(const system_state& current_state, system_state& state_derivative, double t) const {
-    const vec3& r_eci      = current_state.position;
-    const vec3& v_eci      = current_state.velocity;
-    const quat  q_att      = current_state.attitude.normalized();  // Normalize to prevent drift
-    const vec3& omega_body = current_state.angular_velocity;
-    const auto  env_data   = _environment->calculate(t, r_eci);
+    const double t_global   = _global_time_offset + t;
+    const vec3&  r_eci      = current_state.position;
+    const vec3&  v_eci      = current_state.velocity;
+    const quat   q_att      = current_state.attitude.normalized();  // Normalize to prevent drift
+    const vec3&  omega_body = current_state.angular_velocity;
+    const auto   env_data   = _environment->calculate(t_global, r_eci);
 
     state_derivative.position = v_eci;
     state_derivative.velocity = compute_total_acceleration(r_eci, env_data.gravity_disturbance_eci_m_s2);

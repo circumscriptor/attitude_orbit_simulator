@@ -16,7 +16,9 @@
 #include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_fehlberg78.hpp>
 
+#include <algorithm>
 #include <memory>
+#include <print>
 #include <string>
 
 namespace aos {
@@ -38,22 +40,51 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
     csv_state_observer  observer(output_filename, satellite->rods().size(), params.observer);
 
     const auto [position, velocity] = orbital_converter::to_cartesian(params.orbit);
+    const double total_duration     = params.t_end - params.t_start;
+    const bool   use_checkpoints    = (params.checkpoint_interval >= 1.0);
 
-    system_state initial;
-    initial.position         = position;
-    initial.velocity         = velocity;
-    initial.attitude         = aos::quat::Identity();
-    initial.angular_velocity = params.angular_velocity;
-    initial.rod_magnetizations.resize(4);
-    initial.rod_magnetizations.setZero();
+    system_state current_state;
+    current_state.position         = position;
+    current_state.velocity         = velocity;
+    current_state.attitude         = aos::quat::Identity();
+    current_state.angular_velocity = params.angular_velocity;
+    current_state.rod_magnetizations.resize(4);
+    current_state.rod_magnetizations.setZero();
+
+    observer(current_state, params.t_start);
+
+    auto run_integration_loop = [&](auto& stepper) {
+        if (not use_checkpoints) {
+            dynamics.set_global_time_offset(0.0);
+            integrate_adaptive(stepper, dynamics, current_state, params.t_start, params.t_end, params.dt_initial, observer);
+        } else {
+            double global_time_accum = params.t_start;
+            double remaining_time    = total_duration;
+            double current_dt        = params.dt_initial;
+
+            while (remaining_time > 1.0) {
+                const double section_length = std::min(params.checkpoint_interval, remaining_time);
+
+                dynamics.set_global_time_offset(global_time_accum);
+                integrate_adaptive(stepper, dynamics, current_state, 0.0, section_length, current_dt);
+
+                global_time_accum += section_length;
+                remaining_time -= section_length;
+                observer(current_state, global_time_accum);
+
+                std::print("Checkpoint: {} s / {} s\r", global_time_accum, params.t_end);
+            }
+        }
+    };
 
     if (params.higher_order) {
         auto stepper = make_controlled<stepper_type_f78>(params.absolute_error, params.relative_error);
-        integrate_adaptive(stepper, dynamics, initial, params.t_start, params.t_end, params.dt_initial, observer);
+        run_integration_loop(stepper);
     } else {
         auto stepper = make_controlled<stepper_type_dp5>(params.absolute_error, params.relative_error);
-        integrate_adaptive(stepper, dynamics, initial, params.t_start, params.t_end, params.dt_initial, observer);
+        run_integration_loop(stepper);
     }
+    std::print("\n");
 }
 
 }  // namespace aos

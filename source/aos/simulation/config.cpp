@@ -27,7 +27,9 @@ void simulation_parameters::debug_print() const {
               << "\ninitial dt:                              " << dt_initial                                                                          //
               << "\nabsolute error:                          " << absolute_error                                                                      //
               << "\nrelative error:                          " << relative_error                                                                      //
-              << "\nhigher order:                            " << higher_order << '\n';
+              << "\nhigher order:                            " << higher_order                                                                        //
+              << "\ncheckpoint interval:                     " << checkpoint_interval                                                                 //
+              << '\n';
 
     std::cout << "----\n";
 }
@@ -61,6 +63,7 @@ simulation_parameters simulation_parameters::get_default() {
         .absolute_error       = default_absolute_error,
         .relative_error       = default_relative_error,
         .higher_order         = false,
+        .checkpoint_interval  = 0.0,
     };
     // NOLINTEND(readability-magic-numbers)
 }
