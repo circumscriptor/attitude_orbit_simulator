@@ -1,18 +1,12 @@
 cmake_minimum_required(VERSION 3.30)
 project(AttitudeOrbitSimulator)
 
-include(CTest)
-
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(GeographicLib CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS
     program_options
     filesystem
 )
-
-if(BUILD_TESTING)
-    find_package(GTest CONFIG REQUIRED)
-endif()
 
 #
 # Library
@@ -89,49 +83,3 @@ set_target_properties(attitude_orbit_simulator PROPERTIES
 target_link_libraries(attitude_orbit_simulator PRIVATE
     attitude_orbit_simulator_core
 )
-
-#
-# TUI Executable
-#
-
-# add_executable(attitude_orbit_simulator_ui "source/ui.cpp")
-
-# set_target_properties(attitude_orbit_simulator_ui PROPERTIES
-#     CXX_SCAN_FOR_MODULES OFF
-# )
-
-# target_link_libraries(attitude_orbit_simulator_ui PRIVATE
-#     attitude_orbit_simulator_core
-#     ftxui::screen
-#     ftxui::dom
-#     ftxui::component
-# )
-
-#
-# Tests
-#
-
-if(BUILD_TESTING)
-
-    add_executable(attitude_orbit_simulator_test
-        "tests/environment_test.cpp"
-        "tests/hysteresis_rod_test.cpp"
-        "tests/permanent_magnet_test.cpp"
-        "tests/simulation_test.cpp"
-        "tests/system_state_test.cpp"
-    )
-
-    set_target_properties(attitude_orbit_simulator_test PROPERTIES
-        CXX_SCAN_FOR_MODULES OFF
-    )
-
-    target_link_libraries(attitude_orbit_simulator_test PRIVATE
-        attitude_orbit_simulator_core
-        GTest::gtest
-        GTest::gtest_main
-    )
-
-    include(GoogleTest)
-    gtest_discover_tests(attitude_orbit_simulator_test)
-
-endif()
