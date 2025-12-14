@@ -30,7 +30,7 @@ public:
     environment_model& operator=(const environment_model&) = delete;
     environment_model& operator=(environment_model&&)      = delete;
 
-    explicit environment_model(double start_year_decimal);
+    explicit environment_model(double start_year_decimal, int degree);
     virtual ~environment_model();
 
     [[nodiscard]]

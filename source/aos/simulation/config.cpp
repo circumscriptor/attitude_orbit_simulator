@@ -20,12 +20,16 @@ void simulation_parameters::debug_print() const {
 
     std::cout << "-- simulation properties --";
     std::cout << "\nangular velocity:                        " << angular_velocity.x() << ' ' << angular_velocity.y() << ' ' << angular_velocity.z()  //
+              << "\nsimulation year:                         " << simulation_year                                                                     //
+              << "\ngravity model degree:                    " << gravity_model_degree                                                                //
               << "\nt start:                                 " << t_start                                                                             //
               << "\nt end:                                   " << t_end                                                                               //
               << "\ninitial dt:                              " << dt_initial                                                                          //
               << "\nabsolute error:                          " << absolute_error                                                                      //
               << "\nrelative error:                          " << relative_error                                                                      //
               << "\nhigher order:                            " << higher_order << '\n';
+
+    std::cout << "----\n";
 }
 
 simulation_parameters simulation_parameters::get_default() {
@@ -41,21 +45,22 @@ simulation_parameters simulation_parameters::get_default() {
              .hysteresis_rod_volume       = 0.005 * 0.005 * std::numbers::pi * 0.1,  // 0.5 cm radius, 10 cm length
              .hysteresis_rod_orientations = {{1.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, -1.0, 0.0}},  // Pairs along the X-axis and Y-axis
              .hysteresis_params           = hysteresis_rod::ja_parameters::hymu80()},
-        .orbit            = {.semi_major_axis_m    = 6818137.0,
-                             .eccentricity         = 0.001,
-                             .inclination_rad      = 1.396263,
-                             .raan_rad             = 0.0,
-                             .arg_of_periapsis_rad = 0.0,
-                             .mean_anomaly_rad     = 0.0},  // 440 km above surface, 80 degree inclicanation
-        .observer         = {.exclude_elements = false, .exclude_magnitudes = false},
-        .angular_velocity = {0.1, -0.05, 0.08},  // rad/s
-        .simulation_year  = 2026.0,
-        .t_start          = 0.0,                             //
-        .t_end            = 2.0 * 7.0 * 24.0 * 60.0 * 60.0,  // 2 weeks
-        .dt_initial       = 0.1,                             //
-        .absolute_error   = default_absolute_error,
-        .relative_error   = default_relative_error,
-        .higher_order     = false,
+        .orbit                = {.semi_major_axis_m    = 6818137.0,
+                                 .eccentricity         = 0.001,
+                                 .inclination_rad      = 1.396263,
+                                 .raan_rad             = 0.0,
+                                 .arg_of_periapsis_rad = 0.0,
+                                 .mean_anomaly_rad     = 0.0},  // 440 km above surface, 80 degree inclicanation
+        .observer             = {.exclude_elements = false, .exclude_magnitudes = false},
+        .angular_velocity     = {0.1, -0.05, 0.08},  // rad/s
+        .simulation_year      = 2026.0,
+        .gravity_model_degree = 12,
+        .t_start              = 0.0,                             //
+        .t_end                = 2.0 * 7.0 * 24.0 * 60.0 * 60.0,  // 2 weeks
+        .dt_initial           = 0.1,                             //
+        .absolute_error       = default_absolute_error,
+        .relative_error       = default_relative_error,
+        .higher_order         = false,
     };
     // NOLINTEND(readability-magic-numbers)
 }

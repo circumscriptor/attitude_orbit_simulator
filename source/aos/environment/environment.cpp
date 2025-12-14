@@ -6,17 +6,24 @@
 #include <GeographicLib/Constants.hpp>
 
 #include <cmath>
+#include <print>
 #include <utility>
 
 namespace aos {
 
-environment_model::environment_model(double start_year_decimal)
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+environment_model::environment_model(double start_year_decimal, int degree)
     : _start_year_decimal(start_year_decimal),
       _earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f()),
-      _gravity_model("egm2008"),
-      _magnetic_model("wmm2025") {
+      _gravity_model("egm2008", "", degree),
+      _magnetic_model("wmm2025", "") {
     const auto rotation_matrix_size = 3 * 3;
     _cache.rotation_matrix_buffer.resize(rotation_matrix_size, 0.0);
+
+    std::println("Magnetic model: {} (from {}, degree {}, order {})", _magnetic_model.MagneticModelName(), _magnetic_model.MagneticModelDirectory(),
+                 _magnetic_model.Degree(), _magnetic_model.Order());
+    std::println("Gravity model: {} (from {}, degree {}, order {})", _gravity_model.GravityModelName(), _gravity_model.GravityModelDirectory(),
+                 _gravity_model.Degree(), _gravity_model.Order());
 }
 
 environment_model::~environment_model() = default;

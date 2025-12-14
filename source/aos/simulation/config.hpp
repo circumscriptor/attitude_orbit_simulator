@@ -15,6 +15,7 @@ struct simulation_parameters {
 
     vec3   angular_velocity;
     double simulation_year;
+    int    gravity_model_degree;
     double t_start{};
     double t_end{};
     double dt_initial{};

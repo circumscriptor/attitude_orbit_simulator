@@ -32,7 +32,7 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
     using stepper_type_dp5 = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
 
     auto satellite   = std::make_shared<spacecraft>(params.spacecraft);
-    auto environment = std::make_shared<environment_model>(params.simulation_year);
+    auto environment = std::make_shared<environment_model>(params.simulation_year, params.gravity_model_degree);
 
     spacecraft_dynamics dynamics{satellite, environment};
     csv_state_observer  observer(output_filename, satellite->rods().size(), params.observer);

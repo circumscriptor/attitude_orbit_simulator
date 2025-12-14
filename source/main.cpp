@@ -77,6 +77,7 @@ int main(int argc, char** argv) {
         ("orbit-arg-periapsis", value<double>(&params.orbit.arg_of_periapsis_rad), "Orbit Arg of Periapsis [rad]")      //
         ("orbit-mean-anomaly", value<double>(&params.orbit.mean_anomaly_rad), "Orbit Mean Anomaly [rad]")               //
         ("simulation-year", value<double>(&params.simulation_year), "Simulation start year (decimal, e.g. 2025.0)")     //
+        ("gravity-model-degree", value<int>(&params.gravity_model_degree), "Gravity model degree")                      //
         ("angular-velocity", value<std::string>(), "Initial angular velocity xyz [rad/s] (format: x,y,z)")              //
         ("t-start", value<double>(&params.t_start), "Simulation start time offset [s]")                                 //
         ("t-end", value<double>(&params.t_end), "Simulation end time [s]")                                              //
