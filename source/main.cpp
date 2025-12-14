@@ -59,29 +59,36 @@ int main(int argc, char** argv) {
         ("output,o", value<std::string>()->default_value("output.csv"), "Output file");  //
 
     options_description simulation_parameters("Simulation parameters");
-    simulation_parameters.add_options()                                                                                 //
-        ("mass", value<double>(&params.spacecraft.mass_g), "Spacecraft mass [g]")                                       //
-        ("width", value<double>(), "Spacecraft width [m]")                                                              //
-        ("height", value<double>(), "Spacecraft height [m]")                                                            //
-        ("length", value<double>(), "Spacecraft length [m]")                                                            //
-        ("magnet-remanence", value<double>(&params.spacecraft.magnet_remanence), "Permanent magnet remanence [T]")      //
-        ("magnet-length", value<double>(&params.spacecraft.magnet_length), "Permanent magnet length [m]")               //
-        ("magnet-diameter", value<double>(&params.spacecraft.magnet_diameter), "Permanent magnet diameter [m]")         //
-        ("no-rods", "Do not use hysteresis rods")                                                                       //
-        ("rod-volume", value<double>(&params.spacecraft.hysteresis_rod_volume), "Volume of hysteresis rod in [m3]")     //
-        ("rod-orientation", value<std::vector<std::string>>(), "Hysteresis rod orientation (multiple, format: x,y,z)")  //
-        ("orbit-semi-major-axis", value<double>(&params.orbit.semi_major_axis_m), "Orbit Semi-Major Axis [m]")          //
-        ("orbit-eccentricity", value<double>(&params.orbit.eccentricity), "Orbit Eccentricity [0-1]")                   //
-        ("orbit-inclination", value<double>(&params.orbit.inclination_rad), "Orbit Inclination [rad]")                  //
-        ("orbit-raan", value<double>(&params.orbit.raan_rad), "Orbit RAAN [rad]")                                       //
-        ("orbit-arg-periapsis", value<double>(&params.orbit.arg_of_periapsis_rad), "Orbit Arg of Periapsis [rad]")      //
-        ("orbit-mean-anomaly", value<double>(&params.orbit.mean_anomaly_rad), "Orbit Mean Anomaly [rad]")               //
-        ("simulation-year", value<double>(&params.simulation_year), "Simulation start year (decimal, e.g. 2025.0)")     //
-        ("gravity-model-degree", value<int>(&params.gravity_model_degree), "Gravity model degree")                      //
-        ("angular-velocity", value<std::string>(), "Initial angular velocity xyz [rad/s] (format: x,y,z)")              //
-        ("t-start", value<double>(&params.t_start), "Simulation start time offset [s]")                                 //
-        ("t-end", value<double>(&params.t_end), "Simulation end time [s]")                                              //
-        ("dt", value<double>(&params.dt_initial), "Initial simulation time step [s]");                                  //
+    simulation_parameters.add_options()  //
+
+        ("simulation-year", value<double>(&params.simulation_year), "Simulation start year (decimal, e.g. 2025.0)")  //
+        ("gravity-model-degree", value<int>(&params.gravity_model_degree), "Gravity model degree")                   //
+        ("angular-velocity", value<std::string>(), "Initial angular velocity xyz [rad/s] (format: x,y,z)")           //
+        ("t-start", value<double>(&params.t_start), "Simulation start time offset [s]")                              //
+        ("t-end", value<double>(&params.t_end), "Simulation end time [s]")                                           //
+        ("dt", value<double>(&params.dt_initial), "Initial simulation time step [s]");                               //
+
+    options_description spacecraft_parameters("Spacecraft parameters");
+    spacecraft_parameters.add_options()                                                                              //
+        ("mass", value<double>(&params.spacecraft.mass_g), "Spacecraft mass [g]")                                    //
+        ("width", value<double>(), "Spacecraft width [m]")                                                           //
+        ("height", value<double>(), "Spacecraft height [m]")                                                         //
+        ("length", value<double>(), "Spacecraft length [m]")                                                         //
+        ("magnet-remanence", value<double>(&params.spacecraft.magnet_remanence), "Permanent magnet remanence [T]")   //
+        ("magnet-length", value<double>(&params.spacecraft.magnet_length), "Permanent magnet length [m]")            //
+        ("magnet-diameter", value<double>(&params.spacecraft.magnet_diameter), "Permanent magnet diameter [m]")      //
+        ("no-rods", "Do not use hysteresis rods")                                                                    //
+        ("rod-volume", value<double>(&params.spacecraft.hysteresis_rod_volume), "Volume of hysteresis rod in [m3]")  //
+        ("rod-orientation", value<std::vector<std::string>>(), "Hysteresis rod orientation (multiple, format: x,y,z)");
+
+    options_description orbit_parameters("Orbit parameters");
+    orbit_parameters.add_options()                                                                                  //
+        ("orbit-semi-major-axis", value<double>(&params.orbit.semi_major_axis_m), "Orbit Semi-Major Axis [m]")      //
+        ("orbit-eccentricity", value<double>(&params.orbit.eccentricity), "Orbit Eccentricity [0-1]")               //
+        ("orbit-inclination", value<double>(&params.orbit.inclination_rad), "Orbit Inclination [rad]")              //
+        ("orbit-raan", value<double>(&params.orbit.raan_rad), "Orbit RAAN [rad]")                                   //
+        ("orbit-arg-periapsis", value<double>(&params.orbit.arg_of_periapsis_rad), "Orbit Arg of Periapsis [rad]")  //
+        ("orbit-mean-anomaly", value<double>(&params.orbit.mean_anomaly_rad), "Orbit Mean Anomaly [rad]");
 
     options_description hysteresis_parameters("Hysteresis parameters");
     hysteresis_parameters.add_options()                                                                                //
@@ -103,7 +110,13 @@ int main(int argc, char** argv) {
         ("checkpoint-interval", value<double>(&params.checkpoint_interval), "Checkpoint interval instead of full simulation [s] (at least 1.0)");  //
 
     options_description options(help_line_width);
-    options.add(generic).add(simulation_parameters).add(hysteresis_parameters).add(other);
+    options  //
+        .add(generic)
+        .add(simulation_parameters)
+        .add(spacecraft_parameters)
+        .add(orbit_parameters)
+        .add(hysteresis_parameters)
+        .add(other);
 
     variables_map vm;
     try {
