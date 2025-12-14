@@ -1,0 +1,26 @@
+./build/attitude_orbit_simulator \
+    --output simulation_2year.csv \
+    --mass 1300 \
+    --width 0.1 --height 0.1 --length 0.1 \
+    --magnet-remanence 1.2 \
+    --magnet-diameter 0.005 --magnet-length 0.020 \
+    --rod-volume 8.0e-8 \
+    --rod-orientation 1,0,0 \
+    --rod-orientation -1,0,0 \
+    --rod-orientation 0,1,0 \
+    --rod-orientation 0,-1,0 \
+    --hysteresis-ms 600000 \
+    --hysteresis-a 8.0 \
+    --hysteresis-k 4.0 \
+    --hysteresis-c 0.05 \
+    --hysteresis-alpha 1.0e-5 \
+    --orbit-semi-major-axis 6818000 \
+    --orbit-inclination 1.3963 \
+    --orbit-eccentricity 0.001 \
+    --angular-velocity 0.23,-0.23,0 \
+    --simulation-year 2025.0 \
+    --t-end 63072000 \
+    --dt 0.1 \
+    --checkpoint-interval 600 \
+    --absolute-error 1e-12 \
+    --relative-error 1e-12

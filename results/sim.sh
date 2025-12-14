@@ -1,0 +1,15 @@
+./build/attitude_orbit_simulator \
+        --magnet-length 0.015 \
+        --magnet-diameter 0.03 \
+        --angular-velocity 0.5,0.5,0.5 \
+        --rod-volume 3.078e-6 \
+        --hysteresis-ms 1470000 \
+        --hysteresis-a 40 \
+        --hysteresis-alpha 0.00008 \
+        --hysteresis-k 60 \
+        --hysteresis-c 0.55 \
+        --t-end 1209600 \
+        --checkpoint-interval 0 \
+        --orbit-semi-major-axis 6818137 \
+        --orbit-inclination 1.3963 \
+        --orbit-eccentricity 0.001

@@ -12,7 +12,7 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
     const double t_global   = _global_time_offset + t;
     const vec3&  r_eci      = current_state.position;
     const vec3&  v_eci      = current_state.velocity;
-    const quat   q_att      = current_state.attitude.normalized();  // Normalize to prevent drift
+    const quat   q_att      = current_state.attitude.normalized();  // normalize to prevent drift
     const vec3&  omega_body = current_state.angular_velocity;
     const auto   env_data   = _environment->calculate(t_global, r_eci);
 
@@ -43,24 +43,21 @@ vec3 spacecraft_dynamics::compute_rod_effects(const system_state& state, const v
     const auto& rods     = _spacecraft->rods();
     const auto  num_rods = rods.size();
 
-    // Ensure output vector is correctly sized
+    // ensure output vector is correctly sized
     if (dm_dt_out.size() != static_cast<std::ptrdiff_t>(num_rods)) {
         dm_dt_out.resize(static_cast<std::ptrdiff_t>(num_rods));
     }
 
     vec3 total_torque = vec3::Zero();
-
     for (std::size_t i = 0; i < num_rods; ++i) {
-        // 1. Unpack current rod state
         const double m_irr = state.rod_magnetizations(static_cast<int>(i));
 
-        // 2. Compute Derivative (dM_irr/dt)
-        dm_dt_out(static_cast<int>(i)) = rods[i].magnetization_derivative(m_irr, b_body, b_dot_body);
+        // dM_irr/dt
+        dm_dt_out(static_cast<std::ptrdiff_t>(i)) = rods[i].magnetization_derivative(m_irr, b_body, b_dot_body);
 
-        // 3. Compute Torque contribution (tau = m_dipole x B)
+        // tau = m_dipole x B
         total_torque += rods[i].magnetic_moment(m_irr, b_body).cross(b_body);
     }
-
     return total_torque;
 }
 

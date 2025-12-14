@@ -1,143 +1,124 @@
 # Attitude Orbit Simulator for Passive AOCS
 
-This project is a simulator designed to predict the attitude dynamics of a spacecraft using a passive Attitude and Orbit Control System (AOCS). It models the interaction between a permanent magnet, hysteresis damping rods, and the Earth's geomagnetic field to simulate the detumble and final stabilization of a satellite in Low Earth Orbit (LEO).
+This project is designed to predict the attitude dynamics of a CubeSat using a passive Attitude and Orbit Control System (AOCS). It models the interaction between a permanent magnet, hysteresis damping rods, and the Earth's environment to simulate the detumble and stabilization phases in Low Earth Orbit (LEO).
+
+## Mission Context & Deorbit Compliance
+
+This simulator is specifically tuned for long-duration missions (e.g., **2 years**). Understanding the passive equilibrium attitude is critical for drag analysis and ensuring compliance with Space Debris Mitigation Guidelines for post-mission disposal.
 
 ## Core Physics Models
 
-The simulation is built on a foundation of key differential equations that govern the spacecraft's rotational motion. The primary goal is to solve for the time evolution of the spacecraft's angular velocity ($\boldsymbol{\omega}$) and its attitude, represented by a unit quaternion ($\mathbf{q}$).
+The simulation integrates orbital mechanics, environmental modeling, and rigid body dynamics to solve for the time evolution of the spacecraft's angular velocity ($\boldsymbol{\omega}$) and attitude quaternion ($\mathbf{q}$).
 
-### Rotational Dynamics
+### 1. Environmental Modeling (GeographicLib)
+Unlike simple dipole models, this simulator uses high-precision environmental data:
+*   **Gravity:** **EGM2008** (Earth Gravitational Model) is used to calculate gravitational perturbations (J2, etc.) affecting the orbit.
+*   **Magnetosphere:** **WMM2025** (World Magnetic Model) provides the precise magnetic field vector $\mathbf{B}(t, \mathbf{r})$ at the satellite's specific geodetic location and epoch.
 
-The change in angular velocity is driven by external magnetic torques from the permanent magnet and hysteresis rods, balanced against the spacecraft's own gyroscopic inertia.
-
-$$
-\frac{d\boldsymbol{\omega}}{dt} = \mathbf{I}^{-1} \left[ \mathbf{m}_p \times \mathbf{B}(t) + \sum_{i=1}^{N} \mathbf{T}_{h,i}(t) - \boldsymbol{\omega} \times (\mathbf{I}\boldsymbol{\omega}) \right]
-$$
-
-### Attitude Kinematics
-
-The orientation of the spacecraft changes based on its current angular velocity, governed by the quaternion kinematics equation.
+### 2. Rotational Dynamics
+The angular acceleration is driven by external torques balanced against the spacecraft's inertia and gyroscopic coupling:
 
 $$
-\frac{d\mathbf{q}}{dt} = \frac{1}{2} \mathbf{\Omega}(\boldsymbol{\omega}) \mathbf{q}, \quad \text{where} \quad
-\mathbf{\Omega}(\boldsymbol{\omega}) =
-\begin{bmatrix}
-0 & -\omega_x & -\omega_y & -\omega_z \\
-\omega_x & 0 & \omega_z & -\omega_y \\
-\omega_y & -\omega_z & 0 & \omega_x \\
-\omega_z & \omega_y & -\omega_x & 0
-\end{bmatrix}
+\frac{d\boldsymbol{\omega}}{dt} = \mathbf{I}^{-1} \left[ \mathbf{m}_p \times \mathbf{B}_{body} + \sum_{i=1}^{N} \mathbf{T}_{h,i} + \boldsymbol{\tau}_{grav} - \boldsymbol{\omega} \times (\mathbf{I}\boldsymbol{\omega}) \right]
 $$
 
-### Hysteresis Damping Model
+Where:
+*   $\mathbf{m}_p$: Dipole moment of the permanent magnet.
+*   $\mathbf{T}_{h,i}$: Torque from hysteresis rod $i$.
+*   $\boldsymbol{\tau}_{grav}$: Gravity gradient torque.
 
-The energy dissipation from the hysteresis rods is the key to passive damping. This is modeled using the Jiles–Atherton model.
+### 3. Hysteresis Damping (Jiles–Atherton)
+Passive damping is achieved via soft magnetic rods that dissipate energy through magnetic hysteresis. This is modeled using the **Jiles–Atherton** differential equation, solved dynamically alongside the attitude state.
 
-#### Hysteresis Rod Magnetisation
-
-The Jiles-Atherton model is defined in terms of the magnetic field ($H$), while the simulation's ODE solver operates in time ($t$). The chain rule is used to connect the two, providing the time derivative of magnetization required by the solver.
-
-$$
-\frac{dM}{dt} = \frac{dM}{dH} \cdot \frac{dH}{dt}
-$$
-
-#### Jiles–Atherton Model
-
-The model describes the rate of change of magnetization ($M$) with respect to the applied magnetic field ($H$). This is an implicit differential equation that combines the ideal, anhysteretic magnetization with terms for irreversible domain wall motion.
+The solver computes the time derivative of magnetization $\dot{M}$ by applying the chain rule to the field variations experienced by the tumbling craft:
 
 $$
-\frac{dM}{dH} = \frac{c \frac{dM_{an}}{dH} + \frac{M_{an} - M}{k \delta}}{1 - \alpha \left( c \frac{dM_{an}}{dH} + \frac{M_{an} - M}{k \delta} \right)}
-$$
-
-The **effective magnetic field** ($H_e$) includes inter-domain coupling:
-
-$$
-H_e = H + \alpha M
-$$
-
-The **anhysteretic (ideal) magnetization** ($M_{an}$) is given by the Langevin function:
-
-$$
-M_{an}(H_e) = M_s \left( \coth\left(\frac{H_e}{a}\right) - \frac{a}{H_e} \right)
-$$
-
-The **derivative of anhysteretic magnetization** is also required:
-
-$$
-\frac{dM_{an}}{dH} = \frac{M_s}{a} \left(1 - \coth^2 \left(\frac{H_e}{a}\right) + \frac{a^2}{H_e^2}\right) \left(1 + \alpha \frac{dM}{dH}\right)
+\frac{dM}{dt} = \frac{dM}{dH} \cdot \left( \frac{d\mathbf{B}_{body}}{dt} \cdot \frac{\mathbf{u}_{rod}}{\mu_0} \right)
 $$
 
 ## Inputs & Configuration
 
-The simulation is configured via a command-line interface, allowing for easy modification of the scenario. Key inputs include:
+The simulation is configured via command-line arguments. All units are **SI** (Meters, Kilograms, Seconds, Radians, Tesla, A/m) unless otherwise specified.
 
-*   **Spacecraft Physical Properties:**
-    *   Mass and dimensions (for inertia tensor calculation).
-    *   Permanent magnet properties (remanence, dimensions, body-fixed orientation).
-    *   Hysteresis rod properties (material, volume, body-fixed orientations).
-*   **Initial Conditions:**
-    *   Initial angular velocity.
-    *   Initial attitude quaternion. (TODO)
-*   **Orbital Parameters:**
-    *   Circular orbit altitude and inclination.
-*   **Simulation Control:**
-    *   Start and end times.
-    *   Initial time step for the adaptive integrator.
+### Spacecraft Properties
+*   `--mass`: Mass in grams.
+*   `--width`, `--height`, `--length`: Dimensions in meters.
+*   `--magnet-remanence`: Residual flux density ($B_r$) in Tesla.
+*   `--rod-volume`: Volume of individual hysteresis rods ($m^3$).
+*   `--rod-orientation`: Direction vectors for rods (e.g., `1,0,0`).
 
-## Outputs
+### Orbit Initialization (Keplerian Elements)
+*   `--orbit-semi-major-axis`: Semi-major axis ($a$) in meters.
+*   `--orbit-eccentricity`: Orbit eccentricity ($e$).
+*   `--orbit-inclination`: Inclination ($i$) in radians.
+*   `--orbit-raan`: Right Ascension of Ascending Node ($\Omega$) in radians.
+*   `--orbit-arg-periapsis`: Argument of Periapsis ($\omega$) in radians.
+*   `--orbit-mean-anomaly`: Mean Anomaly ($M$) in radians.
 
-The primary output is a CSV data file containing the time history of the spacecraft's state vector. The columns include:
-*   `time`
-*   `q_w, q_x, q_y, q_z` (Attitude Quaternion components)
-*   `w_x, w_y, w_z` (Angular Velocity components in rad/s)
-*   `M_1, M_2, ...` (Internal magnetization of each hysteresis rod in A/m)
+### Simulation Control
+*   `--simulation-year`: Decimal year for magnetic model epoch (e.g., `2025.5`).
+*   `--t-end`: Total simulation duration in seconds.
+*   `--higher-order`: Enable Runge-Kutta-Fehlberg 7/8 solver (default is Dormand-Prince 5).
 
-This data is used to generate plots for analysis and verification.
+## Example Usage
 
-## Example Result & Conclusion
+### 1. Standard Simulation
+Simulate a standard ISS-like orbit (approx 400km altitude, 51.6° inclination) for 2 days.
 
-Input:
-
-```sh
-attitude_orbit_simulator --inclination 80 \
-                         --altitude 440 \
-                         --magnet-length 0.015 \
-                         --magnet-diameter 0.03 \
-                         --angular-velocity 1.57,0,0 \
-                         --rod-volume 3.078e-6
-```
-
-Input with custom hysteresis parameters:
+*Note: Inputs must be in SI units. 400km Altitude $\approx$ 6778000m Semi-Major Axis. 51.6° $\approx$ 0.900 radians.*
 
 ```sh
-./build/attitude_orbit_simulator --inclination 80 \
-                                --altitude 440 \
-                                --magnet-length 0.015 \
-                                --magnet-diameter 0.03 \
-                                --angular-velocity 0.23,-0.23,0 \
-                                --rod-volume 3.078e-6 \
-                                --hysteresis-ms 1470000 \
-                                --hysteresis-a 40 \
-                                --hysteresis-alpha 0.00008 \
-                                --hysteresis-k 60 \
-                                --hysteresis-c 0.55 \
-                                --t-end 345600
+./build/attitude_orbit_simulator \
+    --output results.csv \
+    --mass 1300 \
+    --width 0.1 --height 0.1 --length 0.1 \
+    --magnet-remanence 1.1 \
+    --magnet-diameter 0.005 --magnet-length 0.02 \
+    --rod-volume 3.0e-7 \
+    --rod-orientation 1,0,0 --rod-orientation 0,1,0 \
+    --orbit-semi-major-axis 6778000 \
+    --orbit-inclination 0.9006 \
+    --orbit-eccentricity 0.001 \
+    --angular-velocity 0.1,-0.1,0.5 \
+    --t-end 172800
 ```
 
-The plot below shows the result of a 2-week simulation of a 1U CubeSat with an initial tumble (and 4 day simulation with custom hysteresis parameters).
+### 2. Hysteresis Material Verification
+Generate a hysteresis loop curve for the configured material parameters (e.g., HyMu-80) to verify the physics model before running a full simulation.
 
-![Simulation Results](results/dynamics.png)
+```sh
+./build/attitude_orbit_simulator \
+    --verify-hysteresis \
+    --output hysteresis_curve.csv \
+    --hysteresis-ms 600000 \
+    --hysteresis-k 4.0 \
+    --hysteresis-a 6.5
+```
 
-![Simulation Results](results/dynamics2.png)
+## Results
 
-The plot below shows the result of a calculation of a sample material hysteresis curve:
+### Orbit Simulation
+The 3D plot below demonstrates a 7200 second orbit simulation of a 1U CubeSat. The simulator tracks the ECI position accurately using the EGM2008 gravity model.
 
-![HyMu-80 Hysteresis Curve](results/hymu80_hysteresis_curve.png)
+![Orbit Visualization](results/orbit_sim_7200s.png)
 
-![HyMu-80 Hysteresis Curve 2](results/hymu80_hysteresis_curve_2.png)
+### Detumbling Analysis
+The plots below demonstrate a **2-week simulation** of a 1U CubeSat. The initial high angular velocity (tumble) is dissipated by the hysteresis rods, eventually settling into a magnetic lock with the Earth's field.
 
-**Conclusion:**
+**Angular Velocity Decay:**
+![Angular Velocity](results/sim_omega_2w.png)
 
-1.  **Detumble Phase:** The initial high angular velocity is effectively damped by the hysteresis rods, with the majority of the rotational energy dissipated within the first week.
-2.  **Stabilization Phase:** As the angular velocity approaches zero, the permanent magnet aligns the spacecraft with the local geomagnetic field.
-3.  **Final State:** The spacecraft's permanent magnet continuously tracks the changing direction of the Earth's magnetic field as it orbits, resulting in small, periodic oscillations in attitude and angular velocity.
+**Magnetization Dynamics:**
+![Hysteresis Rod Magnetization](results/sim_m_2w.png)
+
+### Material Characterization
+Verification of the Jiles-Atherton implementation for HyMu-80 Permalloy. This curve validates that the rods saturate correctly ($\approx 600,000$ A/m) and exhibit the expected coercivity.
+
+![HyMu-80 Hysteresis Curve](results/hymu80_hysteresis_curve_2.png)
+
+## Dependencies
+
+*   **C++20** compliant compiler
+*   **Boost** (Program Options, ODEint)
+*   **Eigen3** (Linear Algebra)
+*   **GeographicLib** (Gravity and Magnetic field models)

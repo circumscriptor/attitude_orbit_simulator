@@ -17,6 +17,7 @@
 #include <boost/numeric/odeint/stepper/runge_kutta_fehlberg78.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <print>
 #include <string>
@@ -48,30 +49,41 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
     current_state.velocity         = velocity;
     current_state.attitude         = aos::quat::Identity();
     current_state.angular_velocity = params.angular_velocity;
-    current_state.rod_magnetizations.resize(4);
+    current_state.rod_magnetizations.resize(static_cast<std::ptrdiff_t>(params.spacecraft.hysteresis_rod_orientations.size()));
     current_state.rod_magnetizations.setZero();
 
     observer(current_state, params.t_start);
 
     auto run_integration_loop = [&](auto& stepper) {
         if (not use_checkpoints) {
+            std::println("Starting simulation");
             dynamics.set_global_time_offset(0.0);
             integrate_adaptive(stepper, dynamics, current_state, params.t_start, params.t_end, params.dt_initial, observer);
         } else {
+            std::println("Starting simulation with checkpoints");
             double global_time_accum = params.t_start;
             double remaining_time    = total_duration;
             double current_dt        = params.dt_initial;
 
             while (remaining_time > 1.0) {
-                const double section_length = std::min(params.checkpoint_interval, remaining_time);
+                const double section_period = std::min(params.checkpoint_interval, remaining_time);
 
                 dynamics.set_global_time_offset(global_time_accum);
-                integrate_adaptive(stepper, dynamics, current_state, 0.0, section_length, current_dt);
+                integrate_adaptive(stepper, dynamics, current_state, 0.0, section_period, current_dt);
+                current_state.attitude.normalize();  // fix drift
 
-                global_time_accum += section_length;
-                remaining_time -= section_length;
+                // in case of integrator overshot
+                for (std::ptrdiff_t i = 0; i < current_state.rod_magnetizations.size(); ++i) {
+                    current_state.rod_magnetizations(i) = std::clamp(  //
+                        current_state.rod_magnetizations(i),           //
+                        -params.spacecraft.hysteresis_params.ms,       //
+                        params.spacecraft.hysteresis_params.ms         //
+                    );
+                }
+
+                global_time_accum += section_period;
+                remaining_time -= section_period;
                 observer(current_state, global_time_accum);
-
                 std::print("Checkpoint: {} s / {} s\r", global_time_accum, params.t_end);
             }
         }

@@ -104,6 +104,15 @@ double hysteresis_rod::magnetization_derivative(double m_irr_am, const vec3& b_b
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 double hysteresis_rod::magnetization_derivative(double m_irr_am, double h_along_rod, double dh_dt) const {
+    // stop if we are at (or past) +ms and trying to go higher (dh/dt > 0)
+    if (m_irr_am >= _params.ms && dh_dt > 0.0) {
+        return 0.0;
+    }
+    // stop if we are at (or past) -ms and trying to go lower (dh/dt < 0)
+    if (m_irr_am <= -_params.ms && dh_dt < 0.0) {
+        return 0.0;
+    }
+
     // change in field is negligible = no hysteresis evolution
     if (std::abs(dh_dt) < epsilon_dh_dt) {
         return 0.0;
