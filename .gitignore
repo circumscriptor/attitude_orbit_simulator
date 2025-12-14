@@ -1,6 +1,7 @@
 # Directories
 .cache/
 build/
+__pycache__/
 
 # Default output (testing)
 output.csv
