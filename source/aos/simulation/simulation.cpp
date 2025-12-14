@@ -4,6 +4,7 @@
 #include "aos/core/state.hpp"
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
+#include "aos/environment/orbital_mechanics.hpp"
 #include "aos/simulation/config.hpp"
 #include "aos/simulation/dynamics.hpp"
 #include "aos/simulation/observer.hpp"
@@ -31,11 +32,16 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
     using stepper_type_dp5 = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
 
     auto satellite   = std::make_shared<spacecraft>(params.spacecraft);
-    auto environment = std::make_shared<wmm2025_magnetic_model>(params.environment);
+    auto environment = std::make_shared<environment_model>(params.simulation_year);
 
     spacecraft_dynamics dynamics{satellite, environment};
     csv_state_observer  observer(output_filename, satellite->rods().size(), params.observer);
-    system_state        initial;
+
+    const auto [position, velocity] = orbital_converter::to_cartesian(params.orbit);
+
+    system_state initial;
+    initial.position         = position;
+    initial.velocity         = velocity;
     initial.attitude         = aos::quat::Identity();
     initial.angular_velocity = params.angular_velocity;
     initial.rod_magnetizations.resize(4);

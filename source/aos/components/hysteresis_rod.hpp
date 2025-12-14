@@ -2,56 +2,87 @@
 
 #include "aos/core/types.hpp"
 
+#include <numbers>
+
 namespace aos {
 
 class hysteresis_rod {
 public:
 
-    static constexpr double absolute_error      = 1e-6;
-    static constexpr double denominator_epsilon = 1e-9;
-    static constexpr double dh_dt_threshold     = 1e-12;
-    static constexpr double vector_norm_epsilon = 1e-12;
+    static constexpr double vacuum_permeability = 4.0 * std::numbers::pi * 1e-7;  // [H/m] or [T*m/A]
+
+    // Stability thresholds
+    static constexpr double epsilon_denominator = 1e-9;
+    static constexpr double epsilon_langevin    = 1e-6;
+    static constexpr double epsilon_dh_dt       = 1e-12;
+    static constexpr double epsilon_vector      = 1e-12;
 
     struct ja_parameters {
         double ms;     // Saturation Magnetization [A/m]
         double a;      // Anhysteretic shape parameter [A/m]
-        double k;      // Pinning energy density [A/m]
+        double k;      // Pinning energy density (coercivity) [A/m]
         double c;      // Reversibility coefficient [0-1]
-        double alpha;  // Inter-domain coupling
+        double alpha;  // Inter-domain coupling coefficient
 
         void debug_print() const;
 
         static ja_parameters hymu80();
     };
 
-    struct anhysteretic {
-        double man;         // Anhysteretic Magnetization
-        double dman_dheff;  // Derivative dMan/dHeff
-    };
-
+    /**
+     * @brief Constructor for a hysteresis rod.
+     * @param volume Volume of the rod [m^3].
+     * @param orientation Unit vector defining the rod's axis in the body frame.
+     * @param ja_params J-A model parameters.
+     */
     hysteresis_rod(double volume, const vec3& orientation, const ja_parameters& ja_params);
 
-    [[nodiscard]]
-    vec3 magnetic_moment(double m_scalar_am) const;
+    /**
+     * @brief Calculates the TOTAL magnetic dipole moment (Irreversible + Reversible).
+     *
+     * M_total = (1-c)*M_irr + c*M_an
+     * Torque = M_total * Volume * Orientation X B_body
+     *
+     * @param m_irr_am The current state scalar (Irreversible Magnetization) [A/m].
+     * @param b_body_t The magnetic field vector in the body frame [T].
+     * @return Total magnetic dipole moment vector [A*m^2].
+     */
+    [[nodiscard]] vec3 magnetic_moment(double m_irr_am, const vec3& b_body_t) const;
 
-    [[nodiscard]]
-    double effective_field(double h_along_rod, double m_clamped) const;
+    /**
+     * @brief Calculates the time derivative of the irreversible magnetization (dM_irr/dt).
+     *
+     * This solves the Jiles-Atherton differential equation:
+     * dM_irr/dt = (M_an - M_irr) / (k*delta - alpha*(M_an - M_irr)) * dH/dt
+     *
+     * @param m_irr_am Current scalar irreversible magnetization [A/m].
+     * @param b_body_t Current magnetic field in the body frame [T].
+     * @param b_dot_body_t Rate of change of the magnetic field in the body frame [T/s].
+     * @return The rate of change dM_irr/dt [A/m/s].
+     */
+    [[nodiscard]] double magnetization_derivative(double m_irr_am, const vec3& b_body_t, const vec3& b_dot_body_t) const;
 
-    [[nodiscard]]
-    anhysteretic anhysteretic_magnetization(double h_eff) const;
+    /**
+     * @brief Calculates derivative based on scalar H-Field.
+     *
+     * @param m_irr_am Current irreversible magnetization [A/m].
+     * @param h_along_rod H-Field intensity along the rod [A/m].
+     * @param dh_dt Rate of change of H-field [A/m/s].
+     */
+    [[nodiscard]] double magnetization_derivative(double m_irr_am, double h_along_rod, double dh_dt) const;
 
-    [[nodiscard]]
-    double irreversible_susceptibility(double man, double m_clamped, double dh_dt) const;
+protected:
 
-    [[nodiscard]]
-    double total_susceptibility(double dmirr_dh, double dman_dheff) const;
+    /**
+     * @brief Computes the Anhysteretic Magnetization M_an(H_eff).
+     * Uses the Langevin function: M_an = Ms * (coth(Heff/a) - a/Heff)
+     */
+    [[nodiscard]] double calculate_anhysteretic(double h_eff_am) const;
 
-    // Implementation of the J-A model
-    [[nodiscard]]
-    double magnetization_derivative(double m_scalar_am, const vec3& b_body_t, const vec3& omega_rad_s) const;
-
-    [[nodiscard]]
-    double magnetization_derivative_from_h(double m_scalar_am, double h_along_rod, double dh_dt) const;
+    /**
+     * @brief Computes Effective Field H_eff = H + alpha * M.
+     */
+    [[nodiscard]] double calculate_h_eff(double h_along_rod, double m_val) const;
 
 private:
 

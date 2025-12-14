@@ -34,11 +34,15 @@ csv_state_observer::csv_state_observer(const std::string& filename, std::size_t 
     if (_include_magnitudes) {
         *_file
             // << ",q"  // always norm() == 1
+            << ",r"
+            << ",v"
             << ",w";
     }
 
     if (_include_elements) {
-        *_file << ",q_w,q_x,q_y,q_z"
+        *_file << ",r_x,r_y,r_z"
+               << ",v_x,v_y,v_z"
+               << ",q_w,q_x,q_y,q_z"
                << ",w_x,w_y,w_z";
     }
 
@@ -52,13 +56,21 @@ void csv_state_observer::operator()(const system_state& state, double time) cons
     *_file << time;
 
     if (_include_magnitudes) {
-        *_file                                        //
-                                                      // << ',' << state.attitude.norm() // ignore
+        *_file  //
+                // << ',' << state.attitude.norm() // ignore
+            << ',' << state.position.norm()           //
+            << ',' << state.velocity.norm()           //
             << ',' << state.angular_velocity.norm();  //
     }
 
     if (_include_elements) {
         *_file                                     //
+            << ',' << state.position.x()           //
+            << ',' << state.position.y()           //
+            << ',' << state.position.z()           //
+            << ',' << state.velocity.x()           //
+            << ',' << state.velocity.y()           //
+            << ',' << state.velocity.z()           //
             << ',' << state.attitude.coeffs().w()  //
             << ',' << state.attitude.coeffs().x()  //
             << ',' << state.attitude.coeffs().y()  //

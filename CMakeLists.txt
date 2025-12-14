@@ -58,6 +58,8 @@ target_sources(attitude_orbit_simulator_core PRIVATE
     "source/aos/core/types.hpp"
     "source/aos/environment/environment.cpp"
     "source/aos/environment/environment.hpp"
+    "source/aos/environment/orbital_mechanics.cpp"
+    "source/aos/environment/orbital_mechanics.hpp"
     "source/aos/simulation/config.cpp"
     "source/aos/simulation/config.hpp"
     "source/aos/simulation/dynamics.cpp"

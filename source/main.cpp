@@ -28,7 +28,7 @@ void parse_option_vec3(std::vector<std::string>& tokens, const std::string& inpu
 
     boost::split(tokens, input, boost::is_any_of(","), boost::token_compress_on);
     if (tokens.size() != 3) {
-        throw std::runtime_error("Invalid option size, expceted 3");
+        throw std::runtime_error("Invalid option size, expected 3 (x,y,z)");
     }
 
     output <<                                    //
@@ -59,23 +59,28 @@ int main(int argc, char** argv) {
         ("output,o", value<std::string>()->default_value("output.csv"), "Output file");  //
 
     options_description simulation_parameters("Simulation parameters");
-    simulation_parameters.add_options()                                                                              //
-        ("mass", value<double>(&params.spacecraft.mass_g), "Spacecraft mass [g]")                                    //
-        ("width", value<double>(), "Spacecraft width [m]")                                                           //
-        ("height", value<double>(), "Spacecraft height [m]")                                                         //
-        ("length", value<double>(), "Spacecraft length [m]")                                                         //
-        ("magnet-remanence", value<double>(&params.spacecraft.magnet_remanence), "Permanent magnet remanence")       //
-        ("magnet-length", value<double>(&params.spacecraft.magnet_length), "Permanent magnet length [m]")            //
-        ("magnet-diameter", value<double>(&params.spacecraft.magnet_diameter), "Permanent magnet diameter [m]")      //
-        ("no-rods", "Do not use hysteresis rods")                                                                    //
-        ("rod-volume", value<double>(&params.spacecraft.hysteresis_rod_volume), "Volume of hysteresis rod in [m3]")  //
-        ("rod-orientation", value<std::vector<std::string>>(), "Hysteresis rod orientation (multiple)")              //
-        ("altitude", value<double>(&params.environment.orbit_altitude_km), "Orbit altitude [km]")                    //
-        ("inclination", value<double>(&params.environment.orbit_inclination_deg), "Orbit inclination [deg]")         //
-        ("angular-velocity", value<std::string>(), "Initial angular velocity xyz [rad/s]")                           //
-        ("t-start", value<double>(&params.t_start), "Simulation start time [s]")                                     //
-        ("t-end", value<double>(&params.t_end), "Simulation end time [s]")                                           //
-        ("dt", value<double>(&params.dt_initial), "Initial simulation time step [s]");                               //
+    simulation_parameters.add_options()                                                                                 //
+        ("mass", value<double>(&params.spacecraft.mass_g), "Spacecraft mass [g]")                                       //
+        ("width", value<double>(), "Spacecraft width [m]")                                                              //
+        ("height", value<double>(), "Spacecraft height [m]")                                                            //
+        ("length", value<double>(), "Spacecraft length [m]")                                                            //
+        ("magnet-remanence", value<double>(&params.spacecraft.magnet_remanence), "Permanent magnet remanence [T]")      //
+        ("magnet-length", value<double>(&params.spacecraft.magnet_length), "Permanent magnet length [m]")               //
+        ("magnet-diameter", value<double>(&params.spacecraft.magnet_diameter), "Permanent magnet diameter [m]")         //
+        ("no-rods", "Do not use hysteresis rods")                                                                       //
+        ("rod-volume", value<double>(&params.spacecraft.hysteresis_rod_volume), "Volume of hysteresis rod in [m3]")     //
+        ("rod-orientation", value<std::vector<std::string>>(), "Hysteresis rod orientation (multiple, format: x,y,z)")  //
+        ("orbit-semi-major-axis", value<double>(&params.orbit.semi_major_axis_m), "Orbit Semi-Major Axis [m]")          //
+        ("orbit-eccentricity", value<double>(&params.orbit.eccentricity), "Orbit Eccentricity [0-1]")                   //
+        ("orbit-inclination", value<double>(&params.orbit.inclination_rad), "Orbit Inclination [rad]")                  //
+        ("orbit-raan", value<double>(&params.orbit.raan_rad), "Orbit RAAN [rad]")                                       //
+        ("orbit-arg-periapsis", value<double>(&params.orbit.arg_of_periapsis_rad), "Orbit Arg of Periapsis [rad]")      //
+        ("orbit-mean-anomaly", value<double>(&params.orbit.mean_anomaly_rad), "Orbit Mean Anomaly [rad]")               //
+        ("simulation-year", value<double>(&params.simulation_year), "Simulation start year (decimal, e.g. 2025.0)")     //
+        ("angular-velocity", value<std::string>(), "Initial angular velocity xyz [rad/s] (format: x,y,z)")              //
+        ("t-start", value<double>(&params.t_start), "Simulation start time offset [s]")                                 //
+        ("t-end", value<double>(&params.t_end), "Simulation end time [s]")                                              //
+        ("dt", value<double>(&params.dt_initial), "Initial simulation time step [s]");                                  //
 
     options_description hysteresis_parameters("Hysteresis parameters");
     hysteresis_parameters.add_options()                                                                                //
@@ -87,9 +92,9 @@ int main(int argc, char** argv) {
 
     options_description other("Other options");
     other.add_options()                                                                                                                        //
-        ("higher-order", bool_switch(&params.higher_order), "Use higher order solver")                                                         //
-        ("absolute-error", value<double>(&params.absolute_error), "Integration solver's absolute error")                                       //
-        ("relative-error", value<double>(&params.relative_error), "Integration solver's relative error")                                       //
+        ("higher-order", bool_switch(&params.higher_order), "Use higher order solver (Runge-Kutta-Fehlberg 7/8)")                              //
+        ("absolute-error", value<double>(&params.absolute_error), "Integration solver's absolute error tolerance")                             //
+        ("relative-error", value<double>(&params.relative_error), "Integration solver's relative error tolerance")                             //
         ("verify-hysteresis", "Calculate hysteresis curve for the given material instead of simulation")                                       //
         ("no-observe-element", bool_switch(&params.observer.exclude_elements), "Exclude per-element values from output")                       //
         ("no-observe-magnitude", bool_switch(&params.observer.exclude_magnitudes), "Exclude magnitude values from output")                     //
@@ -116,7 +121,6 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    // Parse remaining params here
     try {
         std::vector<std::string> tokens;
 

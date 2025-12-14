@@ -1,151 +1,140 @@
 #include "hysteresis_rod.hpp"
 
-#include "aos/core/constants.hpp"
 #include "aos/core/types.hpp"
 
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <iostream>
 #include <stdexcept>
 
 namespace aos {
 
 void hysteresis_rod::ja_parameters::debug_print() const {
-    std::cout << "-- hysteresis properties --"                           //
-              << "\nhysteresis saturation magnetization:     " << ms     //
-              << "\nhysteresis anhysteretic shape parameter: " << a      //
-              << "\nhysteresis pinning energy density:       " << k      //
-              << "\nhysteresis reversibility coefficient:    " << c      //
-              << "\nhysteresis inter-domain coupling:        " << alpha  //
+    std::cout << "-- hysteresis properties --"     //
+              << "\n  Ms (Saturation): " << ms     //
+              << "\n  a (Shape):       " << a      //
+              << "\n  k (Coercivity):  " << k      //
+              << "\n  c (Reversible):  " << c      //
+              << "\n  alpha (Coupling):" << alpha  //
               << '\n';
 }
 
 hysteresis_rod::ja_parameters hysteresis_rod::ja_parameters::hymu80() {
     // NOLINTBEGIN(readability-magic-numbers)
     return {
-        .ms    = 6.0e5,   // Saturation Magnetization [A/m]
-        .a     = 6.5,     // Anhysteretic shape parameter [A/m]
-        .k     = 4.0,     // Pinning energy density (coercivity) [A/m]
-        .c     = 0.05,    // Reversibility coefficient
-        .alpha = 1.0e-5,  // Inter-domain coupling
+        .ms    = 6.0e5,  // ~0.75 Tesla / mu0
+        .a     = 6.5,
+        .k     = 4.0,
+        .c     = 0.05,
+        .alpha = 1.0e-5,
     };
     // NOLINTEND(readability-magic-numbers)
 }
 
 hysteresis_rod::hysteresis_rod(double volume, const vec3& orientation, const ja_parameters& ja_params)
     : _volume(volume), _orientation_body(orientation), _params(ja_params) {
-    if (orientation.norm() < vector_norm_epsilon) {
-        throw std::runtime_error("Orientation vector must be non-zero.");
+    if (orientation.norm() < epsilon_vector) {
+        throw std::runtime_error("Hysteresis rod orientation must be non-zero.");
     }
     _orientation_body.normalize();
 
-    if (_params.ms <= 0.0) {
-        throw std::runtime_error("Saturation magnetization (ms) must be positive.");
-    }
-    if (_params.a <= 0.0) {
-        throw std::runtime_error("Anhysteretic parameter (a) must be positive.");
-    }
-    if (_params.k <= 0.0) {
-        throw std::runtime_error("Pinning energy (k) must be positive.");
-    }
-    if (_params.c < 0.0 || _params.c > 1.0) {
-        throw std::runtime_error("Reversible fraction (c) must be in [0, 1].");
-    }
-    if (_params.alpha < 0.0) {
-        throw std::runtime_error("Inter-domain coupling (alpha) must be non-negative.");
-    }
     if (_volume <= 0.0) {
         throw std::runtime_error("Volume must be positive.");
     }
+    if (_params.ms <= 0.0) {
+        throw std::runtime_error("Ms must be positive.");
+    }
+    if (_params.a <= 0.0) {
+        throw std::runtime_error("Parameter 'a' must be positive.");
+    }
+    if (_params.k <= 0.0) {
+        throw std::runtime_error("Parameter 'k' must be positive.");
+    }
+    if (_params.c < 0.0 || _params.c > 1.0) {
+        throw std::runtime_error("Parameter 'c' must be [0, 1].");
+    }
 }
 
-vec3 hysteresis_rod::magnetic_moment(double m_scalar_am) const {
-    return m_scalar_am * _volume * _orientation_body;
+double hysteresis_rod::calculate_h_eff(double h_along_rod, double m_val) const {
+    // H_eff = H + alpha * M
+    return h_along_rod + (_params.alpha * m_val);
 }
 
-double hysteresis_rod::effective_field(double h_along_rod, double m_clamped) const {
-    return h_along_rod + (_params.alpha * m_clamped);
-}
+double hysteresis_rod::calculate_anhysteretic(double h_eff_am) const {
+    const double ratio = h_eff_am / _params.a;
 
-hysteresis_rod::anhysteretic hysteresis_rod::anhysteretic_magnetization(double h_eff) const {
-    const double x = h_eff / _params.a;
-
-    // Use Taylor series for small x to maintain numerical stability
-    if (std::abs(x) < absolute_error) {
-        // Man ≈ Ms * (x/3 - x³/45)
-        // dMan/dH_eff ≈ Ms/a * (1/3 - x²/15)
-        return {
-            .man        = _params.ms * (x / 3.0 - (x * x * x) / 45.0),            // NOLINT(readability-magic-numbers)
-            .dman_dheff = _params.ms / _params.a * (1.0 / 3.0 - (x * x) / 15.0),  // NOLINT(readability-magic-numbers)
-        };
+    // numerical stability for langevin function near zero
+    if (std::abs(ratio) < epsilon_langevin) {
+        // taylor expansion: L(x) approx x/3 - x^3/45
+        return _params.ms * (ratio / 3.0);  // NOLINT(readability-magic-numbers)
+        // - (ratio*ratio*ratio)/45.0;
     }
 
-    // Alternative (more numerically stable for large |x|):
-    // const double cothx = (x > 0) ? (1.0 + 2.0 / (std::exp(2.0 * x) - 1.0)) : (1.0 - 2.0 / (std::exp(-2.0 * x) - 1.0));
+    // langevin: L(x) = coth(x) - 1/x
+    // M_an = Ms * L(x)
+    return _params.ms * ((1.0 / std::tanh(ratio)) - (1.0 / ratio));
+}
 
-    // Brillouin/Langevin function: Man = Ms * [coth(x) - 1/x]
-    const double cothx = 1.0 / std::tanh(x);
-    const double man   = _params.ms * (cothx - 1.0 / x);
+vec3 hysteresis_rod::magnetic_moment(double m_irr_am, const vec3& b_body_t) const {
+    // get H field along the rod
+    const double h_applied = b_body_t.dot(_orientation_body) / vacuum_permeability;
 
-    // Exact derivative: d/dx[coth(x) - 1/x] = -csch²(x) + 1/x²
-    const double sinhx      = std::sinh(x);
-    const double cschx_sq   = 1.0 / (sinhx * sinhx);
-    const double dman_dheff = _params.ms / _params.a * (-cschx_sq + 1.0 / (x * x));
+    // clamp M_irr to physical limits to prevent divergence in H_eff
+    const double m_irr_clamped = std::clamp(m_irr_am, -_params.ms, _params.ms);
 
-    return {
-        .man        = man,
-        .dman_dheff = dman_dheff,
-    };
+    // calculate H_eff based on current M_irr
+    const double h_eff = calculate_h_eff(h_applied, m_irr_clamped);
+    const double m_an  = calculate_anhysteretic(h_eff);
+
+    // M_tot = M_irr + M_rev
+    // M_rev = c * (M_an - M_irr)
+    // => M_tot = (1 - c) * M_irr + c * M_an
+    const double m_total = ((1.0 - _params.c) * m_irr_clamped) + (_params.c * m_an);
+
+    // moment: m = M_tot * volume * direction
+    return m_total * _volume * _orientation_body;
+}
+
+double hysteresis_rod::magnetization_derivative(double m_irr_am, const vec3& b_body_t, const vec3& b_dot_body_t) const {
+    // calculate H and dH/dt along the rod
+    const double h_applied = b_body_t.dot(_orientation_body) / vacuum_permeability;
+    const double dh_dt     = b_dot_body_t.dot(_orientation_body) / vacuum_permeability;
+    return magnetization_derivative(m_irr_am, h_applied, dh_dt);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-double hysteresis_rod::irreversible_susceptibility(double man, double m_clamped, double dh_dt) const {
-    const double m_diff = man - m_clamped;
-
-    // Sign term based on dH/dt direction
-    const double sign_term = (dh_dt >= 0.0) ? 1.0 : -1.0;
-
-    // Calculate denominator with stability check
-    const double denominator = (_params.k * sign_term) - (_params.alpha * m_diff);
-
-    // Preserve sign while ensuring numerical stability
-    if (std::abs(denominator) < denominator_epsilon) {
-        return m_diff / std::copysign(denominator_epsilon, denominator);
-    }
-    return m_diff / denominator;
-}
-
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-double hysteresis_rod::total_susceptibility(double dmirr_dh, double dman_dheff) const {
-    const double dmrev_dh = _params.c * dman_dheff;
-
-    // Total dM/dH is weighted sum of reversible and irreversible parts
-    return ((1.0 - _params.c) * dmirr_dh) + dmrev_dh;
-}
-
-double hysteresis_rod::magnetization_derivative(double m_scalar_am, const vec3& b_body_t, const vec3& omega_rad_s) const {
-    // Convert B [Tesla] to H [A/m]
-    const double h_along_rod = b_body_t.dot(_orientation_body) / vacuum_permeability;
-
-    // Calculate dH/dt first, as its sign is needed
-    const double dh_dt = (-omega_rad_s.cross(b_body_t)).dot(_orientation_body) / vacuum_permeability;
-
-    return magnetization_derivative_from_h(m_scalar_am, h_along_rod, dh_dt);
-}
-
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-double hysteresis_rod::magnetization_derivative_from_h(double m_scalar_am, double h_along_rod, double dh_dt) const {
-    if (std::abs(dh_dt) < dh_dt_threshold) {
+double hysteresis_rod::magnetization_derivative(double m_irr_am, double h_along_rod, double dh_dt) const {
+    // change in field is negligible = no hysteresis evolution
+    if (std::abs(dh_dt) < epsilon_dh_dt) {
         return 0.0;
     }
 
-    const double m_clamped       = std::clamp(m_scalar_am, -_params.ms, _params.ms);
-    const double heff            = effective_field(h_along_rod, m_clamped);
-    const auto [man, dman_dheff] = anhysteretic_magnetization(heff);
-    const double dmirr_dh        = irreversible_susceptibility(man, m_clamped, dh_dt);
-    const double dm_dh           = total_susceptibility(dmirr_dh, dman_dheff);
-    return dm_dh * dh_dt;  // Return dM/dt using the chain rule
+    const double m_irr_clamped = std::clamp(m_irr_am, -_params.ms, _params.ms);
+
+    // intermediate magnetic states
+    const double h_eff = calculate_h_eff(h_along_rod, m_irr_clamped);
+    const double m_an  = calculate_anhysteretic(h_eff);
+
+    // directionality (delta)
+    // delta = +1 if dH/dt > 0, -1 if dH/dt < 0
+    const double delta = (dh_dt > 0.0) ? 1.0 : -1.0;
+
+    // Jiles-Atherton Differential Equation for Irreversible Magnetization
+    // dM_irr / dH = (M_an - M_irr) / (k*delta - alpha*(M_an - M_irr))
+    const double m_diff      = m_an - m_irr_clamped;
+    const double denominator = (_params.k * delta) - (_params.alpha * m_diff);
+
+    // singularity (infinite susceptibility)
+    if (std::abs(denominator) < epsilon_denominator) {
+        // max physical slope proportional to the sign of the numerator
+        const double safe_denom = std::copysign(epsilon_denominator, denominator);
+        const double dmirr_dh   = m_diff / safe_denom;
+        return dmirr_dh * dh_dt;
+    }
+
+    // dM_irr/dt = (dM_irr/dH) * (dH/dt)
+    const double dmirr_dh = m_diff / denominator;
+    return dmirr_dh * dh_dt;
 }
 
 }  // namespace aos

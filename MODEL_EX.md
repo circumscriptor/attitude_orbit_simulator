@@ -1,111 +1,133 @@
 ### 1. The State Vector $\mathbf{Y}$
 
-First, define the complete state of your system as a single vector $Y$. This vector contains all the quantities that change over time and that you need to solve for.
-
 $$
-\begin{equation}
-\mathbf{Y} = [\mathbf{r},\mathbf{v},\mathbf{q},\boldsymbol{\omega},M_{irr}]
-\end{equation}
+\mathbf{Y} = [\mathbf{r}, \mathbf{v}, \mathbf{q}, \boldsymbol{\omega}, \mathbf{M}_{irr}]^T
 $$
 
-Where:
-*   $\mathbf{r}$ - Position vector of the spacecraft in an inertial frame (ECI). ($3 \times 1$ vector)
-*   $\mathbf{v}$ - Velocity vector of the spacecraft in an inertial frame (ECI). ($3 \times 1$ vector)
-*   $\mathbf{q}$ - Attitude quaternion, representing the rotation from the inertial frame to the spacecraft's body frame. ($4 \times 1$ vector, $[w, x, y, z]$)
-*   $\boldsymbol{\omega}$ - Angular velocity vector of the spacecraft in its own body frame. ($3 \times 1$ vector)
-*   $M_{irr}$ - A vector containing the scalar irreversible magnetization for *each* of the $N$ hysteresis rods. ($[M_irr,1, M_irr,2, ..., M_irr,N]$)
+*   $\mathbf{r}$: Position in **ECI** ($m$).
+*   $\mathbf{v}$: Velocity in **ECI** ($m/s$).
+*   $\mathbf{q}$: Quaternion (ECI $\to$ Body) ($[w, x, y, z]$, unit norm).
+*   $\boldsymbol{\omega}$: Angular velocity in **Body** ($rad/s$).
+*   $\mathbf{M}_{irr}$: Irreversible magnetization of hysteresis rods ($A/m$).
 
-### 2. The System of First-Order Differential Equations $\frac{d\mathbf{Y}}{dt}$
+---
 
-Function that takes the current time $t$ and the current state vector $Y$ as input and returns the time derivative of every component of $Y$.
+### 2. The Differential Equation $\frac{d\mathbf{Y}}{dt}$
 
 $$
-\begin{equation}
 \frac{d\mathbf{Y}}{dt} = \begin{bmatrix}
-\dot{\mathbf{r}} \\
-\dot{\mathbf{v}} \\
-\dot{\mathbf{q}} \\
-\dot{\boldsymbol{\omega}} \\
-\dot{\mathbf{M}}_{irr}
-\end{bmatrix} = \begin{bmatrix}
 \mathbf{v} \\
--\frac{G M_{Earth}}{\lVert\mathbf{r}\rVert^3} \mathbf{r} \\
-\frac{1}{2} \mathbf{q} \otimes [0, \omega_x, \omega_y, \omega_z] \\
-\mathbf{I}^{-1} \left( \boldsymbol{\tau}_{total} - \boldsymbol{\omega} \times (\mathbf{I}\boldsymbol{\omega}) \right) \\
-\left[ \frac{dM_{irr,1}}{dt}, \frac{dM_{irr,2}}{dt}, \dots, \frac{dM_{irr,N}}{dt} \right]^T
+-\frac{\mu}{\lVert\mathbf{r}\rVert^3}\mathbf{r} + \mathbf{a}_{pert, ECI} \\
+\frac{1}{2} \mathbf{q} \otimes [0, \boldsymbol{\omega}]^T \\
+\mathbf{I}^{-1} \left( \boldsymbol{\tau}_{mag} + \boldsymbol{\tau}_{aero} + \boldsymbol{\tau}_{grav} - \boldsymbol{\omega} \times (\mathbf{I}\boldsymbol{\omega}) \right) \\
+\dot{\mathbf{M}}_{irr}
 \end{bmatrix}
-\end{equation}
 $$
 
-### 3. Calculation Workflow $f(t, \mathbf{Y})$
+*Note: $\mu$ is retrieved via `GeographicLib::GravityModel::GM()`.*
 
-Perform a sequence of calculations using the current state $Y$ and system parameters.
+---
 
-**Step 1: Unpack the State Vector $Y$**
-   *   Extract $\mathbf{r}$, $\mathbf{v}$, $\mathbf{q}$, $\boldsymbol{\omega}$, and the array of $M_{irr,i}$ values.
-   *   Normalize the quaternion $\mathbf{q}$ to ensure it remains a unit quaternion:
+### 3. Simulation Workflow $f(t, \mathbf{Y})$
 
-$$
-\begin{equation}
-\mathbf{q} = \frac{\mathbf{q}}{\lVert\mathbf{q}\rVert}
-\end{equation}
-$$
+#### Step 1: Time and Frame Setup
+We must bridge the gap between the Inertial frame (ECI) and the Earth-Fixed frame (ECEF/Geodetic).
 
-**Step 2: Calculate Intermediate Environmental Variables**
-*   **$B_{body}$ (Magnetic Field in Body Frame):**
-    1.  Use $\mathbf{r}$ and $t$ to call a geomagnetic model (e.g., WMM) to get the B-field in an Earth-fixed frame ($B_{ECEF}$).
-    2.  Perform the coordinate transformation from the Earth-fixed frame to the inertial frame ($B_{ECI}$).
-    3.  Use the attitude quaternion $\mathbf{q}$ to rotate $B_{ECI}$ into the spacecraft's body frame to get $B_{body}$.
-* **$\frac{dH_i}{dt}$ (Rate of change of field along each rod $i$):**
+1.  **Calculate GMST (Greenwich Mean Sidereal Time):**
+    Compute angle $\theta_{gst}$ based on Julian Date of time $t$.
+2.  **Construct Rotation Matrix $\mathbf{R}_{ECEF}^{ECI}$:**
+    $$
+    \mathbf{R}_{ECEF}^{ECI} = \begin{bmatrix}
+    \cos\theta & -\sin\theta & 0 \\
+    \sin\theta & \cos\theta & 0 \\
+    0 & 0 & 1
+    \end{bmatrix}
+    $$
+3.  **Position Conversion:**
+    $$ \mathbf{r}_{ECEF} = (\mathbf{R}_{ECEF}^{ECI})^T \mathbf{r}_{ECI} $$
 
-$$
-\begin{align}
-\left(\frac{dB}{dt}\right)_{rot,body} &= \omega \times B_{body} \\
-\left(\frac{d\mathbf{B}}{dt}\right)_{orb,eci} &= (\mathbf{v}_{eci} \cdot \nabla)\mathbf{B}_{eci} \approx \frac{\mathbf{B}_{eci}(\mathbf{r}(t) + \mathbf{v}(t)\delta t) - \mathbf{B}_{eci}(\mathbf{r}(t))}{\delta t} \\
-\left(\frac{d\mathbf{B}}{dt}\right)_{orb,body} &= C(\mathbf{q}) \left(\frac{d\mathbf{B}}{dt}\right)_{orb,eci} \\
-\frac{dH_i}{dt} &= \frac{1}{\mu_0} \left[ \left( \left(\frac{d\mathbf{B}}{dt}\right)_{orb, body} + \left(\frac{d\mathbf{B}}{dt}\right)_{rot,body} \right) \cdot \mathbf{b}_i \right]
-\end{align}
-$$
+#### Step 2: GeographicLib Coordinates
+Use `Geocentric` to get Geodetic coordinates and the local frame rotation.
 
-$$
-$$
+```cpp
+GeographicLib::Geocentric earth(Constants::WGS84_a(), Constants::WGS84_f());
+double lat, lon, h;
+// Computes lat/lon/h AND the rotation from ENU to ECEF (M)
+earth.Reverse(r_ecef.x, r_ecef.y, r_ecef.z, lat, lon, h, M);
+```
+*   **Input:** $\mathbf{r}_{ECEF}$.
+*   **Output:** Latitude ($\phi$), Longitude ($\lambda$), Height ($h$).
+*   **Output:** $\mathbf{R}_{ENU}^{ECEF}$ (Returned by `Reverse` as a $3\times3$ matrix or computed via `LocalCartesian`).
 
-$$
-\begin{equation}
-\end{equation}
-$$
+#### Step 3: Environmental Vectors
 
-**Step 3: Calculate the Hysteresis State and Total Magnetization $M_{total,i}$ (for each rod $i$)**
+**A. Gravity Perturbations (GravityModel)**
+1.  Get disturbance in Local Tangent Plane (ENU).
+    ```cpp
+    grav.Disturbance(lat, lon, h, gx, gy, gz); // gx=East, gy=North, gz=Up
+    Vector3d a_pert_ENU(gx, gy, gz);
+    ```
+2.  Transform to Inertial Frame (ECI) for the integrator:
+    $$ \mathbf{a}_{pert, ECI} = \mathbf{R}_{ECEF}^{ECI} \cdot \mathbf{R}_{ENU}^{ECEF} \cdot \mathbf{a}_{pert, ENU} $$
 
-$$
-\begin{align}
-    H_i &= \frac{\mathbf{B}_{body} \cdot \mathbf{b}_i}{\mu_0} \\
-    H_{eff,i} &= H_i + \alpha M_{total,i_{prev}} \\
-    M_{an,i} &= M_s \left[ \coth\left(\frac{H_{eff,i}}{a}\right) - \frac{a}{H_{eff,i}} \right] \\
-    \frac{dM_{irr,i}}{dt} &= \frac{M_{an,i} - M_{irr,i}}{k\delta} \frac{dH_i}{dt} \\
-    M_{total,i} &= M_{irr,i} + c (M_{an,i} - M_{irr,i})
-\end{align}
-$$
+**B. Magnetic Field (MagneticModel)**
+1.  Get field in ENU.
+    ```cpp
+    mag(year, lat, lon, h, Bx, By, Bz); // nT
+    Vector3d B_ENU(Bx, By, Bz);
+    B_ENU *= 1e-9; // Convert nT to Tesla
+    ```
+2.  Transform to Body Frame (for Torque & Hysteresis):
+    *   First to ECI: $\mathbf{B}_{ECI} = \mathbf{R}_{ECEF}^{ECI} \cdot \mathbf{R}_{ENU}^{ECEF} \cdot \mathbf{B}_{ENU}$
+    *   Then to Body: $\mathbf{B}_{body} = \mathbf{R}_{ECI}^{Body}(\mathbf{q}) \cdot \mathbf{B}_{ECI}$
 
-**Step 4: Calculate Torques**
-
-$$
-\begin{align}
-\boldsymbol{\tau}_p &= \mathbf{m}_p \times \mathbf{B}_{body} \\
-\boldsymbol{\mu}_{h,i} &= M_{total,i} V_i \mathbf{b}_i \\
-\boldsymbol{\tau}_{h,i} &= \boldsymbol{\mu}_{h,i} \times \mathbf{B}_{body} \\
-\boldsymbol{\tau}_{total} &= \boldsymbol{\tau}_p + \sum_{i=1}^{N}{\boldsymbol{\tau}_{h,i}}
-\end{align}
-$$
-
-**Step 5: Assemble the Final Derivative Vector $\frac{dY}{dt}$**
+#### Step 4: Magnetic Field Derivative ($\dot{\mathbf{B}}$)
+Hysteresis depends on how fast the field changes *inside the rod*. This has two components: Orbit movement and Satellite tumbling.
 
 $$
-\begin{align}
-    \frac{d\mathbf{r}}{dt} &= \mathbf{v} \\
-    \frac{d\mathbf{v}}{dt} &= -\frac{G M_{earth}}{\lVert\mathbf{r}\rVert^3} \mathbf{r} \\
-    \frac{d\mathbf{q}}{dt} &= \frac{1}{2} \mathbf{q} \otimes [0, \boldsymbol{\omega}] \\
-    \frac{d\boldsymbol{\omega}}{dt} &= \mathbf{I}^{-1} (\boldsymbol{\tau}_{total} - \boldsymbol{\omega} \times (\mathbf{I}\boldsymbol{\omega})) \\
-    \frac{d\mathbf{M}_{irr}}{dt} &= \text{The vector of } \frac{dM_{irr,i}}{dt} \text{ calculated in Step 3.}
-\end{align}
+\frac{d\mathbf{B}_{body}}{dt} = \underbrace{\mathbf{R}_{ECI}^{Body}(\mathbf{q}) \frac{\mathbf{B}_{ECI}(t) - \mathbf{B}_{ECI}(t-\Delta t)}{\Delta t}}_{\text{Orbital Change}} - \underbrace{\boldsymbol{\omega} \times \mathbf{B}_{body}}_{\text{Rotational Change}}
 $$
+
+*   **Logic:**
+    *   If $t=0$, set $\dot{\mathbf{B}}_{body} = 0$ (or assume a small initial rate).
+    *   Store $\mathbf{B}_{ECI}(t)$ to use as $\mathbf{B}_{ECI}(t-\Delta t)$ in the *next* step.
+    *   The $-\boldsymbol{\omega} \times \mathbf{B}$ term is the transport theorem (derivative of a vector in a rotating frame).
+
+#### Step 5: Hysteresis Dynamics ($\dot{\mathbf{M}}_{irr}$)
+For each rod $i$ aligned with body axis $\mathbf{u}_i$:
+
+1.  **Project Field and Rate onto Rod:**
+    $$
+    H_i = \frac{1}{\mu_0} (\mathbf{B}_{body} \cdot \mathbf{u}_i)
+    $$
+    $$
+    \dot{H}_i = \frac{1}{\mu_0} \left( \frac{d\mathbf{B}_{body}}{dt} \cdot \mathbf{u}_i \right)
+    $$
+
+2.  **Calculate Theoretical Anysteretic Magnetization ($M_{an}$):**
+    $$ H_{eff} = H_i + \alpha M_{irr, i} $$
+    $$ M_{an} = M_s \left( \coth\left(\frac{H_{eff}}{a}\right) - \frac{a}{H_{eff}} \right) $$
+
+3.  **Calculate Derivative (The Hysteresis Differential Equation):**
+    Note: The classic equation gives $\frac{dM}{dH}$. We need $\frac{dM}{dt}$.
+    $$
+    \frac{dM_{irr, i}}{dH} = \frac{M_{an} - M_{irr, i}}{k \delta} \quad \text{where } \delta = \text{sign}(\dot{H}_i)
+    $$
+    **Chain Rule:**
+    $$
+    \frac{dM_{irr, i}}{dt} = \left( \frac{M_{an} - M_{irr, i}}{k \cdot \text{sign}(\dot{H}_i)} \right) \cdot \dot{H}_i
+    $$
+
+#### Step 6: Torque Summation
+Calculate the total dipole moment $\mathbf{m}_{total}$ (Permanent + Hysteresis rods).
+
+$$
+\mathbf{m}_{rods} = \sum_{i=1}^{N} (V_{rod} \cdot (M_{irr, i} + \chi_r H_i) \cdot \mathbf{u}_i)
+$$
+*(Note: $\chi_r H_i$ adds the reversible/linear component if explicit in your model, otherwise just $M_{total}$)*
+
+$$
+\boldsymbol{\tau}_{mag} = (\mathbf{m}_{perm} + \mathbf{m}_{rods}) \times \mathbf{B}_{body}
+$$
+
+Use this $\boldsymbol{\tau}_{mag}$ in the final derivative vector defined in Section 2.

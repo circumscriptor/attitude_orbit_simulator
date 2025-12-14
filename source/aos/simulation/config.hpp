@@ -2,17 +2,19 @@
 
 #include "aos/components/spacecraft.hpp"
 #include "aos/core/types.hpp"
-#include "aos/environment/environment.hpp"
+// #include "aos/environment/environment.hpp"
+#include "aos/environment/orbital_mechanics.hpp"
 #include "aos/simulation/observer.hpp"
 
 namespace aos {
 
 struct simulation_parameters {
-    spacecraft::properties             spacecraft;
-    wmm2025_magnetic_model::properties environment;
-    csv_state_observer::properties     observer;
+    spacecraft::properties         spacecraft;
+    keplerian_elements             orbit;
+    csv_state_observer::properties observer;
 
     vec3   angular_velocity;
+    double simulation_year;
     double t_start{};
     double t_end{};
     double dt_initial{};

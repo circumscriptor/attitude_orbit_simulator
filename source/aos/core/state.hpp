@@ -14,11 +14,15 @@
 namespace aos {
 
 struct system_state {
+    vec3 position;
+    vec3 velocity;
     quat attitude;
     vec3 angular_velocity;
     vecX rod_magnetizations;
 
     system_state& operator+=(const system_state& other) {
+        position += other.position;
+        velocity += other.velocity;
         attitude.coeffs() += other.attitude.coeffs();
         angular_velocity += other.angular_velocity;
         rod_magnetizations += other.rod_magnetizations;
@@ -26,6 +30,8 @@ struct system_state {
     }
 
     system_state& operator+=(double scalar) {
+        position.array() += scalar;
+        velocity.array() += scalar;
         attitude.coeffs().array() += scalar;
         angular_velocity.array() += scalar;
         rod_magnetizations.array() += scalar;
@@ -33,6 +39,8 @@ struct system_state {
     }
 
     system_state& operator-=(const system_state& other) {
+        position -= other.position;
+        velocity -= other.velocity;
         attitude.coeffs() -= other.attitude.coeffs();
         angular_velocity -= other.angular_velocity;
         rod_magnetizations -= other.rod_magnetizations;
@@ -40,6 +48,8 @@ struct system_state {
     }
 
     system_state& operator*=(double scalar) {
+        position *= scalar;
+        velocity *= scalar;
         attitude.coeffs() *= scalar;
         angular_velocity *= scalar;
         rod_magnetizations *= scalar;
@@ -47,6 +57,8 @@ struct system_state {
     }
 
     system_state& operator/=(const system_state& other) {
+        position.cwiseQuotient(other.position);
+        velocity.cwiseQuotient(other.velocity);
         attitude.coeffs().cwiseQuotient(other.attitude.coeffs());
         angular_velocity.cwiseQuotient(other.angular_velocity);
         rod_magnetizations.cwiseQuotient(other.rod_magnetizations);
@@ -77,6 +89,8 @@ inline system_state operator/(const system_state& lhs, const system_state& rhs) 
 inline aos::system_state abs(const aos::system_state& state) {
     aos::system_state result;
     result.rod_magnetizations.resize(state.rod_magnetizations.size());
+    result.position           = state.position.cwiseAbs();
+    result.velocity           = state.velocity.cwiseAbs();
     result.attitude.coeffs()  = state.attitude.coeffs().cwiseAbs();
     result.angular_velocity   = state.angular_velocity.cwiseAbs();
     result.rod_magnetizations = state.rod_magnetizations.cwiseAbs();
@@ -108,7 +122,13 @@ template <>
 struct vector_space_norm_inf<aos::system_state> {
     using result_type = double;
     double operator()(const aos::system_state& s) const {
-        return std::max({s.attitude.coeffs().cwiseAbs().maxCoeff(), s.angular_velocity.cwiseAbs().maxCoeff(), s.rod_magnetizations.cwiseAbs().maxCoeff()});
+        return std::max({
+            s.position.cwiseAbs().maxCoeff(),
+            s.velocity.cwiseAbs().maxCoeff(),
+            s.attitude.coeffs().cwiseAbs().maxCoeff(),
+            s.angular_velocity.cwiseAbs().maxCoeff(),
+            s.rod_magnetizations.cwiseAbs().maxCoeff(),
+        });
     }
 };
 

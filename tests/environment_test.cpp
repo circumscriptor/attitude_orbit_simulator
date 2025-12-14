@@ -6,8 +6,8 @@
 #include <cmath>
 #include <numbers>
 
+using aos::environment_model;
 using aos::vec3;
-using aos::wmm2025_magnetic_model;
 
 // Test fixture for the wmm2025_magnetic_model class
 class Wmm2020EnvironmentTest : public ::testing::Test {
@@ -18,8 +18,6 @@ protected:
         props.orbit_altitude_km     = 500.0;
         props.orbit_inclination_deg = 45.0;
     }
-
-    wmm2025_magnetic_model::properties props{};
 };
 
 TEST_F(Wmm2020EnvironmentTest, ConstructorInitializesProperties) {
