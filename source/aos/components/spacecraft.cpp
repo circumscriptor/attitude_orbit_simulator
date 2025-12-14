@@ -1,5 +1,6 @@
 #include "spacecraft.hpp"
 
+#include "aos/components/permanent_magnet.hpp"
 #include "aos/core/types.hpp"
 
 #include <iostream>
@@ -28,7 +29,7 @@ void spacecraft::properties::debug_print() const {
 spacecraft::spacecraft(const mat3x3& inertia, const properties& properties)
     : _inertia_tensor(inertia),
       _inertia_tensor_inverse(inertia.inverse()),
-      _magnet(properties.magnet_remanence, properties.magnet_length, properties.magnet_diameter, properties.magnet_orientation) {
+      _magnet(permanent_magnet::cylindrical(properties.magnet_remanence, properties.magnet_length, properties.magnet_diameter, properties.magnet_orientation)) {
     _rods.reserve(properties.hysteresis_rod_orientations.size());
     for (const auto& orientation : properties.hysteresis_rod_orientations) {
         _rods.emplace_back(properties.hysteresis_rod_volume, orientation, properties.hysteresis_params);

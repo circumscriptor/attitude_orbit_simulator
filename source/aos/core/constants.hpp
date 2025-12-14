@@ -16,6 +16,6 @@ static constexpr double rad_to_deg                = 180.0 / std::numbers::pi;
 static constexpr double seconds_per_year          = 365.25 * 24.0 * 3600.0;
 static constexpr double simulation_start_year     = 2025.0;
 static constexpr double two_pi                    = 2.0 * std::numbers::pi;
-static constexpr double vacuum_permeability       = 1.25663706212e-6;
+static constexpr double vacuum_permeability       = 4.0 * std::numbers::pi * 1e-7;
 
 }  // namespace aos
