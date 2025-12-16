@@ -44,20 +44,19 @@ public:
 protected:
 
     // -mu*r/r^3 + perturbations
-    [[nodiscard]] vec3 compute_total_acceleration(const vec3& r_eci, const vec3& gravity_disturbance) const;
+    [[nodiscard]] auto compute_total_acceleration(const vec3& r_eci, const vec3& gravity_disturbance) const -> vec3;
 
     // compute total rod torque and dM/dt for each rod, returns the total torque exerted by all rods, writes dM/dt values into the dM_dt_out
-    [[nodiscard]]
-    vec3 compute_rod_effects(const system_state& state, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const;
+    [[nodiscard]] auto compute_rod_effects(const system_state& state, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3;
 
     // sums permanent magnet, hysteresis, gyroscopic, and gravity gradient torques
-    [[nodiscard]] vec3 compute_net_torque(const vec3& omega, const vec3& b_body, const vec3& rod_torque, const vec3& r_eci, const quat& q_att) const;
+    [[nodiscard]] auto compute_net_torque(const vec3& omega, const vec3& b_body, const vec3& rod_torque, const vec3& r_eci, const quat& q_att) const -> vec3;
 
     // gravity gradient torque
-    [[nodiscard]] vec3 compute_gravity_gradient_torque(const vec3& r_eci, const quat& q_att) const;
+    [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_eci, const quat& q_att) const -> vec3;
 
     // quaternion derivative: 0.5 * q * omega
-    [[nodiscard]] static vecX compute_attitude_derivative(const quat& q, const vec3& omega);
+    [[nodiscard]] static auto compute_attitude_derivative(const quat& q, const vec3& omega) -> vecX;
 
 private:
 

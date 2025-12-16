@@ -28,7 +28,7 @@ public:
 
         void debug_print() const;
 
-        static ja_parameters hymu80();
+        static auto hymu80() -> ja_parameters;
     };
 
     /**
@@ -52,7 +52,7 @@ public:
      * @param b_body_t The magnetic field vector in the body frame [T].
      * @return Total magnetic dipole moment vector [A*m^2].
      */
-    [[nodiscard]] vec3 magnetic_moment(double m_irr_am, const vec3& b_body_t) const;
+    [[nodiscard]] auto magnetic_moment(double m_irr_am, const vec3& b_body_t) const -> vec3;
 
     /**
      * @brief Calculates the time derivative of the irreversible magnetization (dM_irr/dt).
@@ -65,7 +65,7 @@ public:
      * @param b_dot_body_t Rate of change of the magnetic field in the body frame [T/s].
      * @return The rate of change dM_irr/dt [A/m/s].
      */
-    [[nodiscard]] double magnetization_derivative(double m_irr_am, const vec3& b_body_t, const vec3& b_dot_body_t) const;
+    [[nodiscard]] auto magnetization_derivative(double m_irr_am, const vec3& b_body_t, const vec3& b_dot_body_t) const -> double;
 
     /**
      * @brief Calculates derivative based on scalar H-Field.
@@ -74,7 +74,7 @@ public:
      * @param h_along_rod H-Field intensity along the rod [A/m].
      * @param dh_dt Rate of change of H-field [A/m/s].
      */
-    [[nodiscard]] double magnetization_derivative(double m_irr_am, double h_along_rod, double dh_dt) const;
+    [[nodiscard]] auto magnetization_derivative(double m_irr_am, double h_along_rod, double dh_dt) const -> double;
 
 protected:
 
@@ -82,12 +82,12 @@ protected:
      * @brief Computes the Anhysteretic Magnetization M_an(H_eff).
      * Uses the Langevin function: M_an = Ms * (coth(Heff/a) - a/Heff)
      */
-    [[nodiscard]] double calculate_anhysteretic(double h_eff_am) const;
+    [[nodiscard]] auto calculate_anhysteretic(double h_eff_am) const -> double;
 
     /**
      * @brief Computes Effective Field H_eff = H + alpha * M.
      */
-    [[nodiscard]] double calculate_h_eff(double h_along_rod, double m_val) const;
+    [[nodiscard]] auto calculate_h_eff(double h_along_rod, double m_val) const -> double;
 
 private:
 

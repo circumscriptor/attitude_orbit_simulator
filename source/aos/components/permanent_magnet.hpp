@@ -18,16 +18,16 @@ public:
     /**
      * @brief Static factory for a Cylindrical Magnet.
      */
-    static permanent_magnet cylindrical(double remanence_t, double length_m, double diameter_m, const vec3& orientation);
+    static auto cylindrical(double remanence_t, double length_m, double diameter_m, const vec3& orientation) -> permanent_magnet;
 
     /**
      * @brief Static factory for a Rectangular Bar Magnet.
      */
-    static permanent_magnet rectangular(double remanence_t, double width_m, double height_m, double length_m, const vec3& orientation);
+    static auto rectangular(double remanence_t, double width_m, double height_m, double length_m, const vec3& orientation) -> permanent_magnet;
 
-    [[nodiscard]] vec3   magnetic_moment() const { return _magnetic_moment_body; }
-    [[nodiscard]] double remanence() const { return _remanence; }
-    [[nodiscard]] double volume() const { return _volume; }
+    [[nodiscard]] auto magnetic_moment() const -> vec3 { return _magnetic_moment_body; }
+    [[nodiscard]] auto remanence() const -> double { return _remanence; }
+    [[nodiscard]] auto volume() const -> double { return _volume; }
 
     /**
      * @brief Re-calculates moment using a temperature coefficient (e.g., -0.11% per C for Alnico).

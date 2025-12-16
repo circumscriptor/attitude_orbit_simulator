@@ -30,7 +30,7 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-vec3 spacecraft_dynamics::compute_total_acceleration(const vec3& r_eci, const vec3& gravity_disturbance) const {
+auto spacecraft_dynamics::compute_total_acceleration(const vec3& r_eci, const vec3& gravity_disturbance) const -> vec3 {
     const double r_norm_sq = r_eci.squaredNorm();
     const double r_norm    = std::sqrt(r_norm_sq);
 
@@ -39,7 +39,7 @@ vec3 spacecraft_dynamics::compute_total_acceleration(const vec3& r_eci, const ve
     return a_central + gravity_disturbance;
 }
 
-vec3 spacecraft_dynamics::compute_rod_effects(const system_state& state, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const {
+auto spacecraft_dynamics::compute_rod_effects(const system_state& state, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3 {
     const auto& rods     = _spacecraft->rods();
     const auto  num_rods = rods.size();
 
@@ -62,7 +62,8 @@ vec3 spacecraft_dynamics::compute_rod_effects(const system_state& state, const v
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-vec3 spacecraft_dynamics::compute_net_torque(const vec3& omega, const vec3& b_body, const vec3& rod_torque, const vec3& r_eci, const quat& q_att) const {
+auto spacecraft_dynamics::compute_net_torque(const vec3& omega, const vec3& b_body, const vec3& rod_torque, const vec3& r_eci, const quat& q_att) const
+    -> vec3 {
     vec3 torque = vec3::Zero();
 
     // permanent magnet
@@ -79,7 +80,7 @@ vec3 spacecraft_dynamics::compute_net_torque(const vec3& omega, const vec3& b_bo
     return torque;
 }
 
-vec3 spacecraft_dynamics::compute_gravity_gradient_torque(const vec3& r_eci, const quat& q_att) const {
+auto spacecraft_dynamics::compute_gravity_gradient_torque(const vec3& r_eci, const quat& q_att) const -> vec3 {
     // position to body frame: r_body = R * r_eci
     const vec3 r_body = q_att.toRotationMatrix().transpose() * r_eci;
 
@@ -91,7 +92,7 @@ vec3 spacecraft_dynamics::compute_gravity_gradient_torque(const vec3& r_eci, con
     return coef * r_body.cross(_spacecraft->inertia_tensor() * r_body);
 }
 
-vecX spacecraft_dynamics::compute_attitude_derivative(const quat& q, const vec3& omega) {
+auto spacecraft_dynamics::compute_attitude_derivative(const quat& q, const vec3& omega) -> vecX {
     // dq/dt = 0.5 * q * omega_quat
     const quat omega_q(0, omega.x(), omega.y(), omega.z());
     return 0.5 * (q * omega_q).coeffs();

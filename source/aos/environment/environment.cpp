@@ -28,7 +28,7 @@ environment_model::environment_model(double start_year_decimal, int degree)
 
 environment_model::~environment_model() = default;
 
-environment_data environment_model::calculate(double t_sec, const vec3& r_eci_m) const {
+auto environment_model::calculate(double t_sec, const vec3& r_eci_m) const -> environment_data {
     // update earth rotation and ecef position
     step_eci_to_ecef(t_sec, r_eci_m);
 
@@ -62,7 +62,7 @@ void environment_model::step_geodetic_conversion() const {
     _cache.R_enu_to_ecef << buf[0], buf[1], buf[2], buf[3], buf[4], buf[5], buf[6], buf[7], buf[8];  // NOLINT(readability-magic-numbers)
 }
 
-std::pair<vec3, vec3> environment_model::step_compute_physics_enu(double t_sec) const {
+auto environment_model::step_compute_physics_enu(double t_sec) const -> std::pair<vec3, vec3> {
     const double current_year = _start_year_decimal + (t_sec / seconds_per_year);
 
     // Gravity
@@ -85,7 +85,7 @@ std::pair<vec3, vec3> environment_model::step_compute_physics_enu(double t_sec) 
     };
 }
 
-environment_data environment_model::step_rotate_to_eci(const vec3& mag_enu, const vec3& grav_enu) const {
+auto environment_model::step_rotate_to_eci(const vec3& mag_enu, const vec3& grav_enu) const -> environment_data {
     // ENU -> ECEF -> ECI
     _cache.R_enu_to_eci = _cache.R_ecef_to_eci * _cache.R_enu_to_ecef;
     return {

@@ -11,7 +11,18 @@
 
 namespace aos {
 
-std::pair<vec3, vec3> orbital_converter::to_cartesian(const keplerian_elements& el) {
+void keplerian_elements::debug_print() const {
+    std::cout << "-- orbit properties --"                                           //
+              << "\n  semi-major axis:                   " << semi_major_axis_m     //
+              << "\n  eccentricity:                      " << eccentricity          //
+              << "\n  inclination:                       " << inclination_rad       //
+              << "\n  right ascension of ascending node: " << raan_rad              //
+              << "\n  argument of perapsis:              " << arg_of_periapsis_rad  //
+              << "\n  mean anomaly:                      " << mean_anomaly_rad      //
+              << '\n';
+}
+
+auto orbital_converter::to_cartesian(const keplerian_elements& el) -> std::pair<vec3, vec3> {
     // Kepler's Equation for Eccentric Anomaly (E)
     // M = E - e*sin(E)
     double e = el.mean_anomaly_rad;  // initial guess: E ~ M
@@ -55,17 +66,6 @@ std::pair<vec3, vec3> orbital_converter::to_cartesian(const keplerian_elements& 
         pqw_to_eci * r_pqw,
         pqw_to_eci * v_pqw,
     };
-}
-
-void keplerian_elements::debug_print() const {
-    std::cout << "-- orbit properties --"                                           //
-              << "\n  semi-major axis:                   " << semi_major_axis_m     //
-              << "\n  eccentricity:                      " << eccentricity          //
-              << "\n  inclination:                       " << inclination_rad       //
-              << "\n  right ascension of ascending node: " << raan_rad              //
-              << "\n  argument of perapsis:              " << arg_of_periapsis_rad  //
-              << "\n  mean anomaly:                      " << mean_anomaly_rad      //
-              << '\n';
 }
 
 }  // namespace aos

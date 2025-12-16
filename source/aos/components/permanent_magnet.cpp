@@ -30,7 +30,7 @@ permanent_magnet::permanent_magnet(double remanence_t, double volume_m3, const v
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-permanent_magnet permanent_magnet::cylindrical(double remanence_t, double length_m, double diameter_m, const vec3& orientation) {
+auto permanent_magnet::cylindrical(double remanence_t, double length_m, double diameter_m, const vec3& orientation) -> permanent_magnet {
     double radius = diameter_m / 2.0;
     double volume = std::numbers::pi * (radius * radius) * length_m;
     return {
@@ -41,7 +41,7 @@ permanent_magnet permanent_magnet::cylindrical(double remanence_t, double length
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-permanent_magnet permanent_magnet::rectangular(double remanence_t, double width_m, double height_m, double length_m, const vec3& orientation) {
+auto permanent_magnet::rectangular(double remanence_t, double width_m, double height_m, double length_m, const vec3& orientation) -> permanent_magnet {
     double volume = width_m * height_m * length_m;
     return {
         remanence_t,

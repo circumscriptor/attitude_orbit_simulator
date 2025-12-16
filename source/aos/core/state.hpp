@@ -66,27 +66,27 @@ struct system_state {
     }
 };
 
-inline system_state operator+(double scalar, const system_state& state) {
+inline auto operator+(double scalar, const system_state& state) -> system_state {
     return system_state{state} += scalar;
 }
 
-inline system_state operator+(const system_state& lhs, const system_state& rhs) {
+inline auto operator+(const system_state& lhs, const system_state& rhs) -> system_state {
     return system_state{lhs} += rhs;
 }
 
-inline system_state operator*(const system_state& state, double scalar) {
+inline auto operator*(const system_state& state, double scalar) -> system_state {
     return system_state{state} *= scalar;
 }
 
-inline system_state operator*(double scalar, const system_state& state) {
+inline auto operator*(double scalar, const system_state& state) -> system_state {
     return state * scalar;
 }
 
-inline system_state operator/(const system_state& lhs, const system_state& rhs) {
+inline auto operator/(const system_state& lhs, const system_state& rhs) -> system_state {
     return system_state{lhs} /= rhs;
 }
 
-inline aos::system_state abs(const aos::system_state& state) {
+inline auto abs(const aos::system_state& state) -> aos::system_state {
     aos::system_state result;
     result.rod_magnetizations.resize(state.rod_magnetizations.size());
     result.position           = state.position.cwiseAbs();
@@ -108,7 +108,9 @@ struct is_resizeable<aos::system_state> : boost::false_type {};
 // Define how to check if two states have the same size
 template <>
 struct same_size_impl<aos::system_state, aos::system_state> {
-    static bool same_size(const aos::system_state& s1, const aos::system_state& s2) { return s1.rod_magnetizations.size() == s2.rod_magnetizations.size(); }
+    static auto same_size(const aos::system_state& s1, const aos::system_state& s2) -> bool {
+        return s1.rod_magnetizations.size() == s2.rod_magnetizations.size();
+    }
 };
 
 // Define how to resize one state to match another
@@ -121,7 +123,7 @@ struct resize_impl<aos::system_state, aos::system_state> {
 template <>
 struct vector_space_norm_inf<aos::system_state> {
     using result_type = double;
-    double operator()(const aos::system_state& s) const {
+    auto operator()(const aos::system_state& s) const -> double {
         return std::max({
             s.position.cwiseAbs().maxCoeff(),
             s.velocity.cwiseAbs().maxCoeff(),

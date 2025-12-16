@@ -25,21 +25,18 @@ struct environment_data {
 class environment_model {
 public:
 
-    environment_model(const environment_model&)            = delete;
-    environment_model(environment_model&&)                 = delete;
-    environment_model& operator=(const environment_model&) = delete;
-    environment_model& operator=(environment_model&&)      = delete;
+    environment_model(const environment_model&)                    = delete;
+    environment_model(environment_model&&)                         = delete;
+    auto operator=(const environment_model&) -> environment_model& = delete;
+    auto operator=(environment_model&&) -> environment_model&      = delete;
 
     explicit environment_model(double start_year_decimal, int degree);
     virtual ~environment_model();
 
     [[nodiscard]]
-    environment_data calculate(double t_sec, const vec3& r_eci_m) const;
+    auto calculate(double t_sec, const vec3& r_eci_m) const -> environment_data;
 
-    [[nodiscard]]
-    double earth_mu() const {
-        return _gravity_model.MassConstant();
-    }
+    [[nodiscard]] auto earth_mu() const -> double { return _gravity_model.MassConstant(); }
 
 protected:
 
@@ -66,10 +63,10 @@ protected:
     void step_geodetic_conversion() const;
 
     /** Query GeographicLib models for ENU vectors. Returns { Magnetic_ENU, Gravity_ENU } */
-    [[nodiscard]] std::pair<vec3, vec3> step_compute_physics_enu(double t_sec) const;
+    [[nodiscard]] auto step_compute_physics_enu(double t_sec) const -> std::pair<vec3, vec3>;
 
     /**  Combine rotations and transform ENU vectors to ECI. */
-    [[nodiscard]] environment_data step_rotate_to_eci(const vec3& mag_enu, const vec3& grav_enu) const;
+    [[nodiscard]] auto step_rotate_to_eci(const vec3& mag_enu, const vec3& grav_enu) const -> environment_data;
 
 private:
 

@@ -25,7 +25,7 @@ struct simulation_parameters {
 
     void debug_print() const;
 
-    static simulation_parameters get_default();
+    static auto get_default() -> simulation_parameters;
 };
 
 }  // namespace aos

@@ -36,7 +36,7 @@ spacecraft::spacecraft(const mat3x3& inertia, const properties& properties)
     }
 }
 
-mat3x3 spacecraft::get_inertia_tensor(double m, double a, double b, double c) {
+auto spacecraft::get_inertia_tensor(double m, double a, double b, double c) -> mat3x3 {
     const double i_x = (1. / 12.) * m * (b * b + c * c);
     const double i_y = (1. / 12.) * m * (a * a + c * c);
     const double i_z = (1. / 12.) * m * (a * a + b * b);

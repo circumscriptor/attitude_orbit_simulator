@@ -35,7 +35,7 @@ void simulation_parameters::debug_print() const {
     std::cout << "----\n";
 }
 
-simulation_parameters simulation_parameters::get_default() {
+auto simulation_parameters::get_default() -> simulation_parameters {
     // NOLINTBEGIN(readability-magic-numbers)
     return {
         .satellite =

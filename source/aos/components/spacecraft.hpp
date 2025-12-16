@@ -31,12 +31,12 @@ public:
 
     spacecraft(const mat3x3& inertia, const properties& properties);
 
-    [[nodiscard]] const mat3x3&                   inertia_tensor() const { return _inertia_tensor; }
-    [[nodiscard]] const mat3x3&                   inertia_tensor_inverse() const { return _inertia_tensor_inverse; }
-    [[nodiscard]] const permanent_magnet&         magnet() const { return _magnet; }
-    [[nodiscard]] std::span<const hysteresis_rod> rods() const { return _rods; }
+    [[nodiscard]] auto inertia_tensor() const -> const mat3x3& { return _inertia_tensor; }
+    [[nodiscard]] auto inertia_tensor_inverse() const -> const mat3x3& { return _inertia_tensor_inverse; }
+    [[nodiscard]] auto magnet() const -> const permanent_magnet& { return _magnet; }
+    [[nodiscard]] auto rods() const -> std::span<const hysteresis_rod> { return _rods; }
 
-    static mat3x3 get_inertia_tensor(double m, double a, double b, double c);
+    static auto get_inertia_tensor(double m, double a, double b, double c) -> mat3x3;
 
 private:
 

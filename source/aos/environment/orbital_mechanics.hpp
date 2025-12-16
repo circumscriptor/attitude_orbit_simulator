@@ -25,7 +25,7 @@ public:
     static constexpr int    max_iter = 100;
 
     /** convert Keplerian elements to ECI cartesian state vectors, return {position, velocity} in ECI */
-    static std::pair<vec3, vec3> to_cartesian(const keplerian_elements& el);
+    static auto to_cartesian(const keplerian_elements& el) -> std::pair<vec3, vec3>;
 };
 
 }  // namespace aos
