@@ -16,20 +16,20 @@ namespace aos {
 void simulation_parameters::debug_print() const {
     std::cout << std::boolalpha;
 
-    spacecraft.debug_print();
+    satellite.debug_print();
     orbit.debug_print();
 
     std::cout << "-- simulation properties --";
-    std::cout << "\nangular velocity:                        " << angular_velocity.x() << ' ' << angular_velocity.y() << ' ' << angular_velocity.z()  //
-              << "\nsimulation year:                         " << simulation_year                                                                     //
-              << "\ngravity model degree:                    " << gravity_model_degree                                                                //
-              << "\nt start:                                 " << t_start                                                                             //
-              << "\nt end:                                   " << t_end                                                                               //
-              << "\ninitial dt:                              " << dt_initial                                                                          //
-              << "\nabsolute error:                          " << absolute_error                                                                      //
-              << "\nrelative error:                          " << relative_error                                                                      //
-              << "\nhigher order:                            " << higher_order                                                                        //
-              << "\ncheckpoint interval:                     " << checkpoint_interval                                                                 //
+    std::cout << "\n  angular velocity:                        " << angular_velocity.x() << ' ' << angular_velocity.y() << ' ' << angular_velocity.z()  //
+              << "\n  simulation year:                         " << simulation_year                                                                     //
+              << "\n  gravity model degree:                    " << gravity_model_degree                                                                //
+              << "\n  t start:                                 " << t_start                                                                             //
+              << "\n  t end:                                   " << t_end                                                                               //
+              << "\n  initial dt:                              " << dt_initial                                                                          //
+              << "\n  absolute error:                          " << absolute_error                                                                      //
+              << "\n  relative error:                          " << relative_error                                                                      //
+              << "\n  higher order:                            " << higher_order                                                                        //
+              << "\n  checkpoint interval:                     " << checkpoint_interval                                                                 //
               << '\n';
 
     std::cout << "----\n";
@@ -38,7 +38,7 @@ void simulation_parameters::debug_print() const {
 simulation_parameters simulation_parameters::get_default() {
     // NOLINTBEGIN(readability-magic-numbers)
     return {
-        .spacecraft =
+        .satellite =
             {.mass_g                      = 1300.0,                                  // 1.3 kg
              .dim_m                       = {0.1, 0.1, 0.1},                         // 10x10x10 cm
              .magnet_orientation          = {0.0, 0.0, 1.0},                         // Permanent Magnet: A Grade N35 NdFeB magnet

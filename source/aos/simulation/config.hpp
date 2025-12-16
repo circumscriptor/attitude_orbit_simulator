@@ -2,14 +2,13 @@
 
 #include "aos/components/spacecraft.hpp"
 #include "aos/core/types.hpp"
-// #include "aos/environment/environment.hpp"
 #include "aos/environment/orbital_mechanics.hpp"
 #include "aos/simulation/observer.hpp"
 
 namespace aos {
 
 struct simulation_parameters {
-    spacecraft::properties         spacecraft;
+    spacecraft::properties         satellite;
     keplerian_elements             orbit;
     csv_state_observer::properties observer;
 

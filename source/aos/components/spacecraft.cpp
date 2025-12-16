@@ -8,15 +8,15 @@
 namespace aos {
 
 void spacecraft::properties::debug_print() const {
-    std::cout << "--  spacecraft properties  --"                                                                                                            //
-              << "\nmass:                                    " << mass_g                                                                                    //
-              << "\ndimensions:                              " << dim_m.x() << ' ' << dim_m.y() << ' ' << dim_m.z()                                         //
-              << "\nmagnet orientation:                      " << magnet_orientation.x() << ' ' << magnet_orientation.y() << ' ' << magnet_orientation.z()  //
-              << "\nmagnet remanence:                        " << magnet_remanence                                                                          //
-              << "\nmagnet length:                           " << magnet_length                                                                             //
-              << "\nmagnet diameter:                         " << magnet_diameter                                                                           //
-              << "\nhysteresis rod volume:                   " << hysteresis_rod_volume                                                                     //
-              << "\nhysteresis rod orientations:             ";                                                                                             //
+    std::cout << "--  spacecraft properties  --"                                                                                                              //
+              << "\n  mass:                                    " << mass_g                                                                                    //
+              << "\n  dimensions:                              " << dim_m.x() << ' ' << dim_m.y() << ' ' << dim_m.z()                                         //
+              << "\n  magnet orientation:                      " << magnet_orientation.x() << ' ' << magnet_orientation.y() << ' ' << magnet_orientation.z()  //
+              << "\n  magnet remanence:                        " << magnet_remanence                                                                          //
+              << "\n  magnet length:                           " << magnet_length                                                                             //
+              << "\n  magnet diameter:                         " << magnet_diameter                                                                           //
+              << "\n  hysteresis rod volume:                   " << hysteresis_rod_volume                                                                     //
+              << "\n  hysteresis rod orientations:             ";                                                                                             //
 
     for (const auto& orientation : hysteresis_rod_orientations) {
         std::cout << '[' << orientation.x() << ' ' << orientation.y() << ' ' << orientation.z() << "] ";

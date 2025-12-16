@@ -34,7 +34,7 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
     using stepper_type_f78 = runge_kutta_fehlberg78<system_state, double, system_state, double, vector_space_algebra>;
     using stepper_type_dp5 = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
 
-    auto satellite   = std::make_shared<spacecraft>(params.spacecraft);
+    auto satellite   = std::make_shared<spacecraft>(params.satellite);
     auto environment = std::make_shared<environment_model>(params.simulation_year, params.gravity_model_degree);
 
     spacecraft_dynamics dynamics{satellite, environment};
@@ -49,7 +49,7 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
     current_state.velocity         = velocity;
     current_state.attitude         = aos::quat::Identity();
     current_state.angular_velocity = params.angular_velocity;
-    current_state.rod_magnetizations.resize(static_cast<std::ptrdiff_t>(params.spacecraft.hysteresis_rod_orientations.size()));
+    current_state.rod_magnetizations.resize(static_cast<std::ptrdiff_t>(params.satellite.hysteresis_rod_orientations.size()));
     current_state.rod_magnetizations.setZero();
 
     observer(current_state, params.t_start);
@@ -76,8 +76,8 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
                 for (std::ptrdiff_t i = 0; i < current_state.rod_magnetizations.size(); ++i) {
                     current_state.rod_magnetizations(i) = std::clamp(  //
                         current_state.rod_magnetizations(i),           //
-                        -params.spacecraft.hysteresis_params.ms,       //
-                        params.spacecraft.hysteresis_params.ms         //
+                        -params.satellite.hysteresis_params.ms,        //
+                        params.satellite.hysteresis_params.ms          //
                     );
                 }
 
