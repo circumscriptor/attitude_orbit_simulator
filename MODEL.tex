@@ -1,0 +1,228 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bm}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titling}
+
+\geometry{
+	left=10mm,
+	right=10mm,
+	top=15mm,
+	bottom=15mm,
+}
+
+\lstset{
+	language=C++,
+	basicstyle=\ttfamily\small,
+	keywordstyle=\color{blue}\bfseries,
+	stringstyle=\color{red},
+	commentstyle=\color{green!50!black},
+	numbers=none,
+	frame=single,
+	breaklines=true,
+	tabsize=4
+}
+
+\title{CubeSat Attitude Control Simulation}
+\author{AOCS Team}
+\date{\today}
+
+\fancyhf{}
+\fancyhead[C]{\MakeUppercase{\thetitle}}
+\fancyfoot[L]{\theauthor}
+\fancyfoot[C]{\thepage}
+\fancyfoot[R]{\thedate}
+\pagestyle{fancy}
+
+\begin{document}
+
+	\section{The State Vector $\mathbf{Y}$}
+
+	We define the complete state of the system as a single vector $\mathbf{Y}$:
+
+	\begin{equation}
+		\mathbf{Y} = [\mathbf{r}, \mathbf{v}, \mathbf{q}, \bm{\omega}, \mathbf{M}_{irr}]^T
+	\end{equation}
+
+	Where:
+	\begin{itemize}
+		\item $\mathbf{r}$: Position vector in the \textbf{ECI} (Inertial) frame ($m$).
+		\item $\mathbf{v}$: Velocity vector in the \textbf{ECI} frame ($m/s$).
+		\item $\mathbf{q}$: Attitude quaternion (ECI $\to$ Body frame), defined as $[w, x, y, z]$ with unit norm.
+		\item $\bm{\omega}$: Angular velocity vector in the \textbf{Body} frame ($rad/s$).
+		\item $\mathbf{M}_{irr}$: A vector containing the scalar irreversible magnetization for each hysteresis rod ($A/m$).
+	\end{itemize}
+
+	\section{The Differential Equation $\frac{d\mathbf{Y}}{dt}$}
+	\label{sec:diff_eq}
+
+	The system of first-order differential equations governing the state evolution is:
+
+	\begin{equation}
+		\frac{d\mathbf{Y}}{dt} = \begin{bmatrix}
+			\dot{\mathbf{r}} \\
+			\dot{\mathbf{v}} \\
+			\dot{\mathbf{q}} \\
+			\dot{\bm{\omega}} \\
+			\dot{\mathbf{M}}_{irr}
+		\end{bmatrix} = \begin{bmatrix}
+			\mathbf{v} \\
+			-\frac{\mu}{\lVert\mathbf{r}\rVert^3}\mathbf{r} + \mathbf{a}_{pert, ECI} \\
+			\frac{1}{2} \mathbf{q} \otimes [0, \omega_x, \omega_y, \omega_z]^T \\
+			\mathbf{I}^{-1} \left( \bm{\tau}_{total} - \bm{\omega} \times (\mathbf{I}\bm{\omega}) \right) \\
+			\mathbf{f}_{hyst}(\mathbf{B}_{body}, \dot{\mathbf{B}}_{body}, \mathbf{M}_{irr})
+		\end{bmatrix}
+	\end{equation}
+
+	\noindent \textit{Note: $\mu$ is the standard gravitational parameter, retrieved via \texttt{GeographicLib::GravityModel::GM()}. $\mathbf{a}_{pert, ECI}$ represents gravitational perturbations transformed into the inertial frame. The term $\mathbf{f}_{hyst}$ represents the complex nonlinear evolution of the hysteresis rods.}
+
+	\section{Simulation Workflow $f(t, \mathbf{Y})$}
+
+	\subsection{Time and Frame Setup}
+	We must bridge the gap between the Inertial frame (ECI) and the Earth-Fixed frame (ECEF/Geodetic).
+
+	\begin{enumerate}
+		\item \textbf{Calculate GMST (Greenwich Mean Sidereal Time):}\\
+		Compute the angle $\theta_{gst}$ based on the Julian Date derived from time $t$.
+
+		\item \textbf{Construct Rotation Matrix $\mathbf{R}_{ECEF}^{ECI}$:}
+		\begin{equation}
+			\mathbf{R}_{ECEF}^{ECI} = \begin{bmatrix}
+				\cos\theta_{gst} & -\sin\theta_{gst} & 0 \\
+				\sin\theta_{gst} & \cos\theta_{gst} & 0 \\
+				0 & 0 & 1
+			\end{bmatrix}
+		\end{equation}
+
+		\item \textbf{Position Conversion:}
+		\begin{equation}
+			\mathbf{r}_{ECEF} = (\mathbf{R}_{ECEF}^{ECI})^T \mathbf{r}_{ECI}
+		\end{equation}
+	\end{enumerate}
+
+	\subsection{GeographicLib Coordinates}
+	Use the \texttt{Geocentric} class to obtain Geodetic coordinates and the local frame rotation matrix.
+
+	\begin{lstlisting}
+GeographicLib::Geocentric earth(Constants::WGS84_a(), Constants::WGS84_f());
+double lat, lon, h;
+// Computes lat/lon/h AND the rotation from ENU to ECEF (M)
+earth.Reverse(r_ecef.x, r_ecef.y, r_ecef.z, lat, lon, h, M);
+	\end{lstlisting}
+
+	\begin{itemize}
+		\item \textbf{Input:} $\mathbf{r}_{ECEF}$.
+		\item \textbf{Output:} Latitude ($\phi$), Longitude ($\lambda$), Height ($h$).
+		\item \textbf{Output:} $\mathbf{R}_{ENU}^{ECEF}$ (Returned by \texttt{Reverse} as a $3\times3$ matrix or computed via \texttt{LocalCartesian}).
+	\end{itemize}
+
+	\subsection{Environmental Vectors}
+
+	\paragraph{A. Gravity Perturbations (GravityModel)}
+	\begin{enumerate}
+		\item Get disturbance in Local Tangent Plane (ENU).
+		\begin{lstlisting}
+grav.Disturbance(lat, lon, h, gx, gy, gz); // gx=East, gy=North, gz=Up
+Vector3d a_pert_ENU(gx, gy, gz);
+		\end{lstlisting}
+		\item Transform to Inertial Frame (ECI) for the integrator:
+		\begin{equation}
+			\mathbf{a}_{pert, ECI} = \mathbf{R}_{ECEF}^{ECI} \cdot \mathbf{R}_{ENU}^{ECEF} \cdot \mathbf{a}_{pert, ENU}
+		\end{equation}
+	\end{enumerate}
+
+	\paragraph{B. Magnetic Field (MagneticModel)}
+	\begin{enumerate}
+		\item Get field in ENU.
+		\begin{lstlisting}
+mag(year, lat, lon, h, Bx, By, Bz); // nT
+Vector3d B_ENU(Bx, By, Bz);
+B_ENU *= 1e-9; // Convert nT to Tesla
+		\end{lstlisting}
+		\item Transform to Body Frame (needed for Torque \& Hysteresis):
+		\begin{itemize}
+			\item First to ECI: $\mathbf{B}_{ECI} = \mathbf{R}_{ECEF}^{ECI} \cdot \mathbf{R}_{ENU}^{ECEF} \cdot \mathbf{B}_{ENU}$
+			\item Then to Body: $\mathbf{B}_{body} = \mathbf{R}_{ECI}^{Body}(\mathbf{q}) \cdot \mathbf{B}_{ECI}$
+		\end{itemize}
+	\end{enumerate}
+
+	\subsection{Magnetic Field Derivative ($\dot{\mathbf{B}}$)}
+	Hysteresis depends on how fast the field changes \textit{inside the rod}. This has two components: Orbit movement and Satellite tumbling.
+
+	\begin{equation}
+		\frac{d\mathbf{B}_{body}}{dt} = \underbrace{\mathbf{R}_{ECI}^{Body}(\mathbf{q}) \frac{\mathbf{B}_{ECI}(t) - \mathbf{B}_{ECI}(t-\Delta t)}{\Delta t}}_{\text{Orbital Change}} - \underbrace{\bm{\omega} \times \mathbf{B}_{body}}_{\text{Rotational Change}}
+	\end{equation}
+
+	\textbf{Logic Implementation:}
+	\begin{itemize}
+		\item If $t=0$, set $\dot{\mathbf{B}}_{body} = 0$ (or assume a small initial rate).
+		\item Store $\mathbf{B}_{ECI}(t)$ to use as $\mathbf{B}_{ECI}(t-\Delta t)$ in the \textit{next} integration step.
+		\item The term $-\bm{\omega} \times \mathbf{B}$ arises from the transport theorem (derivative of a vector in a rotating frame).
+	\end{itemize}
+
+	\subsection{Hysteresis Dynamics ($\dot{\mathbf{M}}_{irr}$)}
+	The function $\mathbf{f}_{hyst}$ mentioned in Section~\ref{sec:diff_eq} is computed here. For each rod $i$ aligned with the body axis unit vector $\mathbf{u}_i$:
+
+	\begin{enumerate}
+		\item \textbf{Project Field and Rate onto Rod:}
+		\begin{align}
+			H_i &= \frac{1}{\mu_0} (\mathbf{B}_{body} \cdot \mathbf{u}_i) \\
+			\dot{H}_i &= \frac{1}{\mu_0} \left( \frac{d\mathbf{B}_{body}}{dt} \cdot \mathbf{u}_i \right)
+		\end{align}
+
+		\item \textbf{Calculate Theoretical Anhysteretic Magnetization ($M_{an}$):}
+		\begin{align}
+			H_{eff} &= H_i + \alpha M_{irr, i} \\
+			M_{an} &= M_s \left( \coth\left(\frac{H_{eff}}{a}\right) - \frac{a}{H_{eff}} \right)
+		\end{align}
+
+		\item \textbf{Calculate Derivative (The Hysteresis Differential Equation):}\\
+		\textit{Note: The classic equation gives $dM/dH$. We require $dM/dt$ for the state integration.}
+		\begin{equation}
+			\frac{dM_{irr, i}}{dH} = \frac{M_{an} - M_{irr, i}}{k \delta} \quad \text{where } \delta = \text{sign}(\dot{H}_i)
+		\end{equation}
+		Applying the chain rule:
+		\begin{equation}
+			\frac{dM_{irr, i}}{dt} = \left( \frac{M_{an} - M_{irr, i}}{k \cdot \text{sign}(\dot{H}_i)} \right) \cdot \dot{H}_i
+		\end{equation}
+	\end{enumerate}
+
+	\subsection{Torque Dynamics ($\bm{\tau}_{total}$)}
+	The total external torque acting on the spacecraft is the sum of two components:
+	\begin{equation}
+		\bm{\tau}_{total} = \bm{\tau}_{mag} + \bm{\tau}_{grad}
+	\end{equation}
+
+	\subsubsection{Magnetic Torque ($\bm{\tau}_{mag}$)}
+	This is the interaction between the spacecraft's total dipole moment and the Earth's magnetic field. The dipole moment consists of the permanent magnet ($\mathbf{m}_{perm}$) and the hysteresis rods ($\mathbf{m}_{rods}$).
+
+	\begin{equation}
+		\mathbf{m}_{rods} = \sum_{i=1}^{N} \left( V_{rod} \cdot (M_{irr, i} + \chi_r H_i) \cdot \mathbf{u}_i \right)
+	\end{equation}
+	\textit{Note: $\chi_r H_i$ adds the reversible/linear component if explicit in the model; otherwise, $M_{total}$ is used.}
+
+	\begin{equation}
+		\bm{\tau}_{mag} = (\mathbf{m}_{perm} + \mathbf{m}_{rods}) \times \mathbf{B}_{body}
+	\end{equation}
+
+	\subsubsection{Gravity Gradient Torque ($\bm{\tau}_{grad}$)}
+	In LEO, the Earth's gravitational field varies across the body of the spacecraft, creating a torque that tries to align the minimum moment of inertia with the nadir vector.
+
+	\begin{equation}
+		\bm{\tau}_{grad} = \frac{3\mu}{\lVert\mathbf{r}\rVert^5} \left( \mathbf{r}_{body} \times (\mathbf{I} \cdot \mathbf{r}_{body}) \right)
+	\end{equation}
+
+	Where:
+	\begin{itemize}
+		\item $\mathbf{r}_{body} = \mathbf{R}_{ECI}^{Body} \cdot \mathbf{r}_{ECI}$ is the position vector in the Body frame.
+		\item $\mathbf{I}$ is the spacecraft inertia tensor.
+		\item $\mu$ is the Earth's standard gravitational parameter.
+	\end{itemize}
+
+\end{document}
