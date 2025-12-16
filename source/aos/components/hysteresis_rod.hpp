@@ -2,20 +2,22 @@
 
 #include "aos/core/types.hpp"
 
-#include <numbers>
-
 namespace aos {
 
 class hysteresis_rod {
 public:
 
-    static constexpr double vacuum_permeability = 4.0 * std::numbers::pi * 1e-7;  // [H/m] or [T*m/A]
-
     // Stability thresholds
+    static constexpr double epsilon_langevin = 1e-6;
+    static constexpr double epsilon_vector   = 1e-12;
+    // Threshold below which dh/dt is treated as static
+    static constexpr double epsilon_dh_dt = 1e-9;
+    // Threshold for singularity (denominator -> 0)
     static constexpr double epsilon_denominator = 1e-9;
-    static constexpr double epsilon_langevin    = 1e-6;
-    static constexpr double epsilon_dh_dt       = 1e-12;
-    static constexpr double epsilon_vector      = 1e-12;
+    // Tolerance for causality checks (preventing noise triggers)
+    static constexpr double tolerance_causality = 1e-12;
+    // Physical floor for 'k' to prevent division by zero in max_chi calculation
+    static constexpr double min_k_value = 1e-3;
 
     struct ja_parameters {
         double ms;     // Saturation Magnetization [A/m]
@@ -36,6 +38,9 @@ public:
      * @param ja_params J-A model parameters.
      */
     hysteresis_rod(double volume, const vec3& orientation, const ja_parameters& ja_params);
+
+    /** @brief Get J-A parameters of this hysteresis rod. */
+    [[nodiscard]] auto params() const -> ja_parameters { return _params; }
 
     /**
      * @brief Calculates the TOTAL magnetic dipole moment (Irreversible + Reversible).

@@ -143,10 +143,10 @@ def plot_data(filename, plot_types, display_mode, t_start=None, t_end=None):
             ax = axes[current_ax_idx]
             quat_cols = ["q_w", "q_x", "q_y", "q_z"]
             if show_comp and all(col in df.columns for col in quat_cols):
-                ax.plot(t, df["q_w"], label="w", linewidth=1.5)
-                ax.plot(t, df["q_x"], label="x", linewidth=1)
-                ax.plot(t, df["q_y"], label="y", linewidth=1)
-                ax.plot(t, df["q_z"], label="z", linewidth=1)
+                ax.plot(t, df["q_w"], label="qw", linewidth=1.5)
+                ax.plot(t, df["q_x"], label="qx", linewidth=1)
+                ax.plot(t, df["q_y"], label="qy", linewidth=1)
+                ax.plot(t, df["q_z"], label="qz", linewidth=1)
 
             if show_mag:
                 q_mag = np.sqrt(

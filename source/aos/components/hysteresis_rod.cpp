@@ -1,8 +1,10 @@
 #include "hysteresis_rod.hpp"
 
+#include "aos/core/constants.hpp"
 #include "aos/core/types.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -104,46 +106,63 @@ double hysteresis_rod::magnetization_derivative(double m_irr_am, const vec3& b_b
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 double hysteresis_rod::magnetization_derivative(double m_irr_am, double h_along_rod, double dh_dt) const {
-    // stop if we are at (or past) +ms and trying to go higher (dh/dt > 0)
+    // If saturated and driving further into saturation, no change possible.
     if (m_irr_am >= _params.ms && dh_dt > 0.0) {
         return 0.0;
     }
-    // stop if we are at (or past) -ms and trying to go lower (dh/dt < 0)
     if (m_irr_am <= -_params.ms && dh_dt < 0.0) {
         return 0.0;
     }
 
-    // change in field is negligible = no hysteresis evolution
+    // Skip calculation if field change is negligible (Static field)
     if (std::abs(dh_dt) < epsilon_dh_dt) {
         return 0.0;
     }
 
     const double m_irr_clamped = std::clamp(m_irr_am, -_params.ms, _params.ms);
+    const double h_eff         = calculate_h_eff(h_along_rod, m_irr_clamped);
+    const double m_an          = calculate_anhysteretic(h_eff);
+    const double delta         = (dh_dt > 0.0) ? 1.0 : -1.0;
+    const double numerator     = m_an - m_irr_clamped;
+    const double denominator   = (_params.k * delta) - (_params.alpha * numerator);
+    const double max_chi       = _params.ms / std::max(_params.k, min_k_value);
 
-    // intermediate magnetic states
-    const double h_eff = calculate_h_eff(h_along_rod, m_irr_clamped);
-    const double m_an  = calculate_anhysteretic(h_eff);
-
-    // directionality (delta)
-    // delta = +1 if dH/dt > 0, -1 if dH/dt < 0
-    const double delta = (dh_dt > 0.0) ? 1.0 : -1.0;
-
-    // Jiles-Atherton Differential Equation for Irreversible Magnetization
-    // dM_irr / dH = (M_an - M_irr) / (k*delta - alpha*(M_an - M_irr))
-    const double m_diff      = m_an - m_irr_clamped;
-    const double denominator = (_params.k * delta) - (_params.alpha * m_diff);
-
-    // singularity (infinite susceptibility)
+    double dmirr_dh = 0.0;
     if (std::abs(denominator) < epsilon_denominator) {
-        // max physical slope proportional to the sign of the numerator
-        const double safe_denom = std::copysign(epsilon_denominator, denominator);
-        const double dmirr_dh   = m_diff / safe_denom;
-        return dmirr_dh * dh_dt;
+        // Singularity Handling (0/0 check)
+        if (std::abs(numerator) < epsilon_denominator) {
+            dmirr_dh = 0.0;
+        } else {
+            // Cap to physical max limit, preserving direction
+            dmirr_dh = std::copysign(max_chi, numerator);
+        }
+    } else {
+        // Standard J-A Equation
+        dmirr_dh = numerator / denominator;
+
+        // Numerical Stability Clamp (Sign-Preserving)
+        if (std::abs(dmirr_dh) > max_chi) {
+            dmirr_dh = std::copysign(max_chi, dmirr_dh);
+        }
     }
 
-    // dM_irr/dt = (dM_irr/dH) * (dH/dt)
-    const double dmirr_dh = m_diff / denominator;
-    return dmirr_dh * dh_dt;
+    const double dm_irr_dt = dmirr_dh * dh_dt;
+
+    // Enforce that magnetization changes in the direction driven by the field.
+    // If H increases (dh_dt > 0), M_irr should not decrease.
+    // If H decreases (dh_dt < 0), M_irr should not increase.
+    // This prevents unphysical "active" behavior (energy generation) which
+    // can occur numerically in certain parameter regimes.
+
+    if (dh_dt > 0.0 && dm_irr_dt < -tolerance_causality) {
+        return 0.0;  // Field Increasing, but Math says M decreases -> Clamp
+    }
+
+    if (dh_dt < 0.0 && dm_irr_dt > tolerance_causality) {
+        return 0.0;  // Field Decreasing, but Math says M increases -> Clamp
+    }
+
+    return dm_irr_dt;
 }
 
 }  // namespace aos

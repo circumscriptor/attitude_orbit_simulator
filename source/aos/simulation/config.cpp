@@ -17,6 +17,7 @@ void simulation_parameters::debug_print() const {
     std::cout << std::boolalpha;
 
     spacecraft.debug_print();
+    orbit.debug_print();
 
     std::cout << "-- simulation properties --";
     std::cout << "\nangular velocity:                        " << angular_velocity.x() << ' ' << angular_velocity.y() << ' ' << angular_velocity.z()  //

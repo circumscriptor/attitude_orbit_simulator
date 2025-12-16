@@ -13,6 +13,8 @@ struct keplerian_elements {
     double raan_rad;              // Omega (Right Ascension of Ascending Node)
     double arg_of_periapsis_rad;  // omega (Argument of Periapsis)
     double mean_anomaly_rad;      // M (Initial placement)
+
+    void debug_print() const;
 };
 
 class orbital_converter {
