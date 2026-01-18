@@ -37,8 +37,8 @@ auto spacecraft_dynamics::compute_rod_effects(const system_state& state, const v
     const auto  num_rods = std::min(static_cast<std::ptrdiff_t>(rods.size()), state.rod_magnetizations.size());
 
     // ensure output vector is correctly sized
-    if (dm_dt_out.size() != static_cast<std::ptrdiff_t>(num_rods)) {
-        dm_dt_out.resize(static_cast<std::ptrdiff_t>(num_rods));
+    if (dm_dt_out.size() != num_rods) {
+        dm_dt_out.resize(num_rods);
     }
 
     vec3 total_torque = vec3::Zero();

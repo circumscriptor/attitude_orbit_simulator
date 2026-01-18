@@ -57,12 +57,12 @@ hysteresis_rod::hysteresis_rod(double volume, const vec3& orientation, const ja_
     }
 }
 
-double hysteresis_rod::calculate_h_eff(double h_along_rod, double m_val) const {
+auto hysteresis_rod::calculate_h_eff(double h_along_rod, double m_val) const -> double {
     // H_eff = H + alpha * M
     return h_along_rod + (_params.alpha * m_val);
 }
 
-double hysteresis_rod::calculate_anhysteretic(double h_eff_am) const {
+auto hysteresis_rod::calculate_anhysteretic(double h_eff_am) const -> double {
     const double ratio = h_eff_am / _params.a;
 
     // numerical stability for langevin function near zero
@@ -77,7 +77,7 @@ double hysteresis_rod::calculate_anhysteretic(double h_eff_am) const {
     return _params.ms * ((1.0 / std::tanh(ratio)) - (1.0 / ratio));
 }
 
-vec3 hysteresis_rod::magnetic_moment(double m_irr_am, const vec3& b_body_t) const {
+auto hysteresis_rod::magnetic_moment(double m_irr_am, const vec3& b_body_t) const -> vec3 {
     // get H field along the rod
     const double h_applied = b_body_t.dot(_orientation_body) / vacuum_permeability;
 
@@ -97,7 +97,7 @@ vec3 hysteresis_rod::magnetic_moment(double m_irr_am, const vec3& b_body_t) cons
     return m_total * _volume * _orientation_body;
 }
 
-double hysteresis_rod::magnetization_derivative(double m_irr_am, const vec3& b_body_t, const vec3& b_dot_body_t) const {
+auto hysteresis_rod::magnetization_derivative(double m_irr_am, const vec3& b_body_t, const vec3& b_dot_body_t) const -> double {
     // calculate H and dH/dt along the rod
     const double h_applied = b_body_t.dot(_orientation_body) / vacuum_permeability;
     const double dh_dt     = b_dot_body_t.dot(_orientation_body) / vacuum_permeability;
@@ -105,7 +105,7 @@ double hysteresis_rod::magnetization_derivative(double m_irr_am, const vec3& b_b
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-double hysteresis_rod::magnetization_derivative(double m_irr_am, double h_along_rod, double dh_dt) const {
+auto hysteresis_rod::magnetization_derivative(double m_irr_am, double h_along_rod, double dh_dt) const -> double {
     // If saturated and driving further into saturation, no change possible.
     if (m_irr_am >= _params.ms && dh_dt > 0.0) {
         return 0.0;
