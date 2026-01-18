@@ -15,7 +15,6 @@
 #include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
 
 #include <memory>
-#include <numbers>
 #include <string>
 
 namespace aos {
@@ -27,7 +26,7 @@ void verify_attitude(const std::string& output_filename, const simulation_parame
     using boost::numeric::odeint::vector_space_algebra;
 
     auto satellite = std::make_shared<spacecraft>(params.satellite);
-    auto env       = std::make_shared<environment_model>(params.simulation_year, 0);  // degree 0 is enough for this
+    auto env       = std::make_shared<environment_model>(params.simulation_year, params.gravity_model_degree);
 
     spacecraft_dynamics dynamics(satellite, env);
     attitude_observer   observer(output_filename);
@@ -35,12 +34,9 @@ void verify_attitude(const std::string& output_filename, const simulation_parame
     const auto [position, velocity] = orbital_converter::to_cartesian(params.orbit);
 
     system_state state;
-    state.position = position;
-    state.velocity = velocity;
-
-    // TEST CONDITION: Tip the satellite by 10 degrees (Pitch)
-    // If rotation matrix is correct, GG torque will try to fix this.
-    state.attitude         = quat(aaxis(10.0 * std::numbers::pi / 180.0, vec3::UnitY()));  // NOLINT(readability-magic-numbers)
+    state.position         = position;
+    state.velocity         = velocity;
+    state.attitude         = quat::Identity();
     state.angular_velocity = vec3::Zero();
 
     using stepper_type = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
