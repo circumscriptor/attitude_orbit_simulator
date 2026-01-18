@@ -10,6 +10,7 @@
 #include <boost/type_traits/integral_constant.hpp>
 
 #include <algorithm>
+#include <limits>
 
 namespace aos {
 
@@ -129,7 +130,7 @@ struct vector_space_norm_inf<aos::system_state> {
             s.velocity.cwiseAbs().maxCoeff(),
             s.attitude.coeffs().cwiseAbs().maxCoeff(),
             s.angular_velocity.cwiseAbs().maxCoeff(),
-            s.rod_magnetizations.cwiseAbs().maxCoeff(),
+            s.rod_magnetizations.size() > 0 ? s.rod_magnetizations.cwiseAbs().maxCoeff() : std::numeric_limits<double>::min(),
         });
     }
 };

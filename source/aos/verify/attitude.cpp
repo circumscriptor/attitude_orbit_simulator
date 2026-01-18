@@ -16,7 +16,6 @@
 
 #include <memory>
 #include <numbers>
-#include <print>
 #include <string>
 
 namespace aos {
@@ -43,13 +42,10 @@ void verify_attitude(const std::string& output_filename, const simulation_parame
     // If rotation matrix is correct, GG torque will try to fix this.
     state.attitude         = quat(aaxis(10.0 * std::numbers::pi / 180.0, vec3::UnitY()));  // NOLINT(readability-magic-numbers)
     state.angular_velocity = vec3::Zero();
-    state.rod_magnetizations.resize(0);
 
     using stepper_type = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
     auto stepper       = make_controlled<stepper_type>(default_absolute_error, default_relative_error);
-
-    std::println("Verifying Attitude (Gravity Gradient & Rotation Frames)...");
-    integrate_adaptive(stepper, dynamics, state, 0.0, params.t_end, 0.5, observer);
+    integrate_adaptive(stepper, dynamics, state, params.t_start, params.t_end, params.dt_initial, observer);
 }
 
 }  // namespace aos

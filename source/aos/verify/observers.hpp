@@ -38,6 +38,10 @@ public:
     explicit attitude_observer(const std::string& filename);
     void operator()(const system_state& state, double t) const;
 
+protected:
+
+    static auto calculate_nadir_error(const system_state& state) -> double;
+
 private:
 
     std::shared_ptr<std::ofstream> _file;

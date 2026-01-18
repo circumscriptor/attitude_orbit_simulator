@@ -3,6 +3,7 @@
 #include "aos/core/state.hpp"
 #include "aos/core/types.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 
@@ -19,7 +20,7 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
     state_derivative.position = v_eci;
     state_derivative.velocity = env_data.gravity_eci_m_s2;
 
-    const mat3x3 R_eci_to_body    = q_att.toRotationMatrix() /*.transpose()*/;  // NOLINT(readability-identifier-naming)
+    const mat3x3 R_eci_to_body    = q_att.toRotationMatrix().transpose();  // NOLINT(readability-identifier-naming)
     const vec3   b_body           = R_eci_to_body * env_data.magnetic_field_eci_t;
     const vec3   b_dot_orbital    = R_eci_to_body * env_data.magnetic_field_dot_eci_t_s;
     const vec3   b_dot_rotational = -omega_body.cross(b_body);
@@ -33,7 +34,7 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
 
 auto spacecraft_dynamics::compute_rod_effects(const system_state& state, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3 {
     const auto& rods     = _spacecraft->rods();
-    const auto  num_rods = rods.size();
+    const auto  num_rods = std::min(static_cast<std::ptrdiff_t>(rods.size()), state.rod_magnetizations.size());
 
     // ensure output vector is correctly sized
     if (dm_dt_out.size() != static_cast<std::ptrdiff_t>(num_rods)) {
@@ -41,11 +42,11 @@ auto spacecraft_dynamics::compute_rod_effects(const system_state& state, const v
     }
 
     vec3 total_torque = vec3::Zero();
-    for (std::size_t i = 0; i < num_rods; ++i) {
+    for (std::ptrdiff_t i = 0; i < num_rods; ++i) {
         const double m_irr = state.rod_magnetizations(static_cast<int>(i));
 
         // dM_irr/dt
-        dm_dt_out(static_cast<std::ptrdiff_t>(i)) = rods[i].magnetization_derivative(m_irr, b_body, b_dot_body);
+        dm_dt_out(i) = rods[i].magnetization_derivative(m_irr, b_body, b_dot_body);
 
         // tau = m_dipole x B
         total_torque += rods[i].magnetic_moment(m_irr, b_body).cross(b_body);
@@ -74,7 +75,7 @@ auto spacecraft_dynamics::compute_net_torque(const vec3& omega, const vec3& b_bo
 
 auto spacecraft_dynamics::compute_gravity_gradient_torque(const vec3& r_eci, const quat& q_att) const -> vec3 {
     // position to body frame: r_body = R * r_eci
-    const vec3 r_body = q_att.toRotationMatrix() /*.transpose()*/ * r_eci;
+    const vec3 r_body = q_att.toRotationMatrix().transpose() * r_eci;
 
     const double r_sq  = r_body.squaredNorm();
     const double r_val = std::sqrt(r_sq);

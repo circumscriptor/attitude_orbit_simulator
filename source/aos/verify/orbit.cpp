@@ -41,11 +41,10 @@ void verify_orbit(const std::string& output_filename, const simulation_parameter
     state.velocity         = velocity;
     state.attitude         = quat::Identity();
     state.angular_velocity = vec3::Zero();
-    state.rod_magnetizations.resize(0);  // No rods for pure orbit test
 
     using stepper_type = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
     auto stepper       = make_controlled<stepper_type>(default_absolute_error, default_relative_error);
-    integrate_adaptive(stepper, dynamics, state, 0.0, params.t_end, 1.0, observer);
+    integrate_adaptive(stepper, dynamics, state, params.t_start, params.t_end, params.dt_initial, observer);
 }
 
 }  // namespace aos
