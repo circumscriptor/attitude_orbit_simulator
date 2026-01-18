@@ -62,27 +62,31 @@ auto environment_model::compute_fields_at(double t_sec, const vec3& r_eci_m) con
     update_ecef_transform(t_sec, r_eci_m);
     update_geodetic_conversion();
 
-    // ENU -> ECEF -> ECI
-    _cache.R_enu_to_eci = _cache.R_ecef_to_eci * _cache.R_enu_to_ecef;
-
     const double current_year = _start_year_decimal + (t_sec / seconds_per_year);
 
     double bx{};
     double by{};
     double bz{};
-    double gx{};
-    double gy{};
-    double gz{};
+    double gx_ecef{};
+    double gy_ecef{};
+    double gz_ecef{};
 
     _magnetic_model(current_year, _cache.lat_deg, _cache.lon_deg, _cache.h_m, bx, by, bz);
-    _gravity_model.Gravity(_cache.lat_deg, _cache.lon_deg, _cache.h_m, gx, gy, gz);
-
     const vec3 b_enu(bx * nanotesla_to_tesla, by * nanotesla_to_tesla, bz * nanotesla_to_tesla);
-    const vec3 g_enu(gx, gy, gz);
+
+    // ENU -> ECEF -> ECI
+    const mat3x3 R_enu_to_eci = _cache.R_ecef_to_eci * _cache.R_enu_to_ecef;  // NOLINT(readability-identifier-naming)
+    const vec3   b_eci        = R_enu_to_eci * b_enu;
+
+    _gravity_model.V(_cache.r_ecef_m.x(), _cache.r_ecef_m.y(), _cache.r_ecef_m.z(), gx_ecef, gy_ecef, gz_ecef);
+
+    // ECEF -> ECI
+    const vec3 g_ecef(gx_ecef, gy_ecef, gz_ecef);
+    const vec3 g_eci = _cache.R_ecef_to_eci * g_ecef;
 
     return {
-        .b_eci = _cache.R_enu_to_eci * b_enu,
-        .g_eci = _cache.R_enu_to_eci * g_enu,
+        .b_eci = b_eci,
+        .g_eci = g_eci,
     };
 }
 
