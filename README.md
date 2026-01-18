@@ -107,8 +107,8 @@ Generate a hysteresis loop curve to verify the physics model corresponds to the 
 ## Results
 
 ### Orbit Visualization
-A 7200-second validation of the orbital propagator using EGM2008 gravity (Degree 12).
-![Orbit Visualization](results/orbit_sim_7200s.png)
+Validation of the orbital propagator using EGM2008 gravity (Degree 12).
+![Orbit Visualization](results/orbit_sim_5e5.png)
 
 ### Detumbling Phase (First 2 Weeks)
 
