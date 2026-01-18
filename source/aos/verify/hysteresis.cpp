@@ -2,8 +2,8 @@
 
 #include "aos/components/hysteresis_rod.hpp"
 #include "aos/core/constants.hpp"
-#include "aos/verify/bh_observer.hpp"
 #include "aos/verify/hysteresis_loop_dynamics.hpp"
+#include "aos/verify/observers.hpp"
 
 #include <boost/numeric/odeint.hpp>
 #include <boost/numeric/odeint/integrate/integrate_adaptive.hpp>

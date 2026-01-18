@@ -20,7 +20,7 @@ struct system_state {
     vec3 angular_velocity;
     vecX rod_magnetizations;
 
-    system_state& operator+=(const system_state& other) {
+    auto operator+=(const system_state& other) -> system_state& {
         position += other.position;
         velocity += other.velocity;
         attitude.coeffs() += other.attitude.coeffs();
@@ -29,7 +29,7 @@ struct system_state {
         return *this;
     }
 
-    system_state& operator+=(double scalar) {
+    auto operator+=(double scalar) -> system_state& {
         position.array() += scalar;
         velocity.array() += scalar;
         attitude.coeffs().array() += scalar;
@@ -38,7 +38,7 @@ struct system_state {
         return *this;
     }
 
-    system_state& operator-=(const system_state& other) {
+    auto operator-=(const system_state& other) -> system_state& {
         position -= other.position;
         velocity -= other.velocity;
         attitude.coeffs() -= other.attitude.coeffs();
@@ -47,7 +47,7 @@ struct system_state {
         return *this;
     }
 
-    system_state& operator*=(double scalar) {
+    auto operator*=(double scalar) -> system_state& {
         position *= scalar;
         velocity *= scalar;
         attitude.coeffs() *= scalar;
@@ -56,7 +56,7 @@ struct system_state {
         return *this;
     }
 
-    system_state& operator/=(const system_state& other) {
+    auto operator/=(const system_state& other) -> system_state& {
         position.cwiseQuotient(other.position);
         velocity.cwiseQuotient(other.velocity);
         attitude.coeffs().cwiseQuotient(other.attitude.coeffs());

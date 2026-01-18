@@ -1,7 +1,9 @@
 #include "aos/core/types.hpp"
 #include "aos/simulation/config.hpp"
 #include "aos/simulation/simulation.hpp"
+#include "aos/verify/attitude.hpp"
 #include "aos/verify/hysteresis.hpp"
+#include "aos/verify/orbit.hpp"
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
@@ -99,15 +101,17 @@ int main(int argc, char** argv) {
         ("hysteresis-alpha", value<double>(&params.satellite.hysteresis_params.alpha), "Inter-domain coupling");      //
 
     options_description other("Other options");
-    other.add_options()                                                                                                                            //
-        ("higher-order", bool_switch(&params.higher_order), "Use higher order solver (Runge-Kutta-Fehlberg 7/8)")                                  //
-        ("absolute-error", value<double>(&params.absolute_error), "Integration solver's absolute error tolerance")                                 //
-        ("relative-error", value<double>(&params.relative_error), "Integration solver's relative error tolerance")                                 //
-        ("verify-hysteresis", "Calculate hysteresis curve for the given material instead of simulation")                                           //
-        ("no-observe-element", bool_switch(&params.observer.exclude_elements), "Exclude per-element values from output")                           //
-        ("no-observe-magnitude", bool_switch(&params.observer.exclude_magnitudes), "Exclude magnitude values from output")                         //
-        ("hysteresis-material", value<std::string>()->default_value("hymu80"), "The material for hysteresis generation (not supported yet)")       //
-        ("checkpoint-interval", value<double>(&params.checkpoint_interval), "Checkpoint interval instead of full simulation [s] (at least 1.0)");  //
+    other.add_options()                                                                                                                           //
+        ("absolute-error", value<double>(&params.absolute_error), "Integration solver's absolute error tolerance")                                //
+        ("checkpoint-interval", value<double>(&params.checkpoint_interval), "Checkpoint interval instead of full simulation [s] (at least 1.0)")  //
+        ("higher-order", bool_switch(&params.higher_order), "Use higher order solver (Runge-Kutta-Fehlberg 7/8)")                                 //
+        ("hysteresis-material", value<std::string>()->default_value("hymu80"), "The material for hysteresis generation (not supported yet)")      //
+        ("no-observe-element", bool_switch(&params.observer.exclude_elements), "Exclude per-element values from output")                          //
+        ("no-observe-magnitude", bool_switch(&params.observer.exclude_magnitudes), "Exclude magnitude values from output")                        //
+        ("relative-error", value<double>(&params.relative_error), "Integration solver's relative error tolerance")                                //
+        ("verify-attitude", "Run attitude simulation (verification)")                                                                             //
+        ("verify-hysteresis", "Calculate hysteresis curve for the given material instead of simulation")                                          //
+        ("verify-orbit", "Run orbit simulation (verification)");                                                                                  //
 
     options_description options(help_line_width);
     options  //
@@ -178,6 +182,12 @@ int main(int argc, char** argv) {
         if (vm.contains("verify-hysteresis")) {
             params.satellite.hysteresis_params.debug_print();
             aos::verify_hysteresis(vm["output"].as<std::string>(), params.satellite.hysteresis_params);
+        } else if (vm.contains("verify-attitude")) {
+            params.debug_print();
+            aos::verify_attitude(vm["output"].as<std::string>(), params);
+        } else if (vm.contains("verify-orbit")) {
+            params.debug_print();
+            aos::verify_orbit(vm["output"].as<std::string>(), params);
         } else {
             params.debug_print();
             aos::run_simulation(vm["output"].as<std::string>(), params);
