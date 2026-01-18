@@ -14,29 +14,21 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
     const vec3&  v_eci      = current_state.velocity;
     const quat   q_att      = current_state.attitude.normalized();  // normalize to prevent drift
     const vec3&  omega_body = current_state.angular_velocity;
-    const auto   env_data   = _environment->calculate(t_global, r_eci);
+    const auto   env_data   = _environment->calculate(t_global, r_eci, v_eci);
 
     state_derivative.position = v_eci;
-    state_derivative.velocity = compute_total_acceleration(r_eci, env_data.gravity_disturbance_eci_m_s2);
+    state_derivative.velocity = env_data.gravity_eci_m_s2;
 
     const mat3x3 R_eci_to_body    = q_att.toRotationMatrix().transpose();  // NOLINT(readability-identifier-naming)
     const vec3   b_body           = R_eci_to_body * env_data.magnetic_field_eci_t;
-    const vec3   b_dot_body       = -omega_body.cross(b_body);
+    const vec3   b_dot_orbital    = R_eci_to_body * env_data.magnetic_field_dot_eci_t_s;
+    const vec3   b_dot_rotational = -omega_body.cross(b_body);
+    const vec3   b_dot_body       = b_dot_orbital + b_dot_rotational;
     const vec3   total_rod_torque = compute_rod_effects(current_state, b_body, b_dot_body, state_derivative.rod_magnetizations);
     const vec3   net_torque       = compute_net_torque(omega_body, b_body, total_rod_torque, r_eci, q_att);
 
     state_derivative.angular_velocity  = _spacecraft->inertia_tensor_inverse() * net_torque;
     state_derivative.attitude.coeffs() = compute_attitude_derivative(q_att, omega_body);
-}
-
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto spacecraft_dynamics::compute_total_acceleration(const vec3& r_eci, const vec3& gravity_disturbance) const -> vec3 {
-    const double r_norm_sq = r_eci.squaredNorm();
-    const double r_norm    = std::sqrt(r_norm_sq);
-
-    // newtonian central force: a = -mu/r^3 * r
-    const vec3 a_central = -(_environment->earth_mu() / (r_norm_sq * r_norm)) * r_eci;
-    return a_central + gravity_disturbance;
 }
 
 auto spacecraft_dynamics::compute_rod_effects(const system_state& state, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3 {

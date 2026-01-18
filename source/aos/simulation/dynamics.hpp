@@ -43,9 +43,6 @@ public:
 
 protected:
 
-    // -mu*r/r^3 + perturbations
-    [[nodiscard]] auto compute_total_acceleration(const vec3& r_eci, const vec3& gravity_disturbance) const -> vec3;
-
     // compute total rod torque and dM/dt for each rod, returns the total torque exerted by all rods, writes dM/dt values into the dM_dt_out
     [[nodiscard]] auto compute_rod_effects(const system_state& state, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3;
 

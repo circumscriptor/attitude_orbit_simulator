@@ -6,7 +6,6 @@
 #include <GeographicLib/GravityModel.hpp>
 #include <GeographicLib/MagneticModel.hpp>
 
-#include <utility>
 #include <vector>
 
 namespace aos {
@@ -18,8 +17,9 @@ struct geodetic_coords {
 };
 
 struct environment_data {
-    vec3 magnetic_field_eci_t;          // Tesla
-    vec3 gravity_disturbance_eci_m_s2;  // m/s^2
+    vec3 magnetic_field_eci_t;        // B (Tesla)
+    vec3 magnetic_field_dot_eci_t_s;  // dB/dt (Tesla/s) - Material Derivative
+    vec3 gravity_eci_m_s2;            // Total Gravity (m/s^2)
 };
 
 class environment_model {
@@ -33,8 +33,13 @@ public:
     explicit environment_model(double start_year_decimal, int degree);
     virtual ~environment_model();
 
-    [[nodiscard]]
-    auto calculate(double t_sec, const vec3& r_eci_m) const -> environment_data;
+    /**
+     * @brief Computes environmental vectors.
+     * @param t_sec Global simulation time.
+     * @param r_eci_m Position vector in ECI frame.
+     * @param v_eci_m_s Velocity vector in ECI frame (required for magnetic gradient).
+     */
+    [[nodiscard]] auto calculate(double t_sec, const vec3& r_eci_m, const vec3& v_eci_m_s) const -> environment_data;
 
     [[nodiscard]] auto earth_mu() const -> double { return _gravity_model.MassConstant(); }
 
@@ -56,17 +61,19 @@ protected:
         vec3   r_ecef_m;
     };
 
+    struct field_at_point {
+        vec3 b_eci;
+        vec3 g_eci;
+    };
+
+    /** Compute magnetic and gravity fields at a specific spacetime point. */
+    [[nodiscard]] auto compute_fields_at(double t_sec, const vec3& r_eci_m) const -> field_at_point;
+
     /** Compute Earth rotation and transform position ECI -> ECEF. */
-    void step_eci_to_ecef(double t_sec, const vec3& r_eci_m) const;
+    void update_ecef_transform(double t_sec, const vec3& r_eci_m) const;
 
-    /**  Convert ECEF -> Geodetic and compute ENU basis. */
-    void step_geodetic_conversion() const;
-
-    /** Query GeographicLib models for ENU vectors. Returns { Magnetic_ENU, Gravity_ENU } */
-    [[nodiscard]] auto step_compute_physics_enu(double t_sec) const -> std::pair<vec3, vec3>;
-
-    /**  Combine rotations and transform ENU vectors to ECI. */
-    [[nodiscard]] auto step_rotate_to_eci(const vec3& mag_enu, const vec3& grav_enu) const -> environment_data;
+    /** Convert ECEF -> Geodetic and compute ENU basis. */
+    void update_geodetic_conversion() const;
 
 private:
 

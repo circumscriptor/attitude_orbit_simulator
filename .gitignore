@@ -5,3 +5,6 @@ __pycache__/
 
 # Default output (testing)
 output.csv
+
+# Other files
+imgui.ini

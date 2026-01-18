@@ -73,14 +73,37 @@
 			\dot{\mathbf{M}}_{irr}
 		\end{bmatrix} = \begin{bmatrix}
 			\mathbf{v} \\
-			-\frac{\mu}{\lVert\mathbf{r}\rVert^3}\mathbf{r} + \mathbf{a}_{pert, ECI} \\
+			\mathbf{g}_{\text{total}}(\mathbf{r}, t) \\
 			\frac{1}{2} \mathbf{q} \otimes [0, \omega_x, \omega_y, \omega_z]^T \\
 			\mathbf{I}^{-1} \left( \bm{\tau}_{total} - \bm{\omega} \times (\mathbf{I}\bm{\omega}) \right) \\
 			\mathbf{f}_{hyst}(\mathbf{B}_{body}, \dot{\mathbf{B}}_{body}, \mathbf{M}_{irr})
 		\end{bmatrix}
 	\end{equation}
 
-	\noindent \textit{Note: $\mu$ is the standard gravitational parameter, retrieved via \texttt{GeographicLib::GravityModel::GM()}. $\mathbf{a}_{pert, ECI}$ represents gravitational perturbations transformed into the inertial frame. The term $\mathbf{f}_{hyst}$ represents the complex nonlinear evolution of the hysteresis rods.}
+	\subsection{Gravitational Acceleration}
+	The term $\mathbf{g}_{\text{total}}(\mathbf{r}, t)$ represents the total gravitational acceleration vector in the ECI frame. It is computed via the \texttt{GeographicLib::GravityModel}, which evaluates the gradient of the Earth's geopotential $V$:
+
+	\begin{equation}
+		\mathbf{g}_{\text{total}} = \nabla V(r, \theta, \lambda)
+	\end{equation}
+
+	The potential $V$ is defined by a spherical harmonic expansion (EGM2008 model):
+	\begin{equation}
+		V(r, \theta, \lambda) = \frac{GM}{r} \left[ 1 + \sum_{n=2}^{N} \left(\frac{a}{r}\right)^n \sum_{m=0}^{n} (C_{nm} \cos m\lambda + S_{nm} \sin m\lambda) P_{nm}(\cos \theta) \right]
+	\end{equation}
+
+	This naturally includes the central Newtonian term ($n=0$), the $J_2$ oblateness perturbation ($n=2, m=0$), and higher-order zonal and tesseral harmonics up to degree $N$.
+
+	\noindent \textit{Note: The term $\mathbf{f}_{hyst}$ represents the complex nonlinear evolution of the hysteresis rods, detailed in Section 3.5.}
+
+	\subsection{Quaternion Normalization}
+	The quaternion derivative $\dot{\mathbf{q}} = \frac{1}{2} \mathbf{q} \otimes [0, \omega_x, \omega_y, \omega_z]^T$ is exact, but numerical integration causes quaternions to drift from unit norm due to accumulated roundoff errors. To maintain the constraint $\|\mathbf{q}\| = 1$, the quaternion is explicitly normalized at regular intervals during integration:
+
+	\begin{equation}
+		\mathbf{q}_{\text{normalized}} = \frac{\mathbf{q}}{\|\mathbf{q}\|}
+	\end{equation}
+
+	This is performed every $N$ integration steps (typically $N = 10$) to prevent numerical drift while minimizing computational overhead.
 
 	\section{Simulation Workflow $f(t, \mathbf{Y})$}
 
@@ -88,14 +111,14 @@
 	We must bridge the gap between the Inertial frame (ECI) and the Earth-Fixed frame (ECEF/Geodetic).
 
 	\begin{enumerate}
-		\item \textbf{Calculate GMST (Greenwich Mean Sidereal Time):}\\
-		Compute the angle $\theta_{gst}$ based on the Julian Date derived from time $t$.
+		\item \textbf{Calculate Earth Rotation Angle:}\\
+		Compute the rotation angle $\theta_{rot} = \omega_{\oplus} \cdot t$, where $\omega_{\oplus} = 7.2921159 \times 10^{-5}$ rad/s is Earth's rotation rate.
 
 		\item \textbf{Construct Rotation Matrix $\mathbf{R}_{ECEF}^{ECI}$:}
 		\begin{equation}
 			\mathbf{R}_{ECEF}^{ECI} = \begin{bmatrix}
-				\cos\theta_{gst} & -\sin\theta_{gst} & 0 \\
-				\sin\theta_{gst} & \cos\theta_{gst} & 0 \\
+				\cos\theta_{rot} & -\sin\theta_{rot} & 0 \\
+				\sin\theta_{rot} & \cos\theta_{rot} & 0 \\
 				0 & 0 & 1
 			\end{bmatrix}
 		\end{equation}
@@ -112,59 +135,83 @@
 	\begin{lstlisting}
 GeographicLib::Geocentric earth(Constants::WGS84_a(), Constants::WGS84_f());
 double lat, lon, h;
-// Computes lat/lon/h AND the rotation from ENU to ECEF (M)
+std::vector<double> M;
+// Computes lat/lon/h AND the rotation from ENU to ECEF
 earth.Reverse(r_ecef.x, r_ecef.y, r_ecef.z, lat, lon, h, M);
 	\end{lstlisting}
 
 	\begin{itemize}
 		\item \textbf{Input:} $\mathbf{r}_{ECEF}$.
 		\item \textbf{Output:} Latitude ($\phi$), Longitude ($\lambda$), Height ($h$).
-		\item \textbf{Output:} $\mathbf{R}_{ENU}^{ECEF}$ (Returned by \texttt{Reverse} as a $3\times3$ matrix or computed via \texttt{LocalCartesian}).
+		\item \textbf{Output:} $\mathbf{R}_{ENU}^{ECEF}$ as a $3\times3$ matrix.
 	\end{itemize}
 
 	\subsection{Environmental Vectors}
 
-	\paragraph{A. Gravity Perturbations (GravityModel)}
-	\begin{enumerate}
-		\item Get disturbance in Local Tangent Plane (ENU).
-		\begin{lstlisting}
-grav.Disturbance(lat, lon, h, gx, gy, gz); // gx=East, gy=North, gz=Up
-Vector3d a_pert_ENU(gx, gy, gz);
-		\end{lstlisting}
-		\item Transform to Inertial Frame (ECI) for the integrator:
-		\begin{equation}
-			\mathbf{a}_{pert, ECI} = \mathbf{R}_{ECEF}^{ECI} \cdot \mathbf{R}_{ENU}^{ECEF} \cdot \mathbf{a}_{pert, ENU}
-		\end{equation}
-	\end{enumerate}
-
-	\paragraph{B. Magnetic Field (MagneticModel)}
-	\begin{enumerate}
-		\item Get field in ENU.
-		\begin{lstlisting}
-mag(year, lat, lon, h, Bx, By, Bz); // nT
-Vector3d B_ENU(Bx, By, Bz);
-B_ENU *= 1e-9; // Convert nT to Tesla
-		\end{lstlisting}
-		\item Transform to Body Frame (needed for Torque \& Hysteresis):
-		\begin{itemize}
-			\item First to ECI: $\mathbf{B}_{ECI} = \mathbf{R}_{ECEF}^{ECI} \cdot \mathbf{R}_{ENU}^{ECEF} \cdot \mathbf{B}_{ENU}$
-			\item Then to Body: $\mathbf{B}_{body} = \mathbf{R}_{ECI}^{Body}(\mathbf{q}) \cdot \mathbf{B}_{ECI}$
-		\end{itemize}
-	\end{enumerate}
-
-	\subsection{Magnetic Field Derivative ($\dot{\mathbf{B}}$)}
-	Hysteresis depends on how fast the field changes \textit{inside the rod}. This has two components: Orbit movement and Satellite tumbling.
-
+	\paragraph{A. Gravitational Acceleration (GravityModel)}
+	The gravity vector is obtained in the Local Tangent Plane (ENU) and includes all perturbations:
+	\begin{lstlisting}
+// Returns total acceleration g (including J2, higher harmonics)
+grav.Gravity(lat, lon, h, gx, gy, gz);
+Vector3d g_ENU(gx, gy, gz);
+	\end{lstlisting}
+	Transform to Inertial Frame (ECI):
 	\begin{equation}
-		\frac{d\mathbf{B}_{body}}{dt} = \underbrace{\mathbf{R}_{ECI}^{Body}(\mathbf{q}) \frac{\mathbf{B}_{ECI}(t) - \mathbf{B}_{ECI}(t-\Delta t)}{\Delta t}}_{\text{Orbital Change}} - \underbrace{\bm{\omega} \times \mathbf{B}_{body}}_{\text{Rotational Change}}
+		\mathbf{g}_{\text{total}}(\mathbf{r}, t) = \mathbf{R}_{ECEF}^{ECI} \cdot \mathbf{R}_{ENU}^{ECEF} \cdot \mathbf{g}_{ENU}
 	\end{equation}
 
-	\textbf{Logic Implementation:}
+	\paragraph{B. Magnetic Field (MagneticModel)}
+	The magnetic field vector is obtained in ENU coordinates:
+	\begin{lstlisting}
+mag(year, lat, lon, h, Bx, By, Bz); // Output in nT
+Vector3d B_ENU(Bx * 1e-9, By * 1e-9, Bz * 1e-9); // Convert to Tesla
+	\end{lstlisting}
+	Transform to ECI frame:
+	\begin{equation}
+		\mathbf{B}_{ECI} = \mathbf{R}_{ECEF}^{ECI} \cdot \mathbf{R}_{ENU}^{ECEF} \cdot \mathbf{B}_{ENU}
+	\end{equation}
+
+	\subsection{Magnetic Field Derivative ($\dot{\mathbf{B}}_{ECI}$)}
+
+	The time derivative of the magnetic field in the ECI frame is computed using a numerical spatial gradient approach. This captures the \textbf{material derivative} (also called the total derivative) following the satellite's trajectory:
+
+	\begin{equation}
+		\frac{D\mathbf{B}_{ECI}}{Dt} = \frac{\partial \mathbf{B}_{ECI}}{\partial t} + (\mathbf{v}_{ECI} \cdot \nabla)\mathbf{B}_{ECI}
+	\end{equation}
+
+	where the first term represents secular variation (negligible on orbital timescales, $\sim 10^{-9}$ T/s) and the second term represents spatial variation due to orbital motion (dominant, $\sim 10^{-6}$ T/s).
+
+	\textbf{Numerical Implementation:}
+	Using a finite difference approximation with a fixed timestep $\Delta t = 0.01$ s:
+	\begin{equation}
+		\frac{D\mathbf{B}_{ECI}}{Dt} \approx \frac{\mathbf{B}_{ECI}(\mathbf{r} + \mathbf{v}\Delta t, t + \Delta t) - \mathbf{B}_{ECI}(\mathbf{r}, t)}{\Delta t}
+	\end{equation}
+
+	This automatically captures the spatial gradient term, which is the dominant contribution. The fixed timestep $\Delta t$ is chosen to balance numerical accuracy (avoiding cancellation errors) with approximation quality (capturing local field curvature). For LEO velocities ($\sim 7.5$ km/s), this corresponds to a spatial displacement of $\sim 75$ m.
+
+	\textbf{Important Notes:}
 	\begin{itemize}
-		\item If $t=0$, set $\dot{\mathbf{B}}_{body} = 0$ (or assume a small initial rate).
-		\item Store $\mathbf{B}_{ECI}(t)$ to use as $\mathbf{B}_{ECI}(t-\Delta t)$ in the \textit{next} integration step.
-		\item The term $-\bm{\omega} \times \mathbf{B}$ arises from the transport theorem (derivative of a vector in a rotating frame).
+		\item The timestep $\Delta t$ is a \textit{numerical differentiation parameter}, independent of the ODE integrator's adaptive timestep.
+		\item This approach works correctly with variable-step integrators (RK45, Dormand-Prince).
+		\item The secular variation $\partial \mathbf{B}/\partial t$ from the WMM model ($\sim$nT/year) is negligible compared to the orbital motion term and is not explicitly computed.
 	\end{itemize}
+
+	\subsection{Magnetic Field Rate in Body Frame}
+
+	For hysteresis rod dynamics, we need the time derivative of $\mathbf{B}$ as measured in the \textit{body-fixed} frame. This has two contributions:
+
+	\begin{equation}
+		\frac{d\mathbf{B}_{body}}{dt} = \underbrace{\mathbf{R}_{ECI}^{Body}(\mathbf{q}) \frac{D\mathbf{B}_{ECI}}{Dt}}_{\text{Orbital Motion (Dominant)}} - \underbrace{\bm{\omega} \times \mathbf{B}_{body}}_{\text{Body Rotation (Secondary)}}
+	\end{equation}
+
+	where:
+	\begin{itemize}
+		\item The first term transforms the material derivative from ECI to the body frame, representing how the field changes as the satellite moves through Earth's magnetic field ($\sim 10^{-6}$ T/s).
+		\item The second term arises from the transport theorem (time derivative in a rotating reference frame), representing the apparent field change due to spacecraft rotation ($\sim 10^{-7}$ T/s for typical tumbling rates).
+		\item $\mathbf{R}_{ECI}^{Body}(\mathbf{q})$ is the rotation matrix derived from the attitude quaternion $\mathbf{q}$.
+	\end{itemize}
+
+	\textbf{Physical Interpretation:} Even when the spacecraft is not rotating ($\bm{\omega} = 0$), the rods experience a time-varying magnetic field due to orbital motion at $\sim 7.5$ km/s through Earth's spatially-varying field. This is the primary mechanism for hysteresis damping.
 
 	\subsection{Hysteresis Dynamics ($\dot{\mathbf{M}}_{irr}$)}
 	The function $\mathbf{f}_{hyst}$ mentioned in Section~\ref{sec:diff_eq} is computed here. For each rod $i$ aligned with the body axis unit vector $\mathbf{u}_i$:
@@ -183,7 +230,7 @@ B_ENU *= 1e-9; // Convert nT to Tesla
 		\end{align}
 
 		\item \textbf{Calculate Derivative (The Hysteresis Differential Equation):}\\
-		\textit{Note: The classic equation gives $dM/dH$. We require $dM/dt$ for the state integration.}
+		The classic Jiles-Atherton model gives $dM/dH$. We require $dM/dt$ for state integration:
 		\begin{equation}
 			\frac{dM_{irr, i}}{dH} = \frac{M_{an} - M_{irr, i}}{k \delta} \quad \text{where } \delta = \text{sign}(\dot{H}_i)
 		\end{equation}
@@ -191,10 +238,16 @@ B_ENU *= 1e-9; // Convert nT to Tesla
 		\begin{equation}
 			\frac{dM_{irr, i}}{dt} = \left( \frac{M_{an} - M_{irr, i}}{k \cdot \text{sign}(\dot{H}_i)} \right) \cdot \dot{H}_i
 		\end{equation}
+
+		\textbf{Singularity Handling:} When $\dot{H}_i \to 0$, the sign function creates a discontinuity. To prevent integrator instability:
+		\begin{itemize}
+			\item Use a smooth approximation: $\text{sign}(x) \approx \tanh(\beta x)$ with large $\beta$.
+			\item Or implement a dead zone: if $|\dot{H}_i| < \epsilon$, set $dM_{irr,i}/dt = 0$.
+		\end{itemize}
 	\end{enumerate}
 
 	\subsection{Torque Dynamics ($\bm{\tau}_{total}$)}
-	The total external torque acting on the spacecraft is the sum of two components:
+	The total external torque acting on the spacecraft is the sum of magnetic and gravity gradient contributions:
 	\begin{equation}
 		\bm{\tau}_{total} = \bm{\tau}_{mag} + \bm{\tau}_{grad}
 	\end{equation}
@@ -203,10 +256,16 @@ B_ENU *= 1e-9; // Convert nT to Tesla
 	This is the interaction between the spacecraft's total dipole moment and the Earth's magnetic field. The dipole moment consists of the permanent magnet ($\mathbf{m}_{perm}$) and the hysteresis rods ($\mathbf{m}_{rods}$).
 
 	\begin{equation}
-		\mathbf{m}_{rods} = \sum_{i=1}^{N} \left( V_{rod} \cdot (M_{irr, i} + \chi_r H_i) \cdot \mathbf{u}_i \right)
+		\mathbf{m}_{rods} = \sum_{i=1}^{N} \left( V_{rod} \cdot M_{total, i} \cdot \mathbf{u}_i \right)
 	\end{equation}
-	\textit{Note: $\chi_r H_i$ adds the reversible/linear component if explicit in the model; otherwise, $M_{total}$ is used.}
 
+	where the total magnetization $M_{total}$ includes both the irreversible state variable and the reversible (elastic) component, scaled by the coefficient $c$:
+
+	\begin{equation}
+		M_{total, i} = (1 - c)M_{irr, i} + cM_{an}(H_{eff, i})
+	\end{equation}
+
+	The total magnetic torque is then:
 	\begin{equation}
 		\bm{\tau}_{mag} = (\mathbf{m}_{perm} + \mathbf{m}_{rods}) \times \mathbf{B}_{body}
 	\end{equation}
@@ -215,14 +274,14 @@ B_ENU *= 1e-9; // Convert nT to Tesla
 	In LEO, the Earth's gravitational field varies across the body of the spacecraft, creating a torque that tries to align the minimum moment of inertia with the nadir vector.
 
 	\begin{equation}
-		\bm{\tau}_{grad} = \frac{3\mu}{\lVert\mathbf{r}\rVert^5} \left( \mathbf{r}_{body} \times (\mathbf{I} \cdot \mathbf{r}_{body}) \right)
+		\bm{\tau}_{grad} = \frac{3\mu}{\lVert\mathbf{r}_{ECI}\rVert^5} \left( \mathbf{r}_{body} \times (\mathbf{I} \cdot \mathbf{r}_{body}) \right)
 	\end{equation}
 
-	Where:
+	where:
 	\begin{itemize}
-		\item $\mathbf{r}_{body} = \mathbf{R}_{ECI}^{Body} \cdot \mathbf{r}_{ECI}$ is the position vector in the Body frame.
-		\item $\mathbf{I}$ is the spacecraft inertia tensor.
-		\item $\mu$ is the Earth's standard gravitational parameter.
+		\item $\mathbf{r}_{body} = \mathbf{R}_{ECI}^{Body}(\mathbf{q}) \cdot \mathbf{r}_{ECI}$ is the position vector in the Body frame.
+		\item $\mathbf{I}$ is the spacecraft inertia tensor (diagonal for principal axes).
+		\item $\mu = 3.986004418 \times 10^{14}$ m$^3$/s$^2$ is Earth's standard gravitational parameter.
 	\end{itemize}
 
 \end{document}
