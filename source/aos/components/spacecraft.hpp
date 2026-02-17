@@ -4,6 +4,8 @@
 #include "aos/components/permanent_magnet.hpp"
 #include "aos/core/types.hpp"
 
+#include <array>
+#include <cstddef>
 #include <span>
 #include <vector>
 
@@ -11,6 +13,8 @@ namespace aos {
 
 class spacecraft {
 public:
+
+    static constexpr size_t num_faces = 6;  // Cube
 
     struct properties {
         double                        mass_g{};
@@ -26,6 +30,12 @@ public:
         void debug_print() const;
     };
 
+    struct face {
+        vec3   center_of_pressure;
+        vec3   surface_normal;
+        double surface_area{};
+    };
+
     explicit spacecraft(const properties& properties)
         : spacecraft(get_inertia_tensor(properties.mass_g, properties.dim_m.x(), properties.dim_m.y(), properties.dim_m.z()), properties) {}
 
@@ -38,12 +48,17 @@ public:
 
     static auto get_inertia_tensor(double m, double a, double b, double c) -> mat3x3;
 
+protected:
+
+    void set_faces(const properties& properties);
+
 private:
 
     mat3x3                      _inertia_tensor;          // I
     mat3x3                      _inertia_tensor_inverse;  // I^(-1)
     permanent_magnet            _magnet;
     std::vector<hysteresis_rod> _rods;
+    std::array<face, num_faces> _faces;
 };
 
 }  // namespace aos
