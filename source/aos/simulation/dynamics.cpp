@@ -21,8 +21,8 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
     state_derivative.velocity = env_data.gravity_eci_m_s2;
 
     const mat3x3 R_eci_to_body    = q_att.toRotationMatrix().transpose();  // NOLINT(readability-identifier-naming)
-    const vec3   b_body           = R_eci_to_body * env_data.magnetic_field_eci_t;
-    const vec3   b_dot_orbital    = R_eci_to_body * env_data.magnetic_field_dot_eci_t_s;
+    const vec3   b_body           = R_eci_to_body * env_data.magnetic_field_eci_T;
+    const vec3   b_dot_orbital    = R_eci_to_body * env_data.magnetic_field_dot_eci_T_s;
     const vec3   b_dot_rotational = -omega_body.cross(b_body);
     const vec3   b_dot_body       = b_dot_orbital + b_dot_rotational;
     const vec3   total_rod_torque = compute_rod_effects(current_state, b_body, b_dot_body, state_derivative.rod_magnetizations);

@@ -21,9 +21,11 @@ struct geodetic_coords {
 };
 
 struct environment_data {
-    vec3 magnetic_field_eci_t;        // B (Tesla)
-    vec3 magnetic_field_dot_eci_t_s;  // dB/dt (Tesla/s) - Material Derivative
+    // NOLINTBEGIN(readability-identifier-naming)
+    vec3 magnetic_field_eci_T;        // B (Tesla)
+    vec3 magnetic_field_dot_eci_T_s;  // dB/dt (Tesla/s) - Material Derivative
     vec3 gravity_eci_m_s2;            // Total Gravity (m/s^2)
+    // NOLINTEND(readability-identifier-naming)
 };
 
 class environment_model {
@@ -51,6 +53,7 @@ protected:
 
     // avoid re-allocation
     struct computation_cache {
+        double              current_year;
         std::vector<double> rotation_matrix_buffer;
 
         // intermediate matrices
@@ -70,13 +73,11 @@ protected:
         nrlmsise_output am_output;
     };
 
-    struct field_at_point {
-        vec3 b_eci;
-        vec3 g_eci;
-    };
+    /** Compute magnetic fields at cached transform */
+    [[nodiscard]] auto magnetic_field() const -> vec3;
 
-    /** Compute magnetic and gravity fields at a specific spacetime point */
-    [[nodiscard]] auto compute_fields_at(double t_sec, const vec3& r_eci_m) const -> field_at_point;
+    /** Compute gravitational fields at cached transform */
+    [[nodiscard]] auto gravitational_field() const -> vec3;
 
     /** Compute atmospheric density at a specific spacetime point */
     [[nodiscard]] auto density_at(double t_sec, double lat_deg, double lon_deg, double alt_m) const -> double;
