@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <type_traits>
 
 namespace aos {
 
@@ -58,11 +59,11 @@ struct system_state {
     }
 
     auto operator/=(const system_state& other) -> system_state& {
-        position.cwiseQuotient(other.position);
-        velocity.cwiseQuotient(other.velocity);
-        attitude.coeffs().cwiseQuotient(other.attitude.coeffs());
-        angular_velocity.cwiseQuotient(other.angular_velocity);
-        rod_magnetizations.cwiseQuotient(other.rod_magnetizations);
+        position.array() /= other.position.array();
+        velocity.array() /= other.velocity.array();
+        attitude.coeffs().array() /= other.attitude.coeffs().array();
+        angular_velocity.array() /= other.angular_velocity.array();
+        rod_magnetizations.array() /= other.rod_magnetizations.array();
         return *this;
     }
 };
@@ -104,7 +105,7 @@ namespace boost::numeric::odeint {
 
 // Tell odeint that our struct is a valid state type
 template <>
-struct is_resizeable<aos::system_state> : boost::false_type {};
+struct is_resizeable<aos::system_state> : std::true_type {};
 
 // Define how to check if two states have the same size
 template <>

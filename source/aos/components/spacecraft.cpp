@@ -3,7 +3,6 @@
 #include "aos/components/permanent_magnet.hpp"
 #include "aos/core/types.hpp"
 
-#include <array>
 #include <iostream>
 
 namespace aos {

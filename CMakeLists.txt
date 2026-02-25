@@ -1,12 +1,16 @@
 cmake_minimum_required(VERSION 3.30)
 project(AttitudeOrbitSimulator)
 
+list(APPEND CMAKE_MODULE_PATH "/usr/share/cmake/geographiclib")
+
 find_package(Eigen3 CONFIG REQUIRED)
-find_package(GeographicLib CONFIG REQUIRED)
+find_package(GeographicLib REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS
     program_options
     filesystem
 )
+
+add_subdirectory(third-party)
 
 #
 # Library
@@ -31,13 +35,15 @@ target_include_directories(attitude_orbit_simulator_core PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/source"
 )
 
-target_link_libraries(attitude_orbit_simulator_core PRIVATE
-    Boost::filesystem
-    Boost::program_options
-PUBLIC
-    Boost::boost
-    Eigen3::Eigen
-    GeographicLib::GeographicLib
+target_link_libraries(attitude_orbit_simulator_core
+    PRIVATE
+        Boost::filesystem
+        Boost::program_options
+    PUBLIC
+        Boost::boost
+        Eigen3::Eigen
+        ${GeographicLib_LIBRARIES}
+        nrlmsise-00::nrlmsise-00
 )
 
 target_sources(attitude_orbit_simulator_core PRIVATE

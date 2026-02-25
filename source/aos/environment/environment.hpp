@@ -6,6 +6,10 @@
 #include <GeographicLib/GravityModel.hpp>
 #include <GeographicLib/MagneticModel.hpp>
 
+extern "C" {
+#include <nrlmsise-00.h>
+}
+
 #include <vector>
 
 namespace aos {
@@ -57,8 +61,13 @@ protected:
         // intermediate coordinates
         double lat_deg;
         double lon_deg;
-        double h_m;
+        double alt_m;
         vec3   r_ecef_m;
+
+        // atmospheric model
+        nrlmsise_input  am_input;
+        nrlmsise_flags  am_flags;
+        nrlmsise_output am_output;
     };
 
     struct field_at_point {
@@ -66,14 +75,14 @@ protected:
         vec3 g_eci;
     };
 
-    /** Compute magnetic and gravity fields at a specific spacetime point. */
+    /** Compute magnetic and gravity fields at a specific spacetime point */
     [[nodiscard]] auto compute_fields_at(double t_sec, const vec3& r_eci_m) const -> field_at_point;
 
-    /** Compute Earth rotation and transform position ECI -> ECEF. */
-    void update_ecef_transform(double t_sec, const vec3& r_eci_m) const;
+    /** Compute atmospheric density at a specific spacetime point */
+    [[nodiscard]] auto density_at(double t_sec, double lat_deg, double lon_deg, double alt_m) const -> double;
 
-    /** Convert ECEF -> Geodetic and compute ENU basis. */
-    void update_geodetic_conversion() const;
+    /** Cache coordinate transformation results and matrices */
+    void cache_transform(double t_sec, const vec3& r_eci_m) const;
 
 private:
 
