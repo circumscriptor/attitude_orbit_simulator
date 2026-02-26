@@ -62,6 +62,8 @@ target_sources(attitude_orbit_simulator_core PRIVATE
     "source/aos/environment/nrlmsise.hpp"
     "source/aos/environment/orbital_mechanics.cpp"
     "source/aos/environment/orbital_mechanics.hpp"
+    "source/aos/environment/space_weather.hpp"
+    "source/aos/environment/space_weather.cpp"
     "source/aos/simulation/config.cpp"
     "source/aos/simulation/config.hpp"
     "source/aos/simulation/dynamics.cpp"

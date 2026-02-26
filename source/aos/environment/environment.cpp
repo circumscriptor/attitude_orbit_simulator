@@ -16,7 +16,8 @@ environment_model::environment_model(double start_year_decimal, int degree)
     : _start_year_decimal(start_year_decimal),
       _earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f()),
       _gravity_model("egm2008", "", degree),
-      _magnetic_model("wmm2025", "") {
+      _magnetic_model("wmm2025", ""),
+      _atmospheric_model("../third-party/data/SW-All.csv") {
     if (start_year_decimal < 1900.0 || start_year_decimal > 2100.0) {  // NOLINT(readability-magic-numbers)
         std::println(stderr, "Warning: Magnetic model year {} may be outside valid range", start_year_decimal);
     }
@@ -60,6 +61,10 @@ auto environment_model::calculate(double t_sec, const vec3& r_eci_m, const vec3&
         .magnetic_field_dot_eci_T_s = db_dt,
         .gravity_eci_m_s2           = g,
     };
+}
+
+auto environment_model::atmospheric_density() const -> double {
+    return _atmospheric_model.density_at(_cache.current_year, _cache.lat_deg, _cache.lon_deg, _cache.alt_m);
 }
 
 auto environment_model::magnetic_field() const -> vec3 {

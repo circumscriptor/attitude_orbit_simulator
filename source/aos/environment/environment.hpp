@@ -65,6 +65,9 @@ protected:
         vec3   r_ecef_m;
     };
 
+    /** Compute atmospheric density at cached transform */
+    [[nodiscard]] auto atmospheric_density() const -> double;
+
     /** Compute magnetic fields at cached transform */
     [[nodiscard]] auto magnetic_field() const -> vec3;
 
