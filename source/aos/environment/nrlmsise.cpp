@@ -12,7 +12,7 @@ nrlmsise::nrlmsise(const std::filesystem::path& filepath) : weather(space_weathe
     for (int& fswitch : flags.switches) {
         fswitch = 1;
     }
-    flags.switches[0] = 0;
+    // flags.switches[0] = 0; // Uncomment to use g/cm3 instead of kg/m3
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)

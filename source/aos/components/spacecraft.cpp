@@ -55,24 +55,24 @@ void spacecraft::set_faces(const properties& properties) {
     const auto face_surface_area_z = properties.dim_m.x() * properties.dim_m.y();
 
     // NOLINTBEGIN(readability-magic-numbers)
-    _faces[0].surface_area       = face_surface_area_x;
-    _faces[0].surface_normal     = vec3(1, 0, 0);
-    _faces[0].center_of_pressure = _faces[0].surface_normal * properties.dim_m.x() * 0.5;
-    _faces[1].surface_area       = face_surface_area_x;
-    _faces[1].surface_normal     = vec3(-1, 0, 0);
-    _faces[1].center_of_pressure = _faces[1].surface_normal * properties.dim_m.x() * 0.5;
-    _faces[2].surface_area       = face_surface_area_y;
-    _faces[2].surface_normal     = vec3(0, 1, 0);
-    _faces[2].center_of_pressure = _faces[2].surface_normal * properties.dim_m.y() * 0.5;
-    _faces[3].surface_area       = face_surface_area_y;
-    _faces[3].surface_normal     = vec3(0, -1, 0);
-    _faces[3].center_of_pressure = _faces[3].surface_normal * properties.dim_m.y() * 0.5;
-    _faces[4].surface_area       = face_surface_area_z;
-    _faces[4].surface_normal     = vec3(0, 0, 1);
-    _faces[4].center_of_pressure = _faces[4].surface_normal * properties.dim_m.z() * 0.5;
-    _faces[5].surface_area       = face_surface_area_z;
-    _faces[5].surface_normal     = vec3(0, 0, -1);
-    _faces[5].center_of_pressure = _faces[5].surface_normal * properties.dim_m.z() * 0.5;
+    _faces[0].surface_area_m2      = face_surface_area_x;
+    _faces[0].surface_normal       = vec3(1, 0, 0);
+    _faces[0].center_of_pressure_m = _faces[0].surface_normal * properties.dim_m.x() * 0.5;
+    _faces[1].surface_area_m2      = face_surface_area_x;
+    _faces[1].surface_normal       = vec3(-1, 0, 0);
+    _faces[1].center_of_pressure_m = _faces[1].surface_normal * properties.dim_m.x() * 0.5;
+    _faces[2].surface_area_m2      = face_surface_area_y;
+    _faces[2].surface_normal       = vec3(0, 1, 0);
+    _faces[2].center_of_pressure_m = _faces[2].surface_normal * properties.dim_m.y() * 0.5;
+    _faces[3].surface_area_m2      = face_surface_area_y;
+    _faces[3].surface_normal       = vec3(0, -1, 0);
+    _faces[3].center_of_pressure_m = _faces[3].surface_normal * properties.dim_m.y() * 0.5;
+    _faces[4].surface_area_m2      = face_surface_area_z;
+    _faces[4].surface_normal       = vec3(0, 0, 1);
+    _faces[4].center_of_pressure_m = _faces[4].surface_normal * properties.dim_m.z() * 0.5;
+    _faces[5].surface_area_m2      = face_surface_area_z;
+    _faces[5].surface_normal       = vec3(0, 0, -1);
+    _faces[5].center_of_pressure_m = _faces[5].surface_normal * properties.dim_m.z() * 0.5;
     // NOLINTEND(readability-magic-numbers)
 }
 

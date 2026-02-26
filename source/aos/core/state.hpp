@@ -16,11 +16,11 @@
 namespace aos {
 
 struct system_state {
-    vec3 position;
-    vec3 velocity;
-    quat attitude;
-    vec3 angular_velocity;
-    vecX rod_magnetizations;
+    vec3 position;            //!< Spacecraft position in ECI
+    vec3 velocity;            //!< Spacecraft velocity in ECI
+    quat attitude;            //!< Spacecraft orientation in local body frame
+    vec3 angular_velocity;    //!< Spacecraft angular velocity in local body frame
+    vecX rod_magnetizations;  //!< Hysteresis rod magnetization state (array)
 
     auto operator+=(const system_state& other) -> system_state& {
         position += other.position;

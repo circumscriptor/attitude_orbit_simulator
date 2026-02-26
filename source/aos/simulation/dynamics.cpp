@@ -28,6 +28,8 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
     const vec3   total_rod_torque = compute_rod_effects(current_state, b_body, b_dot_body, state_derivative.rod_magnetizations);
     const vec3   net_torque       = compute_net_torque(omega_body, b_body, total_rod_torque, r_eci, q_att);
 
+    // TODO: compute athmospheric drag and solar pressure
+
     state_derivative.angular_velocity  = _spacecraft->inertia_tensor_inverse() * net_torque;
     state_derivative.attitude.coeffs() = compute_attitude_derivative(q_att, omega_body);
 }

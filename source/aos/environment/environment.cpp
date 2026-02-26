@@ -44,6 +44,7 @@ auto environment_model::calculate(double t_sec, const vec3& r_eci_m, const vec3&
     cache_transform(t_sec, r_eci_m);
 
     const auto b = magnetic_field();
+    const auto d = atmospheric_density();
     const auto g = gravitational_field();
 
     // compute fields at future position for gradient calculation
@@ -60,7 +61,16 @@ auto environment_model::calculate(double t_sec, const vec3& r_eci_m, const vec3&
         .magnetic_field_eci_T       = b,
         .magnetic_field_dot_eci_T_s = db_dt,
         .gravity_eci_m_s2           = g,
+        .atmospheric_density_kg_m3  = d,
     };
+}
+
+auto environment_model::earth_mu() const -> double {
+    return _gravity_model.MassConstant();
+}
+
+auto environment_model::earth_relative_v(const vec3& v_eci_m_s) -> vec3 {
+    return v_eci_m_s - vec3(0., 0., earth_rotation_rate_rad_s);
 }
 
 auto environment_model::atmospheric_density() const -> double {

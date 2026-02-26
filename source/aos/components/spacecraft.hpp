@@ -11,6 +11,12 @@
 
 namespace aos {
 
+struct spacecraft_face {
+    vec3   center_of_pressure_m;  //!< Face center relative to spacecraft center
+    vec3   surface_normal;        //!< Face normal (outward)
+    double surface_area_m2{};     //!< Face surface area
+};
+
 class spacecraft {
 public:
 
@@ -28,12 +34,6 @@ public:
         hysteresis_rod::ja_parameters hysteresis_params;
 
         void debug_print() const;
-    };
-
-    struct face {
-        vec3   center_of_pressure;
-        vec3   surface_normal;
-        double surface_area{};
     };
 
     explicit spacecraft(const properties& properties)
@@ -54,11 +54,11 @@ protected:
 
 private:
 
-    mat3x3                      _inertia_tensor;          // I
-    mat3x3                      _inertia_tensor_inverse;  // I^(-1)
-    permanent_magnet            _magnet;
-    std::vector<hysteresis_rod> _rods;
-    std::array<face, num_faces> _faces;
+    mat3x3                                 _inertia_tensor;          // I
+    mat3x3                                 _inertia_tensor_inverse;  // I^(-1)
+    permanent_magnet                       _magnet;
+    std::vector<hysteresis_rod>            _rods;
+    std::array<spacecraft_face, num_faces> _faces;
 };
 
 }  // namespace aos

@@ -19,9 +19,10 @@ struct geodetic_coords {
 
 struct environment_data {
     // NOLINTBEGIN(readability-identifier-naming)
-    vec3 magnetic_field_eci_T;        // B (Tesla)
-    vec3 magnetic_field_dot_eci_T_s;  // dB/dt (Tesla/s) - Material Derivative
-    vec3 gravity_eci_m_s2;            // Total Gravity (m/s^2)
+    vec3   magnetic_field_eci_T;        // Tesla - B
+    vec3   magnetic_field_dot_eci_T_s;  // dB/dt (Tesla/s) - Material Derivative
+    vec3   gravity_eci_m_s2;            // m/s^2 - Total Acceleration
+    double atmospheric_density_kg_m3;   // kg/m^3 - Density of Gasses including Anomalous Oxygen
     // NOLINTEND(readability-identifier-naming)
 };
 
@@ -44,7 +45,10 @@ public:
      */
     [[nodiscard]] auto calculate(double t_sec, const vec3& r_eci_m, const vec3& v_eci_m_s) const -> environment_data;
 
-    [[nodiscard]] auto earth_mu() const -> double { return _gravity_model.MassConstant(); }
+    [[nodiscard]] auto earth_mu() const -> double;
+
+    /** @brief Get spacecraft velocity relative to earth rotation */
+    [[nodiscard]] static auto earth_relative_v(const vec3& v_eci_m_s) -> vec3;
 
 protected:
 
