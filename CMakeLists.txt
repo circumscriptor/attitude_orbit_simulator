@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.30)
 project(AttitudeOrbitSimulator)
 
-list(APPEND CMAKE_MODULE_PATH "/usr/share/cmake/geographiclib")
+# list(APPEND CMAKE_MODULE_PATH "/usr/share/cmake/geographiclib")
 
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(GeographicLib REQUIRED)
@@ -58,6 +58,8 @@ target_sources(attitude_orbit_simulator_core PRIVATE
     "source/aos/core/types.hpp"
     "source/aos/environment/environment.cpp"
     "source/aos/environment/environment.hpp"
+    "source/aos/environment/nrlmsise.cpp"
+    "source/aos/environment/nrlmsise.hpp"
     "source/aos/environment/orbital_mechanics.cpp"
     "source/aos/environment/orbital_mechanics.hpp"
     "source/aos/simulation/config.cpp"

@@ -1,14 +1,11 @@
 #pragma once
 
 #include "aos/core/types.hpp"
+#include "aos/environment/nrlmsise.hpp"
 
 #include <GeographicLib/Geocentric.hpp>
 #include <GeographicLib/GravityModel.hpp>
 #include <GeographicLib/MagneticModel.hpp>
-
-extern "C" {
-#include <nrlmsise-00.h>
-}
 
 #include <vector>
 
@@ -66,11 +63,6 @@ protected:
         double lon_deg;
         double alt_m;
         vec3   r_ecef_m;
-
-        // atmospheric model
-        nrlmsise_input  am_input;
-        nrlmsise_flags  am_flags;
-        nrlmsise_output am_output;
     };
 
     /** Compute magnetic fields at cached transform */
@@ -78,9 +70,6 @@ protected:
 
     /** Compute gravitational fields at cached transform */
     [[nodiscard]] auto gravitational_field() const -> vec3;
-
-    /** Compute atmospheric density at a specific spacetime point */
-    [[nodiscard]] auto density_at(double t_sec, double lat_deg, double lon_deg, double alt_m) const -> double;
 
     /** Cache coordinate transformation results and matrices */
     void cache_transform(double t_sec, const vec3& r_eci_m) const;
@@ -92,6 +81,7 @@ private:
     GeographicLib::Geocentric    _earth;
     GeographicLib::GravityModel  _gravity_model;
     GeographicLib::MagneticModel _magnetic_model;
+    nrlmsise                     _atmospheric_model;
 };
 
 }  // namespace aos

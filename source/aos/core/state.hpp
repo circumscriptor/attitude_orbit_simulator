@@ -11,7 +11,7 @@
 
 #include <algorithm>
 #include <limits>
-#include <type_traits>
+// #include <type_traits>
 
 namespace aos {
 
@@ -105,7 +105,7 @@ namespace boost::numeric::odeint {
 
 // Tell odeint that our struct is a valid state type
 template <>
-struct is_resizeable<aos::system_state> : std::true_type {};
+struct is_resizeable<aos::system_state> : boost::true_type {};  // when switching to boost 1.90, use std::true_type
 
 // Define how to check if two states have the same size
 template <>

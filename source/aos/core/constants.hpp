@@ -18,5 +18,7 @@ static constexpr double simulation_start_year     = 2025.0;
 static constexpr double two_pi                    = 2.0 * std::numbers::pi;
 static constexpr double vacuum_permeability       = 4.0 * std::numbers::pi * 1e-7;
 static constexpr double dt_gradient               = 0.01;
+static constexpr double year_to_days              = 365.25;
+static constexpr double day_to_seconds            = 24.0 * 60.0 * 60.0;
 
 }  // namespace aos

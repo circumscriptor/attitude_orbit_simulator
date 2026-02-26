@@ -23,10 +23,6 @@ environment_model::environment_model(double start_year_decimal, int degree)
 
     const auto rotation_matrix_size = 3 * 3;
     _cache.rotation_matrix_buffer.resize(rotation_matrix_size, 0.0);
-    for (int& flag_switch : _cache.am_flags.switches) {
-        flag_switch = 1;
-    }
-    // _cache.am_flags.switches[0] = 0;
 
     std::println("Magnetic model: {} (from {}, degree {}, order {})",  //
                  _magnetic_model.MagneticModelName(),                  //
@@ -51,7 +47,7 @@ auto environment_model::calculate(double t_sec, const vec3& r_eci_m, const vec3&
 
     // compute fields at future position for gradient calculation
     const double t_next = t_sec + dt_gradient;
-    const vec3   r_next = r_eci_m + v_eci_m_s * dt_gradient;
+    const vec3   r_next = r_eci_m + (v_eci_m_s * dt_gradient);
     cache_transform(t_next, r_next);
 
     const auto b_next = magnetic_field();
@@ -85,28 +81,6 @@ auto environment_model::gravitational_field() const -> vec3 {
     _gravity_model.V(_cache.r_ecef_m.x(), _cache.r_ecef_m.y(), _cache.r_ecef_m.z(),  // geocentric
                      gx_ecef, gy_ecef, gz_ecef);                                     // acceleration
     return _cache.R_ecef_to_eci * vec3(gx_ecef, gy_ecef, gz_ecef);
-}
-
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto environment_model::density_at(double t_sec, double lat_deg, double lon_deg, double alt_m) const -> double {
-    const double alt_km           = alt_m * 0.001;
-    const double seconds          = std::fmod(t_sec, 86400.0);
-    const double total_days       = ((_start_year_decimal - std::floor(_start_year_decimal)) * 365.25) + (t_sec / 86400.0);
-    const int    day_of_year      = static_cast<int>(std::floor(total_days)) % 366;
-    const double local_solar_time = (seconds / 3600.0) + (lon_deg / 15.0);
-
-    _cache.am_input.alt    = alt_km;
-    _cache.am_input.g_lat  = lat_deg;
-    _cache.am_input.g_long = lon_deg;
-    _cache.am_input.doy    = day_of_year;
-    _cache.am_input.sec    = seconds;
-    _cache.am_input.lst    = local_solar_time;
-    _cache.am_input.f107A  = 80.0;     // TODO: use real values
-    _cache.am_input.f107   = 150.0;    // TODO: use real values
-    _cache.am_input.ap     = 0.0;      // TODO: what to do with this?
-    _cache.am_input.ap_a   = nullptr;  // TODO: what to do with this?
-    gtd7d(&_cache.am_input, &_cache.am_flags, &_cache.am_output);
-    return _cache.am_output.d[5];  // NOLINT(readability-magic-numbers)
 }
 
 void environment_model::cache_transform(double t_sec, const vec3& r_eci_m) const {
