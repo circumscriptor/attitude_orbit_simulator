@@ -47,7 +47,7 @@ auto simulation_parameters::get_default() -> simulation_parameters {
              .magnet_diameter             = 0.01,                                    // 1 cm diameter
              .hysteresis_rod_volume       = 0.005 * 0.005 * std::numbers::pi * 0.1,  // 0.5 cm radius, 10 cm length
              .hysteresis_rod_orientations = {{1.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, -1.0, 0.0}},  // Pairs along the X-axis and Y-axis
-             .hysteresis_params           = hysteresis_rod::ja_parameters::hymu80()},
+             .hysteresis_params           = hysteresis_parameters::hymu80()},
         .orbit                = {.semi_major_axis_m    = 6818137.0,
                                  .eccentricity         = 0.001,
                                  .inclination_rad      = 1.396263,

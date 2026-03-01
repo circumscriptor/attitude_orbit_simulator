@@ -23,15 +23,15 @@ public:
     static constexpr size_t num_faces = 6;  // Cube
 
     struct properties {
-        double                        mass_g{};
-        vec3                          dim_m;
-        vec3                          magnet_orientation;
-        double                        magnet_remanence{};
-        double                        magnet_length{};
-        double                        magnet_diameter{};
-        double                        hysteresis_rod_volume{};
-        std::vector<vec3>             hysteresis_rod_orientations;
-        hysteresis_rod::ja_parameters hysteresis_params;
+        double                mass_g{};
+        vec3                  dim_m;
+        vec3                  magnet_orientation;
+        double                magnet_remanence{};
+        double                magnet_length{};
+        double                magnet_diameter{};
+        double                hysteresis_rod_volume{};
+        std::vector<vec3>     hysteresis_rod_orientations;
+        hysteresis_parameters hysteresis_params;
 
         void debug_print() const;
     };

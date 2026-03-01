@@ -6,6 +6,6 @@
 
 namespace aos {
 
-void verify_hysteresis(const std::string& output_filename, const hysteresis_rod::ja_parameters& params);
+void verify_hysteresis(const std::string& output_filename, const hysteresis_parameters& params);
 
 }  // namespace aos

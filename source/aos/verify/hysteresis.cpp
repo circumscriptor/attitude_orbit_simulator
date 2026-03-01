@@ -14,7 +14,7 @@
 
 namespace aos {
 
-void verify_hysteresis(const std::string& output_filename, const hysteresis_rod::ja_parameters& params) {
+void verify_hysteresis(const std::string& output_filename, const hysteresis_parameters& params) {
     using boost::numeric::odeint::integrate_adaptive;
     using boost::numeric::odeint::make_controlled;
     using boost::numeric::odeint::runge_kutta_dopri5;

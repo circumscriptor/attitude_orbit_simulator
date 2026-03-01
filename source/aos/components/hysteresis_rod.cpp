@@ -11,7 +11,7 @@
 
 namespace aos {
 
-void hysteresis_rod::ja_parameters::debug_print() const {
+void hysteresis_parameters::debug_print() const {
     std::cout << "-- hysteresis properties --"     //
               << "\n  Ms (Saturation): " << ms     //
               << "\n  a (Shape):       " << a      //
@@ -21,7 +21,7 @@ void hysteresis_rod::ja_parameters::debug_print() const {
               << '\n';
 }
 
-hysteresis_rod::ja_parameters hysteresis_rod::ja_parameters::hymu80() {
+auto hysteresis_parameters::hymu80() -> hysteresis_parameters {
     // NOLINTBEGIN(readability-magic-numbers)
     return {
         .ms    = 6.0e5,  // ~0.75 Tesla / mu0
@@ -33,7 +33,7 @@ hysteresis_rod::ja_parameters hysteresis_rod::ja_parameters::hymu80() {
     // NOLINTEND(readability-magic-numbers)
 }
 
-hysteresis_rod::hysteresis_rod(double volume, const vec3& orientation, const ja_parameters& ja_params)
+hysteresis_rod::hysteresis_rod(double volume, const vec3& orientation, const hysteresis_parameters& ja_params)
     : _volume(volume), _orientation_body(orientation), _params(ja_params) {
     if (orientation.norm() < epsilon_vector) {
         throw std::runtime_error("Hysteresis rod orientation must be non-zero.");
