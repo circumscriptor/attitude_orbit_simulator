@@ -7,6 +7,7 @@
 #include <GeographicLib/Geocentric.hpp>
 #include <toml++/impl/table.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <print>
@@ -95,6 +96,11 @@ auto environment_model::calculate(double t_sec, const vec3& r_eci_m, const vec3&
     const auto g_sun   = solar_perturbation(r_eci_m, _cache.r_sun_eci);
     const auto g_total = g_earth + g_sun;
 
+    const vec3&  r_sun    = _cache.r_sun_eci;
+    const double d_sun_sq = r_sun.squaredNorm();
+    const double pressure = solar_pressure_1au * (au_to_m_2 / d_sun_sq);
+    const double shadow   = earth_shadow_factor(r_eci_m, r_sun);
+
     // compute fields at future position for gradient calculation
     const double t_next = t_sec + dt_gradient;
     const vec3   r_next = r_eci_m + (v_eci_m_s * dt_gradient);
@@ -110,6 +116,9 @@ auto environment_model::calculate(double t_sec, const vec3& r_eci_m, const vec3&
         .magnetic_field_dot_eci_T_s = db_dt,
         .gravity_eci_m_s2           = g_total,
         .atmospheric_density_kg_m3  = d,
+        .r_sun_eci                  = r_sun,
+        .shadow_factor              = shadow,
+        .solar_pressure_Pa          = pressure,
     };
 }
 
@@ -117,8 +126,11 @@ auto environment_model::earth_mu() const -> double {
     return _gravity_model.MassConstant();
 }
 
-auto environment_model::earth_relative_v(const vec3& v_eci_m_s) -> vec3 {
-    return v_eci_m_s - vec3(0., 0., earth_rotation_rate_rad_s);
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+auto environment_model::earth_relative_v(const vec3& v_eci_m_s, const vec3& r_eci_m) -> vec3 {
+    const vec3 omega_earth_eci(0.0, 0.0, earth_rotation_rate_rad_s);  // Earth rotation vector in ECI
+    const vec3 v_atm_eci = omega_earth_eci.cross(r_eci_m);            // Linear velocity of the atmosphere at position r_eci
+    return v_eci_m_s - v_atm_eci;                                     // Velocity of satellite relative to the air
 }
 
 auto environment_model::atmospheric_density() const -> double {
@@ -216,6 +228,32 @@ auto environment_model::solar_perturbation(const vec3& r_sat_eci, const vec3& r_
     const double d_sun_cubed = d_sun_sq * std::sqrt(d_sun_sq);
     // a = mu * (r_rel/d_rel^3 - r_sun/d_sun^3)
     return sun_mu_m3_s2 * ((r_rel / d_rel_cubed) - (r_sun_eci / d_sun_cubed));
+}
+
+auto environment_model::earth_shadow_factor(const vec3& r_sat, const vec3& r_sun) -> double {
+    const double d_sat     = r_sat.norm();
+    const vec3   unit_sat  = r_sat / d_sat;
+    const vec3   unit_sun  = r_sun.normalized();
+    const double cos_theta = unit_sat.dot(unit_sun);
+    if (cos_theta > 0) {
+        return 1.0;  // Sun is on the same side as satellite
+    }
+
+    const double d_sat_sun = (r_sun - r_sat).norm();
+
+    // Apparent angular radii (half-angles)
+    const double alpha = std::asin(sun_radius_m / d_sat_sun);
+    const double beta  = std::asin(earth_radius_m / d_sat);
+    const double gamma = std::acos(std::clamp(-cos_theta, -1.0, 1.0));
+
+    if (gamma > alpha + beta) {
+        return 1.0;  // Full sunlight
+    }
+    if (gamma < beta - alpha) {
+        return 0.0;  // Umbra (total eclipse)
+    }
+    // Penumbra: Linear transition based on angular overlap
+    return std::clamp((gamma + alpha - beta) / (2.0 * alpha), 0.0, 1.0);
 }
 
 }  // namespace aos

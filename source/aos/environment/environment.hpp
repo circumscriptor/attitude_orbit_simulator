@@ -23,6 +23,9 @@ struct environment_data {
     vec3   magnetic_field_dot_eci_T_s;  // [Tesla/s] - (dB/dt) Material Derivative
     vec3   gravity_eci_m_s2;            // [m/s^2] - Total Acceleration
     double atmospheric_density_kg_m3;   // [kg/m^3] - Density of Gasses including Anomalous Oxygen
+    vec3   r_sun_eci;                   // [m] Position of Sun relative to Earth
+    double shadow_factor;               // [-] 1.0 = Sun, 0.0 = Umbra, (0,1) = Penumbra
+    double solar_pressure_Pa;           // [N/m^2] Radiation pressure at current distance
     // NOLINTEND(readability-identifier-naming)
 };
 
@@ -65,11 +68,13 @@ public:
     [[nodiscard]] auto earth_mu() const -> double;
 
     /** @brief Get spacecraft velocity relative to earth rotation */
-    [[nodiscard]] static auto earth_relative_v(const vec3& v_eci_m_s) -> vec3;
+    [[nodiscard]] static auto earth_relative_v(const vec3& v_eci_m_s, const vec3& r_eci_m) -> vec3;
 
     [[nodiscard]] static auto sun_position_eci(double days_since_j2000) -> vec3;
 
     [[nodiscard]] static auto solar_perturbation(const vec3& r_sat_eci, const vec3& r_sun_eci) -> vec3;
+
+    [[nodiscard]] static auto earth_shadow_factor(const vec3& r_sat, const vec3& r_sun) -> double;
 
 protected:
 

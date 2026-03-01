@@ -17,8 +17,8 @@ class spacecraft_dynamics {
 public:
 
     struct face_effects {
-        vec3 torque;
-        vec3 force;
+        vec3 torque_body;
+        vec3 force_eci;
     };
 
     spacecraft_dynamics(std::shared_ptr<const spacecraft> spacecraft_model, std::shared_ptr<const environment_model> environment_model)
@@ -35,13 +35,14 @@ protected:
     [[nodiscard]] auto compute_rod_effects(const vecX& rod_magnetizations, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3;
 
     // compute total face (drag) torque, return the total torque exerted by all faces
-    [[nodiscard]] auto compute_face_effects(double density, const quat& q_att, const vec3& v_eci, const vec3& omega_body) const -> face_effects;
+    [[nodiscard]] auto compute_face_effects(const environment_data& data, const quat& q_att, const vec3& v_eci, const vec3& r_eci, const vec3& omega_body) const
+        -> face_effects;
 
     // sums permanent magnet, gyroscopic, and gravity gradient torques
-    [[nodiscard]] auto compute_other_torques(const vec3& omega, const vec3& b_body, const vec3& r_eci, const quat& q_att) const -> vec3;
+    [[nodiscard]] auto compute_other_torques(const vec3& omega, const vec3& b_body, const vec3& r_eci, const mat3x3& eci_to_body) const -> vec3;
 
     // gravity gradient torque
-    [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_eci, const quat& q_att) const -> vec3;
+    [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_eci, const mat3x3& eci_to_body) const -> vec3;
 
     // quaternion derivative: 0.5 * q * omega
     [[nodiscard]] static auto compute_attitude_derivative(const quat& q_att, const vec3& omega) -> vecX;

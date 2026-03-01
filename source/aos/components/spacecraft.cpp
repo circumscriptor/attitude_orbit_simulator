@@ -2,77 +2,19 @@
 
 #include "aos/components/hysteresis_rod.hpp"
 #include "aos/components/permanent_magnet.hpp"
+#include "aos/components/spacecraft_face.hpp"
 #include "aos/core/constants.hpp"
 #include "aos/core/types.hpp"
-#include "aos/environment/environment.hpp"
 
 #include <toml++/impl/table.hpp>
 
-#include <cmath>
 #include <cstddef>
 #include <iostream>
-#include <limits>
 #include <span>
 #include <type_traits>
 #include <variant>
 
 namespace aos {
-
-void spacecraft_face::from_toml(const toml::table& table) {
-    if (const auto* vec = table["center_of_pressure_m"].as_array()) {
-        center_of_pressure_m <<          //
-            vec->get(0)->value_or(0.0),  //
-            vec->get(1)->value_or(0.0),  //
-            vec->get(2)->value_or(0.0);
-    }
-
-    if (const auto* vec = table["surface_normal"].as_array()) {
-        surface_normal <<                //
-            vec->get(0)->value_or(0.0),  //
-            vec->get(1)->value_or(0.0),  //
-            vec->get(2)->value_or(0.0);
-    }
-
-    surface_area_m2  = table["surface_area_m2"].value_or(0.0);
-    drag_coefficient = table["drag_coefficient"].value_or(default_drag_coefficient);
-}
-
-void spacecraft_face::debug_print() const {
-    std::cout << "--  spacecraft face  --"                                                                                                     //
-              << "\n  center of pressure: " << center_of_pressure_m.x() << ' ' << center_of_pressure_m.y() << ' ' << center_of_pressure_m.z()  //
-              << "\n  surface normal:     " << surface_normal.x() << ' ' << surface_normal.y() << ' ' << surface_normal.z()                    //
-              << "\n  surface area:       " << surface_area_m2                                                                                 //
-              << "\n  drag coefficient:   " << drag_coefficient                                                                                //
-              << '\n';
-}
-
-auto spacecraft_face::compute_force_drag(double density, const quat& q_att, const vec3& v_eci, const vec3& omega_body) const -> vec3 {
-    const vec3       v_rel = compute_v_rel_atmosphere(q_att, v_eci, omega_body);
-    const double     v_sq  = v_rel.squaredNorm();
-    constexpr double eps   = std::numeric_limits<double>::epsilon();
-    if (v_sq <= (eps * eps)) {
-        return vec3::Zero();
-    }
-
-    const double v_mag     = std::sqrt(v_sq);
-    const vec3   n_eci     = q_att * surface_normal;
-    const double cos_theta = n_eci.dot(-v_rel / v_mag);
-    if (!(cos_theta > 0.0)) {
-        return vec3::Zero();
-    }
-
-    const double scalar = 0.5 * density * drag_coefficient * surface_area_m2 * cos_theta * v_mag;
-    return scalar * v_rel;
-}
-
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto spacecraft_face::compute_v_rel_atmosphere(const quat& q_att, const vec3& v_eci, const vec3& omega_body) const -> vec3 {
-    const vec3 v_com_rel  = environment_model::earth_relative_v(v_eci);
-    const vec3 r_face_eci = q_att * center_of_pressure_m;
-    const vec3 omega_eci  = q_att * omega_body;
-    const vec3 v_tangent  = omega_eci.cross(r_face_eci);
-    return v_com_rel + v_tangent;
-}
 
 // NOLINTBEGIN(readability-magic-numbers)
 
@@ -187,27 +129,27 @@ spacecraft::spacecraft(const spacecraft_properties& properties) : _mass_g(proper
             using shape_type = std::decay_t<decltype(shape)>;
 
             if constexpr (std::is_same_v<shape_type, spacecraft_uniform>) {
-                uniform(_mass_g, shape.dimensions_m, shape.drag_coefficient);
+                uniform(_mass_g * gram_to_kilogram, shape.dimensions_m, shape.drag_coefficient);
             } else if constexpr (std::is_same_v<shape_type, spacecraft_custom>) {
-                _inertia_tensor = shape.inertia;
-                _faces          = shape.faces;
+                _inertia_tensor_kg_m2 = shape.inertia;
+                _faces                = shape.faces;
             }
         },
         properties.shape);
 
-    _inertia_tensor_inverse = _inertia_tensor.inverse();
+    _inertia_tensor_kg_m2_inverse = _inertia_tensor_kg_m2.inverse();
 }
 
-auto spacecraft::mass() const -> double {
+auto spacecraft::mass_g() const -> double {
     return _mass_g;
 }
 
-auto spacecraft::inertia_tensor() const -> const mat3x3& {
-    return _inertia_tensor;
+auto spacecraft::inertia_tensor_kg_m2() const -> const mat3x3& {
+    return _inertia_tensor_kg_m2;
 }
 
-auto spacecraft::inertia_tensor_inverse() const -> const mat3x3& {
-    return _inertia_tensor_inverse;
+auto spacecraft::inertia_tensor_kg_m2_inverse() const -> const mat3x3& {
+    return _inertia_tensor_kg_m2_inverse;
 }
 
 auto spacecraft::faces() const -> std::span<const spacecraft_face> {
@@ -222,7 +164,7 @@ auto spacecraft::rods() const -> std::span<const hysteresis_rod> {
     return _rods;
 }
 
-void spacecraft::uniform(double mass, const vec3& dim_m, double drag_coefficient) {
+void spacecraft::uniform(double mass_kg, const vec3& dim_m, double drag_coefficient) {
     const auto face_surface_area_x = dim_m.y() * dim_m.z();
     const auto face_surface_area_y = dim_m.x() * dim_m.z();
     const auto face_surface_area_z = dim_m.x() * dim_m.y();
@@ -254,13 +196,13 @@ void spacecraft::uniform(double mass, const vec3& dim_m, double drag_coefficient
     _faces[5].drag_coefficient     = drag_coefficient;
     // NOLINTEND(readability-magic-numbers)
 
-    _inertia_tensor = compute_inertia_tensor(mass, dim_m.x(), dim_m.y(), dim_m.z());
+    _inertia_tensor_kg_m2 = compute_inertia_tensor(mass_kg, dim_m.x(), dim_m.y(), dim_m.z());
 }
 
-auto spacecraft::compute_inertia_tensor(double m, double a, double b, double c) -> mat3x3 {
-    const double i_x = (1. / 12.) * m * (b * b + c * c);
-    const double i_y = (1. / 12.) * m * (a * a + c * c);
-    const double i_z = (1. / 12.) * m * (a * a + b * b);
+auto spacecraft::compute_inertia_tensor(double m_kg, double a, double b, double c) -> mat3x3 {
+    const double i_x = (1. / 12.) * m_kg * (b * b + c * c);
+    const double i_y = (1. / 12.) * m_kg * (a * a + c * c);
+    const double i_z = (1. / 12.) * m_kg * (a * a + b * b);
 
     mat3x3 tensor = mat3x3::Zero();
     tensor(0, 0)  = i_x;

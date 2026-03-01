@@ -1,6 +1,5 @@
 #include "dynamics.hpp"
 
-#include "aos/components/spacecraft.hpp"
 #include "aos/core/constants.hpp"
 #include "aos/core/state.hpp"
 #include "aos/core/types.hpp"
@@ -29,11 +28,8 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
     const vec3   b_dot_rotational = -omega_body.cross(b_body);
     const vec3   b_dot_body       = b_dot_orbital + b_dot_rotational;
     const vec3   rods_torque      = compute_rod_effects(current_state.rod_magnetizations, b_body, b_dot_body, state_derivative.rod_magnetizations);
-    const auto   face_effects     = compute_face_effects(env_data.atmospheric_density_kg_m3, q_att, v_eci, omega_body);
-    const vec3   faces_torque     = R_eci_to_body * face_effects.torque;
-    const vec3   net_torque       = compute_other_torques(omega_body, b_body, r_eci, q_att) + rods_torque + faces_torque;
-
-    // TODO: compute solar pressure
+    const auto   face_effects     = compute_face_effects(env_data, q_att, v_eci, r_eci, omega_body);
+    const vec3   net_torque       = compute_other_torques(omega_body, b_body, r_eci, R_eci_to_body) + rods_torque + face_effects.torque_body;
 
     // if (std::isnan(net_torque.x()) || std::isnan(state_derivative.angular_velocity_m_s.x())) {
     //     std::println(stderr, "[DYNAMICS ERROR] NaN detected at t={:.4f}", t_global);
@@ -46,8 +42,8 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
     //     }
     // }
 
-    state_derivative.velocity_m_s += face_effects.force / (_spacecraft->mass() * gram_to_kilogram);
-    state_derivative.angular_velocity_m_s = _spacecraft->inertia_tensor_inverse() * net_torque;
+    state_derivative.velocity_m_s += face_effects.force_eci / (_spacecraft->mass_g() * gram_to_kilogram);
+    state_derivative.angular_velocity_m_s = _spacecraft->inertia_tensor_kg_m2_inverse() * net_torque;
     state_derivative.attitude.coeffs()    = compute_attitude_derivative(q_att, omega_body);
 }
 
@@ -73,48 +69,61 @@ auto spacecraft_dynamics::compute_rod_effects(const vecX& rod_magnetizations, co
     return total_torque;
 }
 
-auto spacecraft_dynamics::compute_face_effects(double density, const quat& q_att, const vec3& v_eci, const vec3& omega_body) const -> face_effects {
-    vec3 total_torque = vec3::Zero();
-    vec3 total_force  = vec3::Zero();
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
+auto spacecraft_dynamics::compute_face_effects(const environment_data& data,
+                                               const quat&             q_att,
+                                               const vec3&             v_eci,
+                                               const vec3&             r_eci,
+                                               const vec3&             omega_body) const -> face_effects {
+    vec3 total_torque_body = vec3::Zero();
+    vec3 total_force_body  = vec3::Zero();
+
+    const quat q_inv  = q_att.conjugate();
+    const vec3 s_body = (q_inv * data.r_sun_eci).normalized();
+    const vec3 v_body = q_inv * environment_model::earth_relative_v(v_eci, r_eci);
 
     for (const auto& face : _spacecraft->faces()) {
-        const auto force_drag = face.compute_force_drag(density, q_att, v_eci, omega_body);
-        const auto face_eci   = (q_att * face.center_of_pressure_m);
-        total_force += force_drag;
-        total_torque += face_eci.cross(force_drag);
+        const vec3 v_rel_body   = face.compute_v_rel_body(v_body, omega_body);
+        const vec3 f_drag_body  = face.compute_force_drag_body(data.atmospheric_density_kg_m3, v_rel_body);
+        const vec3 f_srp_body   = face.compute_force_srp_body(data.solar_pressure_Pa, s_body, data.shadow_factor);
+        const vec3 f_total_body = f_drag_body + f_srp_body;
+
+        total_force_body += f_total_body;
+        total_torque_body += face.center_of_pressure_m.cross(f_total_body);
     }
 
     return {
-        .torque = total_torque,
-        .force  = total_force,
+        .torque_body = total_torque_body,
+        .force_eci   = q_att * total_force_body,
     };
 }
+// NOLINTEND(bugprone-easily-swappable-parameters)
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto spacecraft_dynamics::compute_other_torques(const vec3& omega, const vec3& b_body, const vec3& r_eci, const quat& q_att) const -> vec3 {
+auto spacecraft_dynamics::compute_other_torques(const vec3& omega, const vec3& b_body, const vec3& r_eci, const mat3x3& eci_to_body) const -> vec3 {
     vec3 torque = vec3::Zero();
 
     // permanent magnet
     torque += _spacecraft->magnet().magnetic_moment().cross(b_body);
 
     // gyroscopic (rigid body coupling): -omega x (I * omega)
-    torque -= omega.cross(_spacecraft->inertia_tensor() * omega);
+    torque -= omega.cross(_spacecraft->inertia_tensor_kg_m2() * omega);
 
     // gravity gradient
-    torque += compute_gravity_gradient_torque(r_eci, q_att);
+    torque += compute_gravity_gradient_torque(r_eci, eci_to_body);
     return torque;
 }
 
-auto spacecraft_dynamics::compute_gravity_gradient_torque(const vec3& r_eci, const quat& q_att) const -> vec3 {
+auto spacecraft_dynamics::compute_gravity_gradient_torque(const vec3& r_eci, const mat3x3& eci_to_body) const -> vec3 {
     // position to body frame: r_body = R * r_eci
-    const vec3 r_body = q_att.toRotationMatrix().transpose() * r_eci;
+    const vec3 r_body = eci_to_body * r_eci;
 
     const double r_sq  = r_body.squaredNorm();
     const double r_val = std::sqrt(r_sq);
 
     // tau_gg = (3*mu / r^5) * (r_body x (I * r_body))
     const double coef = (3.0 * _environment->earth_mu()) / (r_sq * r_sq * r_val);
-    return coef * r_body.cross(_spacecraft->inertia_tensor() * r_body);
+    return coef * r_body.cross(_spacecraft->inertia_tensor_kg_m2() * r_body);
 }
 
 auto spacecraft_dynamics::compute_attitude_derivative(const quat& q_att, const vec3& omega) -> vecX {
