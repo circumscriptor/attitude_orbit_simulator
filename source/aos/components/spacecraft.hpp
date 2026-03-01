@@ -38,7 +38,7 @@ struct spacecraft_custom {
 using spacecraft_shape = std::variant<spacecraft_uniform, spacecraft_custom>;
 
 struct spacecraft_properties {
-    double                                 mass_g;
+    double                                 mass_kg;
     spacecraft_shape                       shape;
     hysteresis_parameters                  hysteresis;
     permanent_magnet_properties            magnet;
@@ -54,7 +54,7 @@ public:
 
     explicit spacecraft(const spacecraft_properties& properties);
 
-    [[nodiscard]] auto mass_g() const -> double;
+    [[nodiscard]] auto mass_kg() const -> double;
     [[nodiscard]] auto inertia_tensor_kg_m2() const -> const mat3x3&;
     [[nodiscard]] auto inertia_tensor_kg_m2_inverse() const -> const mat3x3&;
     [[nodiscard]] auto faces() const -> std::span<const spacecraft_face>;
@@ -69,7 +69,7 @@ protected:
 
 private:
 
-    double                      _mass_g;                        // [g] Mass
+    double                      _mass_kg;                       // [kg] Mass
     mat3x3                      _inertia_tensor_kg_m2;          // [kg*m^2] Pre-computed for physics
     mat3x3                      _inertia_tensor_kg_m2_inverse;  // [1/(kg*m^2)] Pre-computed
     spacecraft_faces            _faces;

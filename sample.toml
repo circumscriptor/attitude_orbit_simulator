@@ -2,10 +2,10 @@ t_start = 0
 t_end = 604800                     # 7 days
 dt_initial = 0.1
 checkpoint_interval = 60.0         # minute
-angular_velocity = [0.1, 0.1, 0.1]
+angular_velocity = [0.5, 0.5, 0.5]
 
 [satellite]
-mass_g = 1300.0
+mass_kg = 1.3
 hysteresis = { ms = 600000, a = 8.0, k = 4.0, c = 0.05, alpha = 1.0e-5 }
 
 [satellite.uniform]

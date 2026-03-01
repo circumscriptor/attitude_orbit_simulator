@@ -73,7 +73,7 @@ void spacecraft_custom::debug_print() const {
 }
 
 void spacecraft_properties::from_toml(const toml::table& table) {
-    mass_g = table["mass_g"].value_or(default_spacecraft_mass);
+    mass_kg = table["mass_kg"].value_or(default_spacecraft_mass);
 
     if (const auto* uniform = table["uniform"].as_table()) {
         shape.emplace<spacecraft_uniform>().from_toml(*uniform);
@@ -102,7 +102,7 @@ void spacecraft_properties::from_toml(const toml::table& table) {
 
 void spacecraft_properties::debug_print() const {
     std::cout << "--  spacecraft properties  --"  //
-              << "\n  mass: " << mass_g           //
+              << "\n  mass: " << mass_kg          //
               << '\n';
 
     std::visit([](auto&& s) { s.debug_print(); }, shape);
@@ -118,7 +118,7 @@ void spacecraft_properties::debug_print() const {
 
 // NOLINTEND(readability-magic-numbers)
 
-spacecraft::spacecraft(const spacecraft_properties& properties) : _mass_g(properties.mass_g), _magnet(properties.magnet) {
+spacecraft::spacecraft(const spacecraft_properties& properties) : _mass_kg(properties.mass_kg), _magnet(properties.magnet) {
     _rods.reserve(properties.rods.size());
     for (const auto& rod : properties.rods) {
         _rods.emplace_back(rod, properties.hysteresis);
@@ -129,7 +129,7 @@ spacecraft::spacecraft(const spacecraft_properties& properties) : _mass_g(proper
             using shape_type = std::decay_t<decltype(shape)>;
 
             if constexpr (std::is_same_v<shape_type, spacecraft_uniform>) {
-                uniform(_mass_g * gram_to_kilogram, shape.dimensions_m, shape.drag_coefficient);
+                uniform(_mass_kg, shape.dimensions_m, shape.drag_coefficient);
             } else if constexpr (std::is_same_v<shape_type, spacecraft_custom>) {
                 _inertia_tensor_kg_m2 = shape.inertia;
                 _faces                = shape.faces;
@@ -140,8 +140,8 @@ spacecraft::spacecraft(const spacecraft_properties& properties) : _mass_g(proper
     _inertia_tensor_kg_m2_inverse = _inertia_tensor_kg_m2.inverse();
 }
 
-auto spacecraft::mass_g() const -> double {
-    return _mass_g;
+auto spacecraft::mass_kg() const -> double {
+    return _mass_kg;
 }
 
 auto spacecraft::inertia_tensor_kg_m2() const -> const mat3x3& {
