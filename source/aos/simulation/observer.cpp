@@ -86,4 +86,10 @@ void state_observer::operator()(const system_state& state, double time) const {
     *_file << '\n';
 }
 
+void state_observer::flush() {
+    if (_file) {
+        _file->flush();
+    }
+}
+
 }  // namespace aos

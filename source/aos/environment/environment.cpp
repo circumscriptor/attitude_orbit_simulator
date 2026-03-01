@@ -80,12 +80,20 @@ environment_model::environment_model(const environment_model_properties& propert
 environment_model::~environment_model() = default;
 
 auto environment_model::calculate(double t_sec, const vec3& r_eci_m, const vec3& v_eci_m_s) const -> environment_data {
+    // if (std::isnan(r_eci_m.x()) || std::isnan(v_eci_m_s.x())) {
+    //     std::println(stderr, "[FATAL] environment_model received NaN state at t={:.4f}\n  Pos: [{:f}, {:f}, {:f}]\n  Vel: [{:f}, {:f}, {:f}]", t_sec,
+    //                  r_eci_m.x(), r_eci_m.y(), r_eci_m.z(), v_eci_m_s.x(), v_eci_m_s.y(), v_eci_m_s.z());
+    //     std::exit(1);
+    // }
+
     // compute fields at current position
     cache_transform(t_sec, r_eci_m);
 
-    const auto b = magnetic_field();
-    const auto d = atmospheric_density();
-    const auto g = gravitational_field();
+    const auto b       = magnetic_field();
+    const auto d       = atmospheric_density();
+    const auto g_earth = gravitational_field();
+    const auto g_sun   = solar_perturbation(r_eci_m, _cache.r_sun_eci);
+    const auto g_total = g_earth + g_sun;
 
     // compute fields at future position for gradient calculation
     const double t_next = t_sec + dt_gradient;
@@ -100,7 +108,7 @@ auto environment_model::calculate(double t_sec, const vec3& r_eci_m, const vec3&
     return {
         .magnetic_field_eci_T       = b,
         .magnetic_field_dot_eci_T_s = db_dt,
-        .gravity_eci_m_s2           = g,
+        .gravity_eci_m_s2           = g_total,
         .atmospheric_density_kg_m3  = d,
     };
 }
@@ -139,7 +147,14 @@ auto environment_model::gravitational_field() const -> vec3 {
 }
 
 void environment_model::cache_transform(double t_sec, const vec3& r_eci_m) const {
+    // if (std::isnan(r_eci_m.x()) || std::abs(r_eci_m.norm()) > 1e8) {
+    //     std::println(stderr, "[CRITICAL] ECI State Explosion at t={:.3f}: [{:f}, {:f}, {:f}]", t_sec, r_eci_m.x(), r_eci_m.y(), r_eci_m.z());
+    // }
+
     _cache.current_year = _start_year_decimal + (t_sec / seconds_per_year);
+
+    const double days_j2000 = (_cache.current_year - 2000.0) * 365.25;
+    _cache.r_sun_eci        = sun_position_eci(days_j2000);
 
     const double theta     = earth_rotation_rate_rad_s * t_sec;  // TODO: calculate gmst
     const double cos_theta = std::cos(theta);
@@ -160,9 +175,47 @@ void environment_model::cache_transform(double t_sec, const vec3& r_eci_m) const
                    _cache.lat_deg, _cache.lon_deg, _cache.alt_m,                   // geodetic
                    _cache.rotation_matrix_buffer);                                 //
 
+    // if (std::isnan(_cache.lat_deg) || std::isnan(_cache.alt_m)) {
+    //     std::println(stderr,
+    //                  "[TRANSFORM ERROR] NaN detected at t={:.3f}\n  ECI:  [{:e}, {:e}, {:e}]\n  ECEF: [{:e}, {:e}, {:e}]\n  Lat: {:f}, Lon: {:f}, Alt: {:f}",
+    //                  t_sec, r_eci_m.x(), r_eci_m.y(), r_eci_m.z(), _cache.r_ecef_m.x(), _cache.r_ecef_m.y(), _cache.r_ecef_m.z(), _cache.lat_deg,
+    //                  _cache.lon_deg, _cache.alt_m);
+    // }
+
     const auto& m = _cache.rotation_matrix_buffer;
     _cache.R_enu_to_ecef << m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8];  // NOLINT(readability-magic-numbers)
     _cache.R_enu_to_eci = _cache.R_ecef_to_eci * _cache.R_enu_to_ecef;
+}
+
+auto environment_model::sun_position_eci(double days_since_j2000) -> vec3 {
+    const double g       = (357.528 + 0.9856003 * days_since_j2000) * deg_to_rad;
+    const double l       = (280.460 + 0.9856474 * days_since_j2000) * deg_to_rad;
+    const double sin_g   = std::sin(g);
+    const double cos_g   = std::cos(g);
+    const double lambda  = l + ((1.915 * sin_g + 0.020 * (2.0 * sin_g * cos_g)) * deg_to_rad);
+    const double epsilon = (23.439 - 0.0000004 * days_since_j2000) * deg_to_rad;
+    const double r_au    = 1.00014 - (0.01671 * cos_g) - (0.00014 * (2.0 * cos_g * cos_g - 1.0));
+    const double r_m     = r_au * au_to_m;
+    const double sin_l   = std::sin(lambda);
+    const double cos_l   = std::cos(lambda);
+    const double sin_e   = std::sin(epsilon);
+    const double cos_e   = std::cos(epsilon);
+    return {
+        r_m * cos_l,
+        r_m * cos_e * sin_l,
+        r_m * sin_e * sin_l,
+    };
+}
+
+auto environment_model::solar_perturbation(const vec3& r_sat_eci, const vec3& r_sun_eci) -> vec3 {
+    const vec3   r_rel    = r_sun_eci - r_sat_eci;
+    const double d_rel_sq = r_rel.squaredNorm();
+    const double d_sun_sq = r_sun_eci.squaredNorm();
+    // (d^2)^(1.5) = d^3
+    const double d_rel_cubed = d_rel_sq * std::sqrt(d_rel_sq);
+    const double d_sun_cubed = d_sun_sq * std::sqrt(d_sun_sq);
+    // a = mu * (r_rel/d_rel^3 - r_sun/d_sun^3)
+    return sun_mu_m3_s2 * ((r_rel / d_rel_cubed) - (r_sun_eci / d_sun_cubed));
 }
 
 }  // namespace aos

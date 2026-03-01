@@ -90,6 +90,7 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
                 global_time_accum += section_period;
                 remaining_time -= section_period;
                 observer(current_state, global_time_accum);
+                // observer.flush();  // comment when not needed
                 std::print("Checkpoint: {} s / {} s\r", global_time_accum, params.t_end);
             }
         }

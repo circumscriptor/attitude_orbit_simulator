@@ -35,6 +35,17 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
 
     // TODO: compute solar pressure
 
+    // if (std::isnan(net_torque.x()) || std::isnan(state_derivative.angular_velocity_m_s.x())) {
+    //     std::println(stderr, "[DYNAMICS ERROR] NaN detected at t={:.4f}", t_global);
+    //     std::println(stderr, "  Rods Torque:  [{:f}, {:f}, {:f}]", rods_torque.x(), rods_torque.y(), rods_torque.z());
+    //     std::println(stderr, "  Faces Torque: [{:f}, {:f}, {:f}]", faces_torque.x(), faces_torque.y(), faces_torque.z());
+    //     std::println(stderr, "  Net Torque:   [{:f}, {:f}, {:f}]", net_torque.x(), net_torque.y(), net_torque.z());
+    //     std::println(stderr, "  Omega Body:   [{:f}, {:f}, {:f}]", omega_body.x(), omega_body.y(), omega_body.z());
+    //     for (int i = 0; i < current_state.rod_magnetizations.size(); ++i) {
+    //         std::println(stderr, "  Rod[{}] M_dot: {:f}", i, state_derivative.rod_magnetizations[i]);
+    //     }
+    // }
+
     state_derivative.velocity_m_s += face_effects.force / (_spacecraft->mass() * gram_to_kilogram);
     state_derivative.angular_velocity_m_s = _spacecraft->inertia_tensor_inverse() * net_torque;
     state_derivative.attitude.coeffs()    = compute_attitude_derivative(q_att, omega_body);

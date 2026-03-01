@@ -8,3 +8,5 @@ output.csv
 
 # Other files
 imgui.ini
+perf.data
+perf.data.old

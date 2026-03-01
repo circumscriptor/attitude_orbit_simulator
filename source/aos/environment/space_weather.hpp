@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <string_view>
@@ -33,7 +34,9 @@ struct space_weather {
     double predicted_days_cutoff_year_decimal;
     double predicted_months_cutoff_year_decimal;
 
-    [[nodiscard]] auto get_at(double year_decimal) const -> const space_weather_data&;
+    [[nodiscard]] auto get_at(double year_decimal, size_t& hint) const -> const space_weather_data&;
+    [[nodiscard]] auto get_month_at(double year_decimal) const -> const space_weather_data&;
+    [[nodiscard]] auto get_linear_month_at(double year_decimal) const -> space_weather_data;
 };
 
 class space_weather_parser {

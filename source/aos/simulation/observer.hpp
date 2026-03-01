@@ -28,6 +28,8 @@ public:
 
     void operator()(const system_state& state, double time) const;
 
+    void flush();
+
 private:
 
     std::shared_ptr<std::ofstream> _file;

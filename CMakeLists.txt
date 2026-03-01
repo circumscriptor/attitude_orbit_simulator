@@ -21,6 +21,7 @@ add_library(attitude_orbit_simulator_core STATIC)
 
 set_target_properties(attitude_orbit_simulator_core PROPERTIES
     CXX_SCAN_FOR_MODULES OFF
+    INTERPROCEDURAL_OPTIMIZATION_RELEASE ON
 )
 
 target_compile_definitions(attitude_orbit_simulator_core PRIVATE

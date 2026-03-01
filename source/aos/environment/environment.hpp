@@ -67,6 +67,10 @@ public:
     /** @brief Get spacecraft velocity relative to earth rotation */
     [[nodiscard]] static auto earth_relative_v(const vec3& v_eci_m_s) -> vec3;
 
+    [[nodiscard]] static auto sun_position_eci(double days_since_j2000) -> vec3;
+
+    [[nodiscard]] static auto solar_perturbation(const vec3& r_sat_eci, const vec3& r_sun_eci) -> vec3;
+
 protected:
 
     // avoid re-allocation
@@ -83,6 +87,7 @@ protected:
         double lon_deg;
         double alt_m;
         vec3   r_ecef_m;
+        vec3   r_sun_eci;  // sun position in ECI
 
         // other
         double current_year;

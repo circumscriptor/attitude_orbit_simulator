@@ -2,6 +2,7 @@
 
 #include "aos/environment/space_weather.hpp"
 
+#include <cstddef>
 #include <filesystem>
 
 extern "C" {
@@ -15,6 +16,7 @@ struct nrlmsise {
     mutable nrlmsise_flags  flags{};
     mutable nrlmsise_output output{};
     space_weather           weather{};
+    mutable size_t          hint{};
 
     explicit nrlmsise(const std::filesystem::path& filepath);
 

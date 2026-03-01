@@ -1,12 +1,12 @@
 t_start = 0
-t_end = 604800                      # 7 days
+t_end = 604800                     # 7 days
 dt_initial = 0.1
-checkpoint_interval = 0.0           # minute
-angular_velocity = [0.5, -0.5, 0.5]
+checkpoint_interval = 60.0         # minute
+angular_velocity = [0.1, 0.1, 0.1]
 
 [satellite]
 mass_g = 1300.0
-hysteresis = { ms = 6.0e5, a = 6.5, k = 4.0, c = 0.05, alpha = 1.0e-5 }
+hysteresis = { ms = 600000, a = 8.0, k = 4.0, c = 0.05, alpha = 1.0e-5 }
 
 [satellite.uniform]
 dimensions_m = [0.1, 0.1, 0.1]
@@ -16,22 +16,22 @@ drag_coefficient = 2.2
 remanence = 1.21
 relative_permeability = 1.05
 orientation = [0.0, 0.0, 1.0]
-cylindrical = { length = 0.05, radius = 0.005 }
+cylindrical = { length = 0.02, radius = 0.0025 }
 
 [[satellite.rods]]
-volume_m3 = 0.00000785
+volume_m3 = 8.0e-8
 orientation = [1.0, 0.0, 0.0]
 
 [[satellite.rods]]
-volume_m3 = 0.00000785
+volume_m3 = 8.0e-8
 orientation = [-1.0, 0.0, 0.0]
 
 [[satellite.rods]]
-volume_m3 = 0.00000785
+volume_m3 = 8.0e-8
 orientation = [0.0, 1.0, 0.0]
 
 [[satellite.rods]]
-volume_m3 = 0.00000785
+volume_m3 = 8.0e-8
 orientation = [0.0, -1.0, 0.0]
 
 [orbit]
@@ -49,4 +49,4 @@ gravity_model_order = 12
 
 [observer]
 exclude_elements = false
-exclude_magnitudes = true
+exclude_magnitudes = false

@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <array>
 #include <charconv>
+#include <cmath>
+#include <cstddef>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -13,7 +15,7 @@
 
 namespace aos {
 
-auto space_weather::get_at(double year_decimal) const -> const space_weather_data& {
+auto space_weather::get_at(double year_decimal, size_t& hint) const -> const space_weather_data& {
     const space_weather_data_vec* target = nullptr;
 
     if (year_decimal <= observed_cutoff_year_decimal) {
@@ -30,12 +32,50 @@ auto space_weather::get_at(double year_decimal) const -> const space_weather_dat
         throw std::runtime_error("space weather data are empty");
     }
 
-    // TODO: Optimize in the future to access by day or month without iterating
+    if (hint < target->size() && (*target)[hint].year_decimal <= year_decimal) {
+        if (hint + 1 < target->size() && (*target)[hint + 1].year_decimal > year_decimal) {
+            return (*target)[hint];
+        }
+    } else {
+        hint = 0;
+    }
+
     auto it = std::ranges::lower_bound(*target, year_decimal, {}, &space_weather_data::year_decimal);
     if (it == target->end()) {
         return target->back();
     }
     return *it;
+}
+
+auto space_weather::get_month_at(double year_decimal) const -> const space_weather_data& {
+    const auto&  target = predicted_months;
+    const double month  = (year_decimal - target.front().year_decimal) * 12.0;
+    const auto   index  = static_cast<size_t>(std::floor(month));
+    if (index >= target.size() - 1) {
+        return target.back();
+    }
+    return target[index];
+}
+
+auto space_weather::get_linear_month_at(double year_decimal) const -> space_weather_data {
+    const auto&  target   = predicted_months;
+    const double month    = (year_decimal - target.front().year_decimal) * 12.0;
+    const auto   index    = static_cast<size_t>(std::floor(month));
+    const double fraction = month - std::floor(month);
+
+    if (index >= target.size() - 1) {
+        return target.back();
+    }
+
+    const auto& d1 = target[index];
+    const auto& d2 = target[index + 1];
+
+    return {
+        .year_decimal = year_decimal,
+        .f107         = d1.f107 + (fraction * (d2.f107 - d1.f107)),
+        .f107a        = d1.f107a + (fraction * (d2.f107a - d1.f107a)),
+        .type         = space_weather_type_prm,
+    };
 }
 
 auto space_weather_parser::parse(const std::filesystem::path& filepath) -> space_weather {

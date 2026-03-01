@@ -8,6 +8,7 @@
 
 #include <toml++/impl/table.hpp>
 
+#include <cmath>
 #include <cstddef>
 #include <iostream>
 #include <limits>
@@ -46,20 +47,22 @@ void spacecraft_face::debug_print() const {
 }
 
 auto spacecraft_face::compute_force_drag(double density, const quat& q_att, const vec3& v_eci, const vec3& omega_body) const -> vec3 {
-    const vec3   v_rel = compute_v_rel_atmosphere(q_att, v_eci, omega_body);
-    const double v_mag = v_rel.norm();
-    if (v_mag <= std::numeric_limits<double>::epsilon()) {
-        return {};
+    const vec3       v_rel = compute_v_rel_atmosphere(q_att, v_eci, omega_body);
+    const double     v_sq  = v_rel.squaredNorm();
+    constexpr double eps   = std::numeric_limits<double>::epsilon();
+    if (v_sq <= (eps * eps)) {
+        return vec3::Zero();
     }
 
+    const double v_mag     = std::sqrt(v_sq);
     const vec3   n_eci     = q_att * surface_normal;
     const double cos_theta = n_eci.dot(-v_rel / v_mag);
-    if (cos_theta <= 0.0) {
-        return {};
+    if (!(cos_theta > 0.0)) {
+        return vec3::Zero();
     }
 
-    const double effective_area = surface_area_m2 * cos_theta;
-    return -0.5 * density * drag_coefficient * effective_area * v_mag * v_rel;
+    const double scalar = 0.5 * density * drag_coefficient * surface_area_m2 * cos_theta * v_mag;
+    return scalar * v_rel;
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
