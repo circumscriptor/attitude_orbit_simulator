@@ -49,10 +49,10 @@ orbit_observer::orbit_observer(const std::string& filename) {
 }
 
 void orbit_observer::operator()(const system_state& state, double t) const {
-    const double r_mag = state.position.norm();
-    const double v_mag = state.velocity.norm();
+    const double r_mag = state.position_m.norm();
+    const double v_mag = state.velocity_m_s.norm();
 
-    (*_file) << t << "," << state.position.x() << "," << state.position.y() << "," << state.position.z() << "," << r_mag << "," << v_mag << "\n";
+    (*_file) << t << "," << state.position_m.x() << "," << state.position_m.y() << "," << state.position_m.z() << "," << r_mag << "," << v_mag << "\n";
 }
 
 attitude_observer::attitude_observer(const std::string& filename) {
@@ -70,17 +70,17 @@ void attitude_observer::operator()(const system_state& state, double t) const {
     const double nadir_error = calculate_nadir_error(state);
 
     (*_file) << t << "," << state.attitude.w() << "," << state.attitude.x() << "," << state.attitude.y() << "," << state.attitude.z() << ","
-             << euler[2] * rad_to_deg << ","       // Roll
-             << euler[1] * rad_to_deg << ","       // Pitch
-             << euler[0] * rad_to_deg << ","       // Yaw
-             << state.angular_velocity.x() << ","  //
-             << state.angular_velocity.y() << ","  //
-             << state.angular_velocity.z() << ","  //
+             << euler[2] * rad_to_deg << ","           // Roll
+             << euler[1] * rad_to_deg << ","           // Pitch
+             << euler[0] * rad_to_deg << ","           // Yaw
+             << state.angular_velocity_m_s.x() << ","  //
+             << state.angular_velocity_m_s.y() << ","  //
+             << state.angular_velocity_m_s.z() << ","  //
              << nadir_error << "\n";
 }
 
 auto attitude_observer::calculate_nadir_error(const system_state& state) -> double {
-    const vec3   nadir_eci     = -state.position.normalized();
+    const vec3   nadir_eci     = -state.position_m.normalized();
     const mat3x3 R_eci_to_body = state.attitude.toRotationMatrix().transpose();  // NOLINT(readability-identifier-naming)
     const vec3   nadir_body    = R_eci_to_body * nadir_eci;
     const double cos_theta     = std::clamp(nadir_body.z(), -1.0, 1.0);

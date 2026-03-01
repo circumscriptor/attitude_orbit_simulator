@@ -2,6 +2,7 @@
 
 #include "aos/core/state.hpp"
 #include "aos/core/types.hpp"
+#include "aos/environment/environment.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -9,16 +10,16 @@
 
 namespace aos {
 
-void spacecraft_dynamics::operator()(const system_state& current_state, system_state& state_derivative, double t) const {
-    const double t_global   = _global_time_offset + t;
-    const vec3&  r_eci      = current_state.position;
-    const vec3&  v_eci      = current_state.velocity;
+void spacecraft_dynamics::operator()(const system_state& current_state, system_state& state_derivative, double t_sec) const {
+    const double t_global   = _global_time_offset + t_sec;
+    const vec3&  r_eci      = current_state.position_m;
+    const vec3&  v_eci      = current_state.velocity_m_s;
     const quat   q_att      = current_state.attitude.normalized();  // normalize to prevent drift
-    const vec3&  omega_body = current_state.angular_velocity;
+    const vec3&  omega_body = current_state.angular_velocity_m_s;
     const auto   env_data   = _environment->calculate(t_global, r_eci, v_eci);
 
-    state_derivative.position = v_eci;
-    state_derivative.velocity = env_data.gravity_eci_m_s2;
+    state_derivative.position_m   = v_eci;
+    state_derivative.velocity_m_s = env_data.gravity_eci_m_s2;
 
     const mat3x3 R_eci_to_body    = q_att.toRotationMatrix().transpose();  // NOLINT(readability-identifier-naming)
     const vec3   b_body           = R_eci_to_body * env_data.magnetic_field_eci_T;
@@ -30,8 +31,8 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
 
     // TODO: compute athmospheric drag and solar pressure
 
-    state_derivative.angular_velocity  = _spacecraft->inertia_tensor_inverse() * net_torque;
-    state_derivative.attitude.coeffs() = compute_attitude_derivative(q_att, omega_body);
+    state_derivative.angular_velocity_m_s = _spacecraft->inertia_tensor_inverse() * net_torque;
+    state_derivative.attitude.coeffs()    = compute_attitude_derivative(q_att, omega_body);
 }
 
 auto spacecraft_dynamics::compute_rod_effects(const system_state& state, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3 {
@@ -87,10 +88,19 @@ auto spacecraft_dynamics::compute_gravity_gradient_torque(const vec3& r_eci, con
     return coef * r_body.cross(_spacecraft->inertia_tensor() * r_body);
 }
 
-auto spacecraft_dynamics::compute_attitude_derivative(const quat& q, const vec3& omega) -> vecX {
+auto spacecraft_dynamics::compute_attitude_derivative(const quat& q_att, const vec3& omega) -> vecX {
     // dq/dt = 0.5 * q * omega_quat
     const quat omega_q(0, omega.x(), omega.y(), omega.z());
-    return 0.5 * (q * omega_q).coeffs();
+    return 0.5 * (q_att * omega_q).coeffs();
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+auto spacecraft_dynamics::compute_v_face_rel_atmosphere(const quat& q_att, const vec3& v_eci, const vec3& omega_body, const vec3& com_body) -> vec3 {
+    const vec3 v_com_rel  = environment_model::earth_relative_v(v_eci);
+    const vec3 r_face_eci = q_att * com_body;
+    const vec3 omega_eci  = q_att * omega_body;
+    const vec3 v_tangent  = omega_eci.cross(r_face_eci);
+    return v_com_rel + v_tangent;
 }
 
 }  // namespace aos

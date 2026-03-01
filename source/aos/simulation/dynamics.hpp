@@ -35,9 +35,9 @@ public:
      * @brief The main operator called by the ODE solver.
      * @param current_state The current state vector (x) of the system.
      * @param state_derivative The output state derivative vector (dxdt) to be calculated.
-     * @param t The current simulation time in seconds.
+     * @param t_sec The current simulation time in seconds.
      */
-    void operator()(const system_state& current_state, system_state& state_derivative, double t) const;
+    void operator()(const system_state& current_state, system_state& state_derivative, double t_sec) const;
 
     void set_global_time_offset(double offset_s) { _global_time_offset = offset_s; }
 
@@ -53,7 +53,10 @@ protected:
     [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_eci, const quat& q_att) const -> vec3;
 
     // quaternion derivative: 0.5 * q * omega
-    [[nodiscard]] static auto compute_attitude_derivative(const quat& q, const vec3& omega) -> vecX;
+    [[nodiscard]] static auto compute_attitude_derivative(const quat& q_att, const vec3& omega) -> vecX;
+
+    // compute relative velocity of spacecraft face center of mass
+    [[nodiscard]] static auto compute_v_face_rel_atmosphere(const quat& q_att, const vec3& v_eci, const vec3& omega_body, const vec3& com_body) -> vec3;
 
 private:
 

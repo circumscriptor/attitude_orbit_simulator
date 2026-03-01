@@ -11,18 +11,12 @@
 
 namespace aos {
 
-struct geodetic_coords {
-    double lat_deg{};
-    double lon_deg{};
-    double alt_m{};
-};
-
 struct environment_data {
     // NOLINTBEGIN(readability-identifier-naming)
-    vec3   magnetic_field_eci_T;        // Tesla - B
-    vec3   magnetic_field_dot_eci_T_s;  // dB/dt (Tesla/s) - Material Derivative
-    vec3   gravity_eci_m_s2;            // m/s^2 - Total Acceleration
-    double atmospheric_density_kg_m3;   // kg/m^3 - Density of Gasses including Anomalous Oxygen
+    vec3   magnetic_field_eci_T;        // [Tesla] - B
+    vec3   magnetic_field_dot_eci_T_s;  // [Tesla/s] - (dB/dt) Material Derivative
+    vec3   gravity_eci_m_s2;            // [m/s^2] - Total Acceleration
+    double atmospheric_density_kg_m3;   // [kg/m^3] - Density of Gasses including Anomalous Oxygen
     // NOLINTEND(readability-identifier-naming)
 };
 
@@ -38,10 +32,10 @@ public:
     virtual ~environment_model();
 
     /**
-     * @brief Computes environmental vectors.
-     * @param t_sec Global simulation time.
-     * @param r_eci_m Position vector in ECI frame.
-     * @param v_eci_m_s Velocity vector in ECI frame (required for magnetic gradient).
+     * @brief Compute environmental effects
+     * @param t_sec Global simulation time
+     * @param r_eci_m Position vector in ECI frame
+     * @param v_eci_m_s Velocity vector in ECI frame (required for magnetic gradient)
      */
     [[nodiscard]] auto calculate(double t_sec, const vec3& r_eci_m, const vec3& v_eci_m_s) const -> environment_data;
 
@@ -54,7 +48,6 @@ protected:
 
     // avoid re-allocation
     struct computation_cache {
-        double              current_year;
         std::vector<double> rotation_matrix_buffer;
 
         // intermediate matrices
@@ -67,6 +60,9 @@ protected:
         double lon_deg;
         double alt_m;
         vec3   r_ecef_m;
+
+        // other
+        double current_year;
     };
 
     /** Compute atmospheric density at cached transform */

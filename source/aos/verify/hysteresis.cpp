@@ -23,8 +23,13 @@ void verify_hysteresis(const std::string& output_filename, const hysteresis_para
     static constexpr const double t_end   = 2.0;    // [s] Simulate for 2 full cycles.
     static constexpr const double dt      = 0.001;  // [s] Initial time step.
 
-    const hysteresis_rod           hymu80_rod(1.0, {1, 0, 0}, params);  // Volume and orientation don't matter here
-    const hysteresis_loop_dynamics dynamics(hymu80_rod);
+    const hysteresis_rod_properties properties{
+        .volume_m3   = 1.0,
+        .orientation = {1, 0, 0},
+        .hysteresis  = params,
+    };
+    const hysteresis_rod           rod(properties);  // Volume and orientation don't matter here
+    const hysteresis_loop_dynamics dynamics(rod);
     const bh_observer              observer(output_filename);
 
     hysteresis_state_type m_initial{0.0};

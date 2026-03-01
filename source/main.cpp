@@ -71,17 +71,17 @@ int main(int argc, char** argv) {
         ("dt", value<double>(&params.dt_initial), "Initial simulation time step [s]");                               //
 
     options_description spacecraft_parameters("Spacecraft parameters");
-    spacecraft_parameters.add_options()                                                                             //
-        ("mass", value<double>(&params.satellite.mass_g), "Spacecraft mass [g]")                                    //
-        ("width", value<double>(), "Spacecraft width [m]")                                                          //
-        ("height", value<double>(), "Spacecraft height [m]")                                                        //
-        ("length", value<double>(), "Spacecraft length [m]")                                                        //
-        ("magnet-remanence", value<double>(&params.satellite.magnet_remanence), "Permanent magnet remanence [T]")   //
-        ("magnet-length", value<double>(&params.satellite.magnet_length), "Permanent magnet length [m]")            //
-        ("magnet-diameter", value<double>(&params.satellite.magnet_diameter), "Permanent magnet diameter [m]")      //
-        ("no-rods", "Do not use hysteresis rods")                                                                   //
-        ("rod-volume", value<double>(&params.satellite.hysteresis_rod_volume), "Volume of hysteresis rod in [m3]")  //
-        ("rod-orientation", value<std::vector<std::string>>(), "Hysteresis rod orientation (multiple, format: x,y,z)");
+    spacecraft_parameters.add_options()                        //
+                                                               // ("mass", value<double>(&params.satellite.mass_g), "Spacecraft mass [g]")  //
+        ("width", value<double>(), "Spacecraft width [m]")     //
+        ("height", value<double>(), "Spacecraft height [m]")   //
+        ("length", value<double>(), "Spacecraft length [m]");  //
+    // ("magnet-remanence", value<double>(&params.satellite.magnet_remanence), "Permanent magnet remanence [T]")   //
+    // ("magnet-length", value<double>(&params.satellite.magnet_length), "Permanent magnet length [m]")            //
+    // ("magnet-diameter", value<double>(&params.satellite.magnet_diameter), "Permanent magnet diameter [m]")      //
+    // ("no-rods", "Do not use hysteresis rods")                                                                   //
+    // ("rod-volume", value<double>(&params.satellite.hysteresis_rod_volume), "Volume of hysteresis rod in [m3]")  //
+    // ("rod-orientation", value<std::vector<std::string>>(), "Hysteresis rod orientation (multiple, format: x,y,z)");
 
     options_description orbit_parameters("Orbit parameters");
     orbit_parameters.add_options()                                                                                  //
@@ -93,12 +93,12 @@ int main(int argc, char** argv) {
         ("orbit-mean-anomaly", value<double>(&params.orbit.mean_anomaly_rad), "Orbit Mean Anomaly [rad]");
 
     options_description hysteresis_parameters("Hysteresis parameters");
-    hysteresis_parameters.add_options()                                                                               //
-        ("hysteresis-ms", value<double>(&params.satellite.hysteresis_params.ms), "Saturation Magnetization [A/m]")    //
-        ("hysteresis-a", value<double>(&params.satellite.hysteresis_params.a), "Anhysteretic shape parameter [A/m]")  //
-        ("hysteresis-k", value<double>(&params.satellite.hysteresis_params.k), "Pinning energy density [A/m]")        //
-        ("hysteresis-c", value<double>(&params.satellite.hysteresis_params.c), "Reversibility coefficient [0-1]")     //
-        ("hysteresis-alpha", value<double>(&params.satellite.hysteresis_params.alpha), "Inter-domain coupling");      //
+    // hysteresis_parameters.add_options()                                                                               //
+    //     ("hysteresis-ms", value<double>(&params.satellite.hysteresis_params.ms), "Saturation Magnetization [A/m]")    //
+    //     ("hysteresis-a", value<double>(&params.satellite.hysteresis_params.a), "Anhysteretic shape parameter [A/m]")  //
+    //     ("hysteresis-k", value<double>(&params.satellite.hysteresis_params.k), "Pinning energy density [A/m]")        //
+    //     ("hysteresis-c", value<double>(&params.satellite.hysteresis_params.c), "Reversibility coefficient [0-1]")     //
+    //     ("hysteresis-alpha", value<double>(&params.satellite.hysteresis_params.alpha), "Inter-domain coupling");      //
 
     options_description other("Other options");
     other.add_options()                                                                                                                           //
@@ -143,28 +143,28 @@ int main(int argc, char** argv) {
     try {
         std::vector<std::string> tokens;
 
-        if (vm.contains("width")) {
-            params.satellite.dim_m.x() = vm["width"].as<double>();
-        }
+        // if (vm.contains("width")) {
+        //     params.satellite.dim_m.x() = vm["width"].as<double>();
+        // }
 
-        if (vm.contains("height")) {
-            params.satellite.dim_m.y() = vm["height"].as<double>();
-        }
+        // if (vm.contains("height")) {
+        //     params.satellite.dim_m.y() = vm["height"].as<double>();
+        // }
 
-        if (vm.contains("length")) {
-            params.satellite.dim_m.z() = vm["length"].as<double>();
-        }
+        // if (vm.contains("length")) {
+        //     params.satellite.dim_m.z() = vm["length"].as<double>();
+        // }
 
-        if (vm.contains("no-rods")) {
-            params.satellite.hysteresis_rod_orientations.clear();
-        } else if (vm.contains("rod-orientation")) {
-            params.satellite.hysteresis_rod_orientations.clear();
+        // if (vm.contains("no-rods")) {
+        //     params.satellite.hysteresis_rods.clear();
+        // } else if (vm.contains("rod-orientation")) {
+        //     params.satellite.hysteresis_rods.clear();
 
-            const auto& orientations = vm["rod-orientation"].as<std::vector<std::string>>();
-            for (const auto& orientation : orientations) {
-                parse_option_vec3(tokens, orientation, params.satellite.hysteresis_rod_orientations.emplace_back());
-            }
-        }
+        //     const auto& orientations = vm["rod-orientation"].as<std::vector<std::string>>();
+        //     for (const auto& orientation : orientations) {
+        //         parse_option_vec3(tokens, orientation, params.satellite.hysteresis_rods.emplace_back());
+        //     }
+        // }
 
         if (vm.contains("angular-velocity")) {
             const auto& angular_velocity = vm["angular-velocity"].as<std::string>();
@@ -180,8 +180,8 @@ int main(int argc, char** argv) {
 
     try {
         if (vm.contains("verify-hysteresis")) {
-            params.satellite.hysteresis_params.debug_print();
-            aos::verify_hysteresis(vm["output"].as<std::string>(), params.satellite.hysteresis_params);
+            // params.satellite.hysteresis_params.debug_print();
+            // aos::verify_hysteresis(vm["output"].as<std::string>(), params.satellite.hysteresis_params);
         } else if (vm.contains("verify-attitude")) {
             params.debug_print();
             aos::verify_attitude(vm["output"].as<std::string>(), params);

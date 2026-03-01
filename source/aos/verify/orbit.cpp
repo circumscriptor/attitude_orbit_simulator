@@ -37,10 +37,10 @@ void verify_orbit(const std::string& output_filename, const simulation_parameter
     const auto [position, velocity] = orbital_converter::to_cartesian(params.orbit);
 
     system_state state;
-    state.position         = position;
-    state.velocity         = velocity;
-    state.attitude         = quat::Identity();
-    state.angular_velocity = vec3::Zero();
+    state.position_m           = position;
+    state.velocity_m_s         = velocity;
+    state.attitude             = quat::Identity();
+    state.angular_velocity_m_s = vec3::Zero();
 
     using stepper_type = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
     auto stepper       = make_controlled<stepper_type>(default_absolute_error, default_relative_error);

@@ -9,6 +9,11 @@
 
 namespace aos {
 
+struct csv_state_observer_properties {
+    bool exclude_elements;    // per-element entries
+    bool exclude_magnitudes;  // magnitude (vector length) entries
+};
+
 /**
  * @class csv_state_observer
  * @brief An observer functor that writes the simulation state to a CSV file.
@@ -20,11 +25,6 @@ namespace aos {
 class csv_state_observer {
 public:
 
-    struct properties {
-        bool exclude_elements;    // per-element entries
-        bool exclude_magnitudes;  // magnitude (vector length) entries
-    };
-
     /**
      * @brief Constructs the CSV observer.
      * @param filename The path to the output CSV file.
@@ -32,7 +32,7 @@ public:
      *                 dynamically generate the header.
      * @param props The properties struct containing configuration.
      */
-    explicit csv_state_observer(const std::string& filename, std::size_t num_rods, const properties& props);
+    explicit csv_state_observer(const std::string& filename, std::size_t num_rods, const csv_state_observer_properties& props);
 
     /**
      * @brief The main operator called by the ODE solver at each step.

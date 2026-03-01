@@ -5,15 +5,23 @@
 namespace aos {
 
 struct hysteresis_parameters {
-    double ms;     // Saturation Magnetization [A/m]
-    double a;      // Anhysteretic shape parameter [A/m]
-    double k;      // Pinning energy density (coercivity) [A/m]
-    double c;      // Reversibility coefficient [0-1]
-    double alpha;  // Inter-domain coupling coefficient
+    double ms;     // [A/m] Saturation Magnetization
+    double a;      // [A/m] Anhysteretic shape parameter
+    double k;      // [A/m] Pinning energy density (coercivity)
+    double c;      // [-] Reversibility coefficient (0..1)
+    double alpha;  // [-] Inter-domain coupling coefficient
 
     void debug_print() const;
 
     static auto hymu80() -> hysteresis_parameters;
+};
+
+struct hysteresis_rod_properties {
+    double                volume_m3;
+    vec3                  orientation;
+    hysteresis_parameters hysteresis;
+
+    void debug_print() const;
 };
 
 class hysteresis_rod {
@@ -31,16 +39,7 @@ public:
     // Physical floor for 'k' to prevent division by zero in max_chi calculation
     static constexpr double min_k_value = 1e-3;
 
-    /**
-     * @brief Constructor for a hysteresis rod.
-     * @param volume Volume of the rod [m^3].
-     * @param orientation Unit vector defining the rod's axis in the body frame.
-     * @param ja_params J-A model parameters.
-     */
-    hysteresis_rod(double volume, const vec3& orientation, const hysteresis_parameters& ja_params);
-
-    /** @brief Get J-A parameters of this hysteresis rod. */
-    [[nodiscard]] auto params() const -> hysteresis_parameters { return _params; }
+    explicit hysteresis_rod(const hysteresis_rod_properties& properties);
 
     /**
      * @brief Calculates the TOTAL magnetic dipole moment (Irreversible + Reversible).
@@ -93,7 +92,7 @@ private:
 
     double                _volume;
     vec3                  _orientation_body;
-    hysteresis_parameters _params;
+    hysteresis_parameters _hysteresis;
 };
 
 }  // namespace aos

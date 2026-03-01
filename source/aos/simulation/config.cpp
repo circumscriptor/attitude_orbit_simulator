@@ -39,15 +39,17 @@ auto simulation_parameters::get_default() -> simulation_parameters {
     // NOLINTBEGIN(readability-magic-numbers)
     return {
         .satellite =
-            {.mass_g                      = 1300.0,                                  // 1.3 kg
-             .dim_m                       = {0.1, 0.1, 0.1},                         // 10x10x10 cm
-             .magnet_orientation          = {0.0, 0.0, 1.0},                         // Permanent Magnet: A Grade N35 NdFeB magnet
-             .magnet_remanence            = 1.21,                                    // [T] for Grade N35
-             .magnet_length               = 0.05,                                    // 5 cm long
-             .magnet_diameter             = 0.01,                                    // 1 cm diameter
-             .hysteresis_rod_volume       = 0.005 * 0.005 * std::numbers::pi * 0.1,  // 0.5 cm radius, 10 cm length
-             .hysteresis_rod_orientations = {{1.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, -1.0, 0.0}},  // Pairs along the X-axis and Y-axis
-             .hysteresis_params           = hysteresis_parameters::hymu80()},
+            {
+                // .mass_g = 1300.0,           // 1.3 kg
+                // .dim_m  = {0.1, 0.1, 0.1},  // 10x10x10 cm
+                //  .magnet_orientation          = {0.0, 0.0, 1.0},                         // Permanent Magnet: A Grade N35 NdFeB magnet
+                //  .magnet_remanence            = 1.21,                                    // [T] for Grade N35
+                //  .magnet_length               = 0.05,                                    // 5 cm long
+                //  .magnet_diameter             = 0.01,                                    // 1 cm diameter
+                //  .hysteresis_rod_volume       = 0.005 * 0.005 * std::numbers::pi * 0.1,  // 0.5 cm radius, 10 cm length
+                //  .hysteresis_rod_orientations = {{1.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, -1.0, 0.0}},  // Pairs along the X-axis and Y-axis
+                //  .hysteresis_params           = hysteresis_parameters::hymu80()
+            },
         .orbit                = {.semi_major_axis_m    = 6818137.0,
                                  .eccentricity         = 0.001,
                                  .inclination_rad      = 1.396263,

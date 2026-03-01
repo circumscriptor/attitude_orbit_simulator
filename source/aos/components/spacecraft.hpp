@@ -7,58 +7,67 @@
 #include <array>
 #include <cstddef>
 #include <span>
+#include <variant>
 #include <vector>
 
 namespace aos {
 
 struct spacecraft_face {
-    vec3   center_of_pressure_m;  //!< Face center relative to spacecraft center
-    vec3   surface_normal;        //!< Face normal (outward)
-    double surface_area_m2{};     //!< Face surface area
+    static constexpr size_t num_faces                = 6;  // Cube
+    static constexpr double default_drag_coefficient = 2.2;
+
+    vec3   center_of_pressure_m;                        //!< [m] Face center relative to spacecraft center
+    vec3   surface_normal;                              //!< [-] Face normal (outward)
+    double surface_area_m2{};                           //!< [m^2] Face surface area
+    double drag_coefficient{default_drag_coefficient};  //!< Face drag coefficient
+};
+
+using spacecraft_faces = std::array<spacecraft_face, spacecraft_face::num_faces>;
+
+struct spacecraft_uniform {
+    double mass_g;
+    vec3   dimensions_m;
+    double drag_coefficient;
+};
+
+struct spacecraft_custom {
+    mat3x3           inertia;
+    spacecraft_faces faces;
+};
+
+using spacecraft_shape = std::variant<spacecraft_uniform, spacecraft_custom>;
+
+struct spacecraft_properties {
+    spacecraft_shape                       shape;
+    permanent_magnet_properties            magnet;
+    std::vector<hysteresis_rod_properties> rods;
+
+    void debug_print() const;
 };
 
 class spacecraft {
 public:
 
-    static constexpr size_t num_faces = 6;  // Cube
+    explicit spacecraft(const spacecraft_properties& properties);
 
-    struct properties {
-        double                mass_g{};
-        vec3                  dim_m;
-        vec3                  magnet_orientation;
-        double                magnet_remanence{};
-        double                magnet_length{};
-        double                magnet_diameter{};
-        double                hysteresis_rod_volume{};
-        std::vector<vec3>     hysteresis_rod_orientations;
-        hysteresis_parameters hysteresis_params;
-
-        void debug_print() const;
-    };
-
-    explicit spacecraft(const properties& properties)
-        : spacecraft(get_inertia_tensor(properties.mass_g, properties.dim_m.x(), properties.dim_m.y(), properties.dim_m.z()), properties) {}
-
-    spacecraft(const mat3x3& inertia, const properties& properties);
-
-    [[nodiscard]] auto inertia_tensor() const -> const mat3x3& { return _inertia_tensor; }
-    [[nodiscard]] auto inertia_tensor_inverse() const -> const mat3x3& { return _inertia_tensor_inverse; }
-    [[nodiscard]] auto magnet() const -> const permanent_magnet& { return _magnet; }
-    [[nodiscard]] auto rods() const -> std::span<const hysteresis_rod> { return _rods; }
-
-    static auto get_inertia_tensor(double m, double a, double b, double c) -> mat3x3;
+    [[nodiscard]] auto inertia_tensor() const -> const mat3x3&;
+    [[nodiscard]] auto inertia_tensor_inverse() const -> const mat3x3&;
+    [[nodiscard]] auto magnet() const -> const permanent_magnet&;
+    [[nodiscard]] auto rods() const -> std::span<const hysteresis_rod>;
 
 protected:
 
-    void set_faces(const properties& properties);
+    void uniform(double mass, const vec3& dim_m, double drag_coefficient);
+
+    [[nodiscard]] static auto compute_inertia_tensor(double m, double a, double b, double c) -> mat3x3;
 
 private:
 
-    mat3x3                                 _inertia_tensor;          // I
-    mat3x3                                 _inertia_tensor_inverse;  // I^(-1)
-    permanent_magnet                       _magnet;
-    std::vector<hysteresis_rod>            _rods;
-    std::array<spacecraft_face, num_faces> _faces;
+    mat3x3                      _inertia_tensor;          // I
+    mat3x3                      _inertia_tensor_inverse;  // I^(-1)
+    spacecraft_faces            _faces;
+    permanent_magnet            _magnet;
+    std::vector<hysteresis_rod> _rods;
 };
 
 }  // namespace aos

@@ -45,11 +45,11 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
     const bool   use_checkpoints    = (params.checkpoint_interval >= 1.0);
 
     system_state current_state;
-    current_state.position         = position;
-    current_state.velocity         = velocity;
-    current_state.attitude         = aos::quat::Identity();
-    current_state.angular_velocity = params.angular_velocity;
-    current_state.rod_magnetizations.resize(static_cast<std::ptrdiff_t>(params.satellite.hysteresis_rod_orientations.size()));
+    current_state.position_m           = position;
+    current_state.velocity_m_s         = velocity;
+    current_state.attitude             = aos::quat::Identity();
+    current_state.angular_velocity_m_s = params.angular_velocity;
+    current_state.rod_magnetizations.resize(static_cast<std::ptrdiff_t>(params.satellite.rods.size()));
     current_state.rod_magnetizations.setZero();
 
     observer(current_state, params.t_start);
@@ -73,13 +73,13 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
                 current_state.attitude.normalize();  // fix drift
 
                 // in case of integrator overshot
-                for (std::ptrdiff_t i = 0; i < current_state.rod_magnetizations.size(); ++i) {
-                    current_state.rod_magnetizations(i) = std::clamp(  //
-                        current_state.rod_magnetizations(i),           //
-                        -params.satellite.hysteresis_params.ms,        //
-                        params.satellite.hysteresis_params.ms          //
-                    );
-                }
+                // for (std::ptrdiff_t i = 0; i < current_state.rod_magnetizations.size(); ++i) {
+                //     current_state.rod_magnetizations(i) = std::clamp(  //
+                //         current_state.rod_magnetizations(i),           //
+                //         -params.satellite.hysteresis_params.ms,        //
+                //         params.satellite.hysteresis_params.ms          //
+                //     );
+                // }
 
                 global_time_accum += section_period;
                 remaining_time -= section_period;

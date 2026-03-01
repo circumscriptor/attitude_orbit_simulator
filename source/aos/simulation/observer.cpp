@@ -15,7 +15,7 @@
 
 namespace aos {
 
-csv_state_observer::csv_state_observer(const std::string& filename, std::size_t num_rods, const properties& props)
+csv_state_observer::csv_state_observer(const std::string& filename, std::size_t num_rods, const csv_state_observer_properties& props)
     : _num_rods(num_rods), _include_elements(not props.exclude_elements), _include_magnitudes(not props.exclude_magnitudes) {
     boost::filesystem::path file_path(filename);
     if (file_path.has_parent_path()) {
@@ -53,25 +53,25 @@ void csv_state_observer::operator()(const system_state& state, double time) cons
     *_file << time;
 
     if (_include_magnitudes) {
-        *_file << ',' << state.position.norm()           // r
-               << ',' << state.velocity.norm()           // v
-               << ',' << state.angular_velocity.norm();  // w
+        *_file << ',' << state.position_m.norm()             // r
+               << ',' << state.velocity_m_s.norm()           // v
+               << ',' << state.angular_velocity_m_s.norm();  // w
     }
 
     if (_include_elements) {
-        *_file << ',' << state.position.x()           // r_x
-               << ',' << state.position.y()           // r_y
-               << ',' << state.position.z()           // r_z
-               << ',' << state.velocity.x()           // v_x
-               << ',' << state.velocity.y()           // v_y
-               << ',' << state.velocity.z()           // v_z
-               << ',' << state.attitude.coeffs().w()  // q_w
-               << ',' << state.attitude.coeffs().x()  // q_x
-               << ',' << state.attitude.coeffs().y()  // q_y
-               << ',' << state.attitude.coeffs().z()  // q_z
-               << ',' << state.angular_velocity.x()   // w_x
-               << ',' << state.angular_velocity.y()   // w_y
-               << ',' << state.angular_velocity.z();  // w_z
+        *_file << ',' << state.position_m.x()             // r_x
+               << ',' << state.position_m.y()             // r_y
+               << ',' << state.position_m.z()             // r_z
+               << ',' << state.velocity_m_s.x()           // v_x
+               << ',' << state.velocity_m_s.y()           // v_y
+               << ',' << state.velocity_m_s.z()           // v_z
+               << ',' << state.attitude.coeffs().w()      // q_w
+               << ',' << state.attitude.coeffs().x()      // q_x
+               << ',' << state.attitude.coeffs().y()      // q_y
+               << ',' << state.attitude.coeffs().z()      // q_z
+               << ',' << state.angular_velocity_m_s.x()   // w_x
+               << ',' << state.angular_velocity_m_s.y()   // w_y
+               << ',' << state.angular_velocity_m_s.z();  // w_z
     }
 
     for (std::size_t i = 0; i < _num_rods; ++i) {

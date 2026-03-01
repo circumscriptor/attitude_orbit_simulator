@@ -8,9 +8,9 @@
 namespace aos {
 
 struct simulation_parameters {
-    spacecraft::properties         satellite;
-    keplerian_elements             orbit;
-    csv_state_observer::properties observer;
+    spacecraft_properties         satellite;
+    keplerian_elements            orbit;
+    csv_state_observer_properties observer;
 
     vec3   angular_velocity;
     double simulation_year;
