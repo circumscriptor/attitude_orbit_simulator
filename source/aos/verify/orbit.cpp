@@ -28,7 +28,7 @@ void verify_orbit(const std::string& output_filename, const simulation_parameter
     using boost::numeric::odeint::vector_space_algebra;
 
     auto satellite = std::make_shared<spacecraft>(params.satellite);
-    auto env       = std::make_shared<environment_model>(params.simulation_year, params.gravity_model_degree);
+    auto env       = std::make_shared<environment_model>(params.environment);
 
     // Use the real dynamics functor
     spacecraft_dynamics dynamics(satellite, env);

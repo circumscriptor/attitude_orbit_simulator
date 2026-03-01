@@ -4,7 +4,8 @@ project(AttitudeOrbitSimulator)
 # list(APPEND CMAKE_MODULE_PATH "/usr/share/cmake/geographiclib")
 
 find_package(Eigen3 CONFIG REQUIRED)
-find_package(GeographicLib REQUIRED)
+find_package(GeographicLib CONFIG REQUIRED)
+find_package(tomlplusplus CONFIG REQUIRED)
 find_package(Boost CONFIG REQUIRED COMPONENTS
     program_options
     filesystem
@@ -20,6 +21,10 @@ add_library(attitude_orbit_simulator_core STATIC)
 
 set_target_properties(attitude_orbit_simulator_core PROPERTIES
     CXX_SCAN_FOR_MODULES OFF
+)
+
+target_compile_definitions(attitude_orbit_simulator_core PRIVATE
+    WEATHER_DATA_PATH="${SPACE_WEATHER_FILE_PATH}"
 )
 
 target_compile_features(attitude_orbit_simulator_core PUBLIC
@@ -42,8 +47,9 @@ target_link_libraries(attitude_orbit_simulator_core
     PUBLIC
         Boost::boost
         Eigen3::Eigen
-        ${GeographicLib_LIBRARIES}
+        GeographicLib::GeographicLib
         nrlmsise-00::nrlmsise-00
+        tomlplusplus::tomlplusplus
 )
 
 target_sources(attitude_orbit_simulator_core PRIVATE

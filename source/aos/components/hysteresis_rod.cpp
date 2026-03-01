@@ -3,6 +3,8 @@
 #include "aos/core/constants.hpp"
 #include "aos/core/types.hpp"
 
+#include <toml++/impl/table.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -10,6 +12,14 @@
 #include <stdexcept>
 
 namespace aos {
+
+void hysteresis_parameters::from_toml(const toml::table& table) {
+    ms    = table["ms"].value_or(0.0);
+    a     = table["a"].value_or(0.0);
+    k     = table["k"].value_or(0.0);
+    c     = table["c"].value_or(0.0);
+    alpha = table["alpha"].value_or(0.0);
+}
 
 void hysteresis_parameters::debug_print() const {
     std::cout << "-- hysteresis properties --"     //
@@ -21,13 +31,30 @@ void hysteresis_parameters::debug_print() const {
               << '\n';
 }
 
+void hysteresis_rod_properties::from_toml(const toml::table& table) {
+    volume_m3 = table["volume_m3"].value_or(0.0);
+
+    if (const auto* vec = table["orientation"].as_array()) {
+        orientation <<                   //
+            vec->get(0)->value_or(0.0),  //
+            vec->get(1)->value_or(0.0),  //
+            vec->get(2)->value_or(0.0);
+    }
+
+    if (const auto* hyst = table["hysteresis"].as_table()) {
+        hysteresis.emplace().from_toml(*hyst);
+    }
+}
+
 void hysteresis_rod_properties::debug_print() const {
     std::cout << "-- hysteresis rod properties --"                                                           //
               << "\n  volume:      " << volume_m3                                                            //
               << "\n  orientation: " << orientation.x() << ' ' << orientation.y() << ' ' << orientation.z()  //
               << '\n';
 
-    hysteresis.debug_print();
+    if (hysteresis) {
+        hysteresis->debug_print();
+    }
 }
 
 auto hysteresis_parameters::hymu80() -> hysteresis_parameters {
@@ -42,8 +69,8 @@ auto hysteresis_parameters::hymu80() -> hysteresis_parameters {
     // NOLINTEND(readability-magic-numbers)
 }
 
-hysteresis_rod::hysteresis_rod(const hysteresis_rod_properties& properties)
-    : _volume(properties.volume_m3), _orientation_body(properties.orientation), _hysteresis(properties.hysteresis) {
+hysteresis_rod::hysteresis_rod(const hysteresis_rod_properties& properties, const hysteresis_parameters& params)
+    : _volume(properties.volume_m3), _orientation_body(properties.orientation), _hysteresis(properties.hysteresis ? *properties.hysteresis : params) {
     if (_orientation_body.norm() < epsilon_vector) {
         throw std::runtime_error("Hysteresis rod orientation must be non-zero");
     }
@@ -64,6 +91,12 @@ hysteresis_rod::hysteresis_rod(const hysteresis_rod_properties& properties)
     if (_hysteresis.c < 0.0 || _hysteresis.c > 1.0) {
         throw std::runtime_error("Parameter 'c' must be [0, 1]");
     }
+}
+
+hysteresis_rod::hysteresis_rod(const hysteresis_rod_properties& properties) : hysteresis_rod(properties, *properties.hysteresis) {}
+
+auto hysteresis_rod::hysteresis() const noexcept -> const hysteresis_parameters& {
+    return _hysteresis;
 }
 
 auto hysteresis_rod::calculate_h_eff(double h_along_rod, double m_val) const -> double {

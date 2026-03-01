@@ -2,30 +2,35 @@
 
 #include "aos/components/spacecraft.hpp"
 #include "aos/core/types.hpp"
+#include "aos/environment/environment.hpp"
 #include "aos/environment/orbital_mechanics.hpp"
 #include "aos/simulation/observer.hpp"
+
+// clang-format off
+#include <toml++/toml.hpp>
+#include <toml++/impl/table.hpp>
+// clang-format on
 
 namespace aos {
 
 struct simulation_parameters {
-    spacecraft_properties         satellite;
-    keplerian_elements            orbit;
-    csv_state_observer_properties observer;
+    spacecraft_properties        satellite;
+    keplerian_elements           orbit;
+    state_observer_properties    observer;
+    environment_model_properties environment;
 
     vec3   angular_velocity;
-    double simulation_year;
-    int    gravity_model_degree;
     double t_start{};
     double t_end{};
     double dt_initial{};
     double absolute_error{};
     double relative_error{};
-    bool   higher_order{};  // Use higher order solver
+    int    stepper_function{};
     double checkpoint_interval{};
 
-    void debug_print() const;
+    void from_toml(const toml::table& table);
 
-    static auto get_default() -> simulation_parameters;
+    void debug_print() const;
 };
 
 }  // namespace aos

@@ -23,6 +23,11 @@ namespace aos {
 class spacecraft_dynamics {
 public:
 
+    struct face_effects {
+        vec3 torque;
+        vec3 force;
+    };
+
     /**
      * @brief Constructs the dynamics model.
      * @param spacecraft_model A const shared pointer to the spacecraft's physical properties.
@@ -43,20 +48,20 @@ public:
 
 protected:
 
-    // compute total rod torque and dM/dt for each rod, returns the total torque exerted by all rods, writes dM/dt values into the dM_dt_out
-    [[nodiscard]] auto compute_rod_effects(const system_state& state, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3;
+    // compute total rod torque and dM/dt for each rod, return the total torque exerted by all rods, write dM/dt values into the dM_dt_out
+    [[nodiscard]] auto compute_rod_effects(const vecX& rod_magnetizations, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3;
 
-    // sums permanent magnet, hysteresis, gyroscopic, and gravity gradient torques
-    [[nodiscard]] auto compute_net_torque(const vec3& omega, const vec3& b_body, const vec3& rod_torque, const vec3& r_eci, const quat& q_att) const -> vec3;
+    // compute total face (drag) torque, return the total torque exerted by all faces
+    [[nodiscard]] auto compute_face_effects(double density, const quat& q_att, const vec3& v_eci, const vec3& omega_body) const -> face_effects;
+
+    // sums permanent magnet, gyroscopic, and gravity gradient torques
+    [[nodiscard]] auto compute_other_torques(const vec3& omega, const vec3& b_body, const vec3& r_eci, const quat& q_att) const -> vec3;
 
     // gravity gradient torque
     [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_eci, const quat& q_att) const -> vec3;
 
     // quaternion derivative: 0.5 * q * omega
     [[nodiscard]] static auto compute_attitude_derivative(const quat& q_att, const vec3& omega) -> vecX;
-
-    // compute relative velocity of spacecraft face center of mass
-    [[nodiscard]] static auto compute_v_face_rel_atmosphere(const quat& q_att, const vec3& v_eci, const vec3& omega_body, const vec3& com_body) -> vec3;
 
 private:
 

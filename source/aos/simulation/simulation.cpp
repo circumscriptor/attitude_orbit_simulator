@@ -13,6 +13,7 @@
 #include <boost/numeric/odeint/algebra/vector_space_algebra.hpp>
 #include <boost/numeric/odeint/integrate/integrate_adaptive.hpp>
 #include <boost/numeric/odeint/stepper/generation/make_controlled.hpp>
+#include <boost/numeric/odeint/stepper/runge_kutta_cash_karp54.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_dopri5.hpp>
 #include <boost/numeric/odeint/stepper/runge_kutta_fehlberg78.hpp>
 
@@ -28,17 +29,19 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
     using aos::abs;
     using boost::numeric::odeint::integrate_adaptive;
     using boost::numeric::odeint::make_controlled;
+    using boost::numeric::odeint::runge_kutta_cash_karp54;
     using boost::numeric::odeint::runge_kutta_dopri5;
     using boost::numeric::odeint::runge_kutta_fehlberg78;
     using boost::numeric::odeint::vector_space_algebra;
     using stepper_type_f78 = runge_kutta_fehlberg78<system_state, double, system_state, double, vector_space_algebra>;
     using stepper_type_dp5 = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
+    using stepper_type_k54 = runge_kutta_cash_karp54<system_state, double, system_state, double, vector_space_algebra>;
 
     auto satellite   = std::make_shared<spacecraft>(params.satellite);
-    auto environment = std::make_shared<environment_model>(params.simulation_year, params.gravity_model_degree);
+    auto environment = std::make_shared<environment_model>(params.environment);
 
     spacecraft_dynamics dynamics{satellite, environment};
-    csv_state_observer  observer(output_filename, satellite->rods().size(), params.observer);
+    state_observer      observer(output_filename, satellite->rods().size(), params.observer);
 
     const auto [position, velocity] = orbital_converter::to_cartesian(params.orbit);
     const double total_duration     = params.t_end - params.t_start;
@@ -73,13 +76,16 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
                 current_state.attitude.normalize();  // fix drift
 
                 // in case of integrator overshot
-                // for (std::ptrdiff_t i = 0; i < current_state.rod_magnetizations.size(); ++i) {
-                //     current_state.rod_magnetizations(i) = std::clamp(  //
-                //         current_state.rod_magnetizations(i),           //
-                //         -params.satellite.hysteresis_params.ms,        //
-                //         params.satellite.hysteresis_params.ms          //
-                //     );
-                // }
+                const auto rods = satellite->rods();
+                for (std::ptrdiff_t i = 0; i < current_state.rod_magnetizations.size(); ++i) {
+                    const auto& hysteresis = rods[i].hysteresis();
+
+                    current_state.rod_magnetizations(i) = std::clamp(  //
+                        current_state.rod_magnetizations(i),           //
+                        -hysteresis.ms,                                //
+                        hysteresis.ms                                  //
+                    );
+                }
 
                 global_time_accum += section_period;
                 remaining_time -= section_period;
@@ -89,13 +95,25 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
         }
     };
 
-    if (params.higher_order) {
-        auto stepper = make_controlled<stepper_type_f78>(params.absolute_error, params.relative_error);
-        run_integration_loop(stepper);
-    } else {
-        auto stepper = make_controlled<stepper_type_dp5>(params.absolute_error, params.relative_error);
-        run_integration_loop(stepper);
+    switch (params.stepper_function) {
+        case 2: {
+            const auto stepper = make_controlled<stepper_type_f78>(params.absolute_error, params.relative_error);
+            run_integration_loop(stepper);
+        } break;
+        case 1: {
+            const auto stepper = make_controlled<stepper_type_dp5>(params.absolute_error, params.relative_error);
+            run_integration_loop(stepper);
+        } break;
+        case 0: {
+            const auto stepper = make_controlled<stepper_type_k54>(params.absolute_error, params.relative_error);
+            run_integration_loop(stepper);
+        } break;
+        default: {
+            std::println("unknown stepper function: {}", params.stepper_function);
+            break;
+        }
     }
+
     std::print("\n");
 }
 

@@ -2,6 +2,12 @@
 
 #include "aos/core/types.hpp"
 
+// clang-format off
+#include <toml++/toml.hpp>
+#include <toml++/impl/table.hpp>
+#include <optional>
+// clang-format on
+
 namespace aos {
 
 struct hysteresis_parameters {
@@ -11,15 +17,20 @@ struct hysteresis_parameters {
     double c;      // [-] Reversibility coefficient (0..1)
     double alpha;  // [-] Inter-domain coupling coefficient
 
+    void from_toml(const toml::table& table);
+
     void debug_print() const;
 
     static auto hymu80() -> hysteresis_parameters;
 };
 
 struct hysteresis_rod_properties {
-    double                volume_m3;
-    vec3                  orientation;
-    hysteresis_parameters hysteresis;
+    double volume_m3;
+    vec3   orientation;
+    // [optional] custom hysteresis for this rod
+    std::optional<hysteresis_parameters> hysteresis;
+
+    void from_toml(const toml::table& table);
 
     void debug_print() const;
 };
@@ -39,7 +50,10 @@ public:
     // Physical floor for 'k' to prevent division by zero in max_chi calculation
     static constexpr double min_k_value = 1e-3;
 
+    hysteresis_rod(const hysteresis_rod_properties& properties, const hysteresis_parameters& params);
     explicit hysteresis_rod(const hysteresis_rod_properties& properties);
+
+    [[nodiscard]] auto hysteresis() const noexcept -> const hysteresis_parameters&;
 
     /**
      * @brief Calculates the TOTAL magnetic dipole moment (Irreversible + Reversible).

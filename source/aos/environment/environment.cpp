@@ -4,22 +4,62 @@
 #include "aos/core/types.hpp"
 
 #include <GeographicLib/Constants.hpp>
+#include <GeographicLib/Geocentric.hpp>
+#include <toml++/impl/table.hpp>
 
 #include <cmath>
+#include <iostream>
 #include <print>
+#include <string>
 #include <vector>
 
 namespace aos {
 
+void environment_model_properties::from_toml(const toml::table& table) {
+    // NOLINTBEGIN(readability-magic-numbers)
+
+    start_year_decimal    = table["start_year_decimal"].value_or(2026.0);
+    gravity_model_name    = table["gravity_model_name"].value_or<std::string>("egm2008");
+    gravity_model_path    = table["gravity_model_path"].value_or<std::string>("");
+    magnetic_model_name   = table["magnetic_model_name"].value_or<std::string>("wmm2025");
+    magnetic_model_path   = table["magnetic_model_path"].value_or<std::string>("");
+    weather_data_path     = table["weather_data_path"].value_or<std::string>(WEATHER_DATA_PATH);
+    gravity_model_degree  = table["gravity_model_degree"].value_or(-1);
+    gravity_model_order   = table["gravity_model_order"].value_or(-1);
+    magnetic_model_degree = table["magnetic_model_degree"].value_or(-1);
+    magnetic_model_order  = table["magnetic_model_order"].value_or(-1);
+
+    // NOLINTEND(readability-magic-numbers)
+}
+
+void environment_model_properties::debug_print() const {
+    std::cout << "--  spacecraft (custom) shape  --"                     //
+              << "\n  start year:            " << start_year_decimal     //
+              << "\n  gravity model name:    " << gravity_model_name     //
+              << "\n  gravity model path:    " << gravity_model_path     //
+              << "\n  magnetic model name:   " << magnetic_model_name    //
+              << "\n  magnetic model path:   " << magnetic_model_path    //
+              << "\n  weather data path:     " << weather_data_path      //
+              << "\n  gravity model degree:  " << gravity_model_degree   //
+              << "\n  gravity model degree:  " << gravity_model_order    //
+              << "\n  magnetic model degree: " << magnetic_model_degree  //
+              << "\n  magnetic model degree: " << magnetic_model_order   //
+              << '\n';
+}
+
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-environment_model::environment_model(double start_year_decimal, int degree)
-    : _start_year_decimal(start_year_decimal),
+environment_model::environment_model(const environment_model_properties& properties)
+    : _start_year_decimal(properties.start_year_decimal),
       _earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f()),
-      _gravity_model("egm2008", "", degree),
-      _magnetic_model("wmm2025", ""),
-      _atmospheric_model("../third-party/data/SW-All.csv") {
-    if (start_year_decimal < 1900.0 || start_year_decimal > 2100.0) {  // NOLINT(readability-magic-numbers)
-        std::println(stderr, "Warning: Magnetic model year {} may be outside valid range", start_year_decimal);
+      _gravity_model(properties.gravity_model_name, properties.gravity_model_path, properties.gravity_model_degree, properties.gravity_model_order),
+      _magnetic_model(properties.magnetic_model_name,
+                      properties.magnetic_model_path,
+                      GeographicLib::Geocentric::WGS84(),
+                      properties.magnetic_model_degree,
+                      properties.magnetic_model_order),
+      _atmospheric_model(properties.weather_data_path) {
+    if (_start_year_decimal < 1900.0 || _start_year_decimal > 2100.0) {  // NOLINT(readability-magic-numbers)
+        std::println(stderr, "Warning: Magnetic model year {} may be outside valid range", _start_year_decimal);
     }
 
     const auto rotation_matrix_size = 3 * 3;

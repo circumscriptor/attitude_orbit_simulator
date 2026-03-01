@@ -4,6 +4,7 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
+#include <toml++/impl/table.hpp>
 
 #include <cstddef>
 #include <fstream>
@@ -15,7 +16,12 @@
 
 namespace aos {
 
-csv_state_observer::csv_state_observer(const std::string& filename, std::size_t num_rods, const csv_state_observer_properties& props)
+void state_observer_properties::from_toml(const toml::table& table) {
+    exclude_elements   = table["exclude_elements"].value_or(false);
+    exclude_magnitudes = table["exclude_magnitudes"].value_or(false);
+}
+
+state_observer::state_observer(const std::string& filename, std::size_t num_rods, const state_observer_properties& props)
     : _num_rods(num_rods), _include_elements(not props.exclude_elements), _include_magnitudes(not props.exclude_magnitudes) {
     boost::filesystem::path file_path(filename);
     if (file_path.has_parent_path()) {
@@ -49,7 +55,7 @@ csv_state_observer::csv_state_observer(const std::string& filename, std::size_t 
     *_file << "\n";
 }
 
-void csv_state_observer::operator()(const system_state& state, double time) const {
+void state_observer::operator()(const system_state& state, double time) const {
     *_file << time;
 
     if (_include_magnitudes) {

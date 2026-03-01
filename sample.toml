@@ -1,0 +1,52 @@
+t_start = 0
+t_end = 604800                      # 7 days
+dt_initial = 0.1
+checkpoint_interval = 0.0           # minute
+angular_velocity = [0.5, -0.5, 0.5]
+
+[satellite]
+mass_g = 1300.0
+hysteresis = { ms = 6.0e5, a = 6.5, k = 4.0, c = 0.05, alpha = 1.0e-5 }
+
+[satellite.uniform]
+dimensions_m = [0.1, 0.1, 0.1]
+drag_coefficient = 2.2
+
+[satellite.magnet]
+remanence = 1.21
+relative_permeability = 1.05
+orientation = [0.0, 0.0, 1.0]
+cylindrical = { length = 0.05, radius = 0.005 }
+
+[[satellite.rods]]
+volume_m3 = 0.00000785
+orientation = [1.0, 0.0, 0.0]
+
+[[satellite.rods]]
+volume_m3 = 0.00000785
+orientation = [-1.0, 0.0, 0.0]
+
+[[satellite.rods]]
+volume_m3 = 0.00000785
+orientation = [0.0, 1.0, 0.0]
+
+[[satellite.rods]]
+volume_m3 = 0.00000785
+orientation = [0.0, -1.0, 0.0]
+
+[orbit]
+semi_major_axis_m = 6818137.0
+eccentricity = 0.001
+inclination_rad = 1.396263
+raan_rad = 0.0
+arg_of_periapsis_rad = 0.0
+mean_anomaly_rad = 0.0
+
+[environment]
+start_year_decimal = 2026.5
+gravity_model_degree = 12
+gravity_model_order = 12
+
+[observer]
+exclude_elements = false
+exclude_magnitudes = true

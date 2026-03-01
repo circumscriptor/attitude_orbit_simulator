@@ -3,12 +3,71 @@
 #include "aos/core/constants.hpp"
 #include "aos/core/types.hpp"
 
+#include <toml++/impl/table.hpp>
+
+#include <iostream>
 #include <numbers>
 #include <stdexcept>
 #include <type_traits>
 #include <variant>
 
 namespace aos {
+
+// NOLINTBEGIN(readability-magic-numbers)
+void permanent_magnet_cylindrical::from_toml(const toml::table& table) {
+    length_m = table["length_m"].value_or(0.05);
+    radius_m = table["radius_m"].value_or(0.005);
+}
+
+void permanent_magnet_cylindrical::debug_print() const {
+    std::cout << "--  permanent magnet (cylindrical) shape  --"  //
+              << "\n  length: " << length_m                      //
+              << "\n  radius: " << radius_m                      //
+              << '\n';
+}
+
+void permanent_magnet_rectangular::from_toml(const toml::table& table) {
+    width_m  = table["width_m"].value_or(0.02);
+    height_m = table["height_m"].value_or(0.02);
+    length_m = table["length_m"].value_or(0.02);
+}
+
+void permanent_magnet_rectangular::debug_print() const {
+    std::cout << "--  permanent magnet (rectangular) shape  --"  //
+              << "\n  width:  " << width_m                       //
+              << "\n  height: " << height_m                      //
+              << "\n  length: " << length_m                      //
+              << '\n';
+}
+
+void permanent_magnet_properties::from_toml(const toml::table& table) {
+    remanence_t           = table["remanence_t"].value_or(1.21);
+    relative_permeability = table["relative_permeability"].value_or(1.0);
+
+    if (const auto* vec = table["orientation"].as_array()) {
+        orientation <<                   //
+            vec->get(0)->value_or(0.0),  //
+            vec->get(1)->value_or(0.0),  //
+            vec->get(2)->value_or(1.0);
+    }
+
+    if (const auto* cyl = table["cylindrical"].as_table()) {
+        shape.emplace<permanent_magnet_cylindrical>().from_toml(*cyl);
+    } else if (const auto* rect = table["rectangular"].as_table()) {
+        shape.emplace<permanent_magnet_rectangular>().from_toml(*rect);
+    }
+}
+
+void permanent_magnet_properties::debug_print() const {
+    std::cout << "--  permanent magnet properties  --"                                                                 //
+              << "\n  remanence:             " << remanence_t                                                          //
+              << "\n  relative permeability: " << relative_permeability                                                //
+              << "\n  orientation:           " << orientation.x() << ' ' << orientation.y() << ' ' << orientation.z()  //
+              << '\n';
+
+    std::visit([](auto&& s) { s.debug_print(); }, shape);
+}
+// NOLINTEND(readability-magic-numbers)
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 permanent_magnet::permanent_magnet(const permanent_magnet_properties& properties)

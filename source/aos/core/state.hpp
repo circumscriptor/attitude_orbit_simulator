@@ -18,8 +18,8 @@ namespace aos {
 struct system_state {
     vec3 position_m;            //!< [m] Spacecraft position in ECI
     vec3 velocity_m_s;          //!< [m/s] Spacecraft velocity in ECI
-    quat attitude;              //!< [-] Spacecraft orientation (in ECI or body frame?)
-    vec3 angular_velocity_m_s;  //!< [m/s] Spacecraft angular velocity (in ECI or body frame?)
+    quat attitude;              //!< [-] Spacecraft orientation (body-to-ECI)
+    vec3 angular_velocity_m_s;  //!< [m/s] Spacecraft angular velocity in body frame
     vecX rod_magnetizations;    //!< [?] Hysteresis rod magnetization state (array)
 
     auto operator+=(const system_state& other) -> system_state& {

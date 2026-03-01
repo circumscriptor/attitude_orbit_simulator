@@ -26,7 +26,7 @@ void verify_attitude(const std::string& output_filename, const simulation_parame
     using boost::numeric::odeint::vector_space_algebra;
 
     auto satellite = std::make_shared<spacecraft>(params.satellite);
-    auto env       = std::make_shared<environment_model>(params.simulation_year, params.gravity_model_degree);
+    auto env       = std::make_shared<environment_model>(params.environment);
 
     spacecraft_dynamics dynamics(satellite, env);
     attitude_observer   observer(output_filename);

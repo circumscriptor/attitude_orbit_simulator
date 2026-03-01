@@ -1,5 +1,7 @@
 #include "dynamics.hpp"
 
+#include "aos/components/spacecraft.hpp"
+#include "aos/core/constants.hpp"
 #include "aos/core/state.hpp"
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
@@ -26,27 +28,30 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
     const vec3   b_dot_orbital    = R_eci_to_body * env_data.magnetic_field_dot_eci_T_s;
     const vec3   b_dot_rotational = -omega_body.cross(b_body);
     const vec3   b_dot_body       = b_dot_orbital + b_dot_rotational;
-    const vec3   total_rod_torque = compute_rod_effects(current_state, b_body, b_dot_body, state_derivative.rod_magnetizations);
-    const vec3   net_torque       = compute_net_torque(omega_body, b_body, total_rod_torque, r_eci, q_att);
+    const vec3   rods_torque      = compute_rod_effects(current_state.rod_magnetizations, b_body, b_dot_body, state_derivative.rod_magnetizations);
+    const auto   face_effects     = compute_face_effects(env_data.atmospheric_density_kg_m3, q_att, v_eci, omega_body);
+    const vec3   faces_torque     = R_eci_to_body * face_effects.torque;
+    const vec3   net_torque       = compute_other_torques(omega_body, b_body, r_eci, q_att) + rods_torque + faces_torque;
 
-    // TODO: compute athmospheric drag and solar pressure
+    // TODO: compute solar pressure
 
+    state_derivative.velocity_m_s += face_effects.force / (_spacecraft->mass() * gram_to_kilogram);
     state_derivative.angular_velocity_m_s = _spacecraft->inertia_tensor_inverse() * net_torque;
     state_derivative.attitude.coeffs()    = compute_attitude_derivative(q_att, omega_body);
 }
 
-auto spacecraft_dynamics::compute_rod_effects(const system_state& state, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3 {
+auto spacecraft_dynamics::compute_rod_effects(const vecX& rod_magnetizations, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3 {
     const auto& rods     = _spacecraft->rods();
-    const auto  num_rods = std::min(static_cast<std::ptrdiff_t>(rods.size()), state.rod_magnetizations.size());
+    const auto  num_rods = std::min(static_cast<std::ptrdiff_t>(rods.size()), rod_magnetizations.size());
 
     // ensure output vector is correctly sized
-    if (dm_dt_out.size() != num_rods) {
-        dm_dt_out.resize(num_rods);
-    }
+    // if (dm_dt_out.size() != num_rods) {
+    //     dm_dt_out.resize(num_rods);
+    // }
 
     vec3 total_torque = vec3::Zero();
     for (std::ptrdiff_t i = 0; i < num_rods; ++i) {
-        const double m_irr = state.rod_magnetizations(static_cast<int>(i));
+        const double m_irr = rod_magnetizations(static_cast<int>(i));
 
         // dM_irr/dt
         dm_dt_out(i) = rods[i].magnetization_derivative(m_irr, b_body, b_dot_body);
@@ -57,16 +62,29 @@ auto spacecraft_dynamics::compute_rod_effects(const system_state& state, const v
     return total_torque;
 }
 
+auto spacecraft_dynamics::compute_face_effects(double density, const quat& q_att, const vec3& v_eci, const vec3& omega_body) const -> face_effects {
+    vec3 total_torque = vec3::Zero();
+    vec3 total_force  = vec3::Zero();
+
+    for (const auto& face : _spacecraft->faces()) {
+        const auto force_drag = face.compute_force_drag(density, q_att, v_eci, omega_body);
+        const auto face_eci   = (q_att * face.center_of_pressure_m);
+        total_force += force_drag;
+        total_torque += face_eci.cross(force_drag);
+    }
+
+    return {
+        .torque = total_torque,
+        .force  = total_force,
+    };
+}
+
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto spacecraft_dynamics::compute_net_torque(const vec3& omega, const vec3& b_body, const vec3& rod_torque, const vec3& r_eci, const quat& q_att) const
-    -> vec3 {
+auto spacecraft_dynamics::compute_other_torques(const vec3& omega, const vec3& b_body, const vec3& r_eci, const quat& q_att) const -> vec3 {
     vec3 torque = vec3::Zero();
 
     // permanent magnet
     torque += _spacecraft->magnet().magnetic_moment().cross(b_body);
-
-    // hysteresis rods
-    torque += rod_torque;
 
     // gyroscopic (rigid body coupling): -omega x (I * omega)
     torque -= omega.cross(_spacecraft->inertia_tensor() * omega);
@@ -92,15 +110,6 @@ auto spacecraft_dynamics::compute_attitude_derivative(const quat& q_att, const v
     // dq/dt = 0.5 * q * omega_quat
     const quat omega_q(0, omega.x(), omega.y(), omega.z());
     return 0.5 * (q_att * omega_q).coeffs();
-}
-
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto spacecraft_dynamics::compute_v_face_rel_atmosphere(const quat& q_att, const vec3& v_eci, const vec3& omega_body, const vec3& com_body) -> vec3 {
-    const vec3 v_com_rel  = environment_model::earth_relative_v(v_eci);
-    const vec3 r_face_eci = q_att * com_body;
-    const vec3 omega_eci  = q_att * omega_body;
-    const vec3 v_tangent  = omega_eci.cross(r_face_eci);
-    return v_com_rel + v_tangent;
 }
 
 }  // namespace aos

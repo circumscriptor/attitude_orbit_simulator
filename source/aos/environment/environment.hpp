@@ -7,6 +7,12 @@
 #include <GeographicLib/GravityModel.hpp>
 #include <GeographicLib/MagneticModel.hpp>
 
+// clang-format off
+#include <toml++/toml.hpp>
+#include <toml++/impl/table.hpp>
+// clang-format on
+
+#include <string>
 #include <vector>
 
 namespace aos {
@@ -20,6 +26,23 @@ struct environment_data {
     // NOLINTEND(readability-identifier-naming)
 };
 
+struct environment_model_properties {
+    double      start_year_decimal;
+    std::string gravity_model_name;  // "egm2008"
+    std::string gravity_model_path;
+    std::string magnetic_model_name;  // "wmm2025"
+    std::string magnetic_model_path;
+    std::string weather_data_path;
+    int         gravity_model_degree;
+    int         gravity_model_order;
+    int         magnetic_model_degree;
+    int         magnetic_model_order;
+
+    void from_toml(const toml::table& table);
+
+    void debug_print() const;
+};
+
 class environment_model {
 public:
 
@@ -28,7 +51,7 @@ public:
     auto operator=(const environment_model&) -> environment_model& = delete;
     auto operator=(environment_model&&) -> environment_model&      = delete;
 
-    explicit environment_model(double start_year_decimal, int degree);
+    explicit environment_model(const environment_model_properties& properties);
     virtual ~environment_model();
 
     /**

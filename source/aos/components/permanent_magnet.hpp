@@ -2,6 +2,11 @@
 
 #include "aos/core/types.hpp"
 
+// clang-format off
+#include <toml++/toml.hpp>
+#include <toml++/impl/table.hpp>
+// clang-format on
+
 #include <variant>
 
 namespace aos {
@@ -9,12 +14,20 @@ namespace aos {
 struct permanent_magnet_cylindrical {
     double length_m;
     double radius_m;
+
+    void from_toml(const toml::table& table);
+
+    void debug_print() const;
 };
 
 struct permanent_magnet_rectangular {
     double width_m;
     double height_m;
     double length_m;
+
+    void from_toml(const toml::table& table);
+
+    void debug_print() const;
 };
 
 using permanent_magnet_shape = std::variant<permanent_magnet_cylindrical, permanent_magnet_rectangular>;
@@ -24,6 +37,10 @@ struct permanent_magnet_properties {
     double                 relative_permeability;
     vec3                   orientation;
     permanent_magnet_shape shape;
+
+    void from_toml(const toml::table& table);
+
+    void debug_print() const;
 };
 
 class permanent_magnet {

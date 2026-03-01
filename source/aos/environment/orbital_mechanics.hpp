@@ -2,17 +2,24 @@
 
 #include "aos/core/types.hpp"  // Assuming vec3 is here
 
+// clang-format off
+#include <toml++/toml.hpp>
+#include <toml++/impl/table.hpp>
+// clang-format on
+
 #include <utility>
 
 namespace aos {
 
 struct keplerian_elements {
-    double semi_major_axis_m;     // a
-    double eccentricity;          // e
-    double inclination_rad;       // i
-    double raan_rad;              // Omega (Right Ascension of Ascending Node)
-    double arg_of_periapsis_rad;  // omega (Argument of Periapsis)
-    double mean_anomaly_rad;      // M (Initial placement)
+    double semi_major_axis_m{};     // a
+    double eccentricity{};          // e
+    double inclination_rad{};       // i
+    double raan_rad{};              // Omega (Right Ascension of Ascending Node)
+    double arg_of_periapsis_rad{};  // omega (Argument of Periapsis)
+    double mean_anomaly_rad{};      // M (Initial placement)
+
+    void from_toml(const toml::table& table);
 
     void debug_print() const;
 };
