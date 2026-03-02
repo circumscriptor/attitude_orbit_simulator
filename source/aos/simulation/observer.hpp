@@ -15,8 +15,11 @@
 namespace aos {
 
 struct state_observer_properties {
-    bool exclude_elements;    // per-element entries
-    bool exclude_magnitudes;  // magnitude (vector length) entries
+    static constexpr int default_precission = 5;
+
+    bool exclude_elements{};              // per-element entries
+    bool exclude_magnitudes{};            // magnitude (vector length) entries
+    int  precission{default_precission};  // output number decimal precision
 
     void from_toml(const toml::table& table);
 };
@@ -24,7 +27,7 @@ struct state_observer_properties {
 class state_observer {
 public:
 
-    explicit state_observer(const std::string& filename, std::size_t num_rods, const state_observer_properties& props);
+    explicit state_observer(const std::string& filename, std::size_t num_rods, const state_observer_properties& properties);
 
     void operator()(const system_state& state, double time) const;
 

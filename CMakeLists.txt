@@ -65,6 +65,7 @@ target_sources(pmaos_core PRIVATE
     "source/aos/components/spacecraft.cpp"
     "source/aos/components/spacecraft.hpp"
     "source/aos/core/constants.hpp"
+    "source/aos/core/state.cpp"
     "source/aos/core/state.hpp"
     "source/aos/core/types.hpp"
     "source/aos/environment/environment.cpp"

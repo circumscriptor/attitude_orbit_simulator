@@ -22,50 +22,14 @@ struct system_state {
     vec3 angular_velocity_m_s;  //!< [m/s] Spacecraft angular velocity in body frame
     vecX rod_magnetizations;    //!< [?] Hysteresis rod magnetization state (array)
 
-    auto operator+=(const system_state& other) -> system_state& {
-        position_m += other.position_m;
-        velocity_m_s += other.velocity_m_s;
-        attitude.coeffs() += other.attitude.coeffs();
-        angular_velocity_m_s += other.angular_velocity_m_s;
-        rod_magnetizations += other.rod_magnetizations;
-        return *this;
-    }
+    auto operator+=(const system_state& other) -> system_state&;
+    auto operator+=(double scalar) -> system_state&;
+    auto operator-=(const system_state& other) -> system_state&;
+    auto operator*=(double scalar) -> system_state&;
+    auto operator/=(const system_state& other) -> system_state&;
 
-    auto operator+=(double scalar) -> system_state& {
-        position_m.array() += scalar;
-        velocity_m_s.array() += scalar;
-        attitude.coeffs().array() += scalar;
-        angular_velocity_m_s.array() += scalar;
-        rod_magnetizations.array() += scalar;
-        return *this;
-    }
-
-    auto operator-=(const system_state& other) -> system_state& {
-        position_m -= other.position_m;
-        velocity_m_s -= other.velocity_m_s;
-        attitude.coeffs() -= other.attitude.coeffs();
-        angular_velocity_m_s -= other.angular_velocity_m_s;
-        rod_magnetizations -= other.rod_magnetizations;
-        return *this;
-    }
-
-    auto operator*=(double scalar) -> system_state& {
-        position_m *= scalar;
-        velocity_m_s *= scalar;
-        attitude.coeffs() *= scalar;
-        angular_velocity_m_s *= scalar;
-        rod_magnetizations *= scalar;
-        return *this;
-    }
-
-    auto operator/=(const system_state& other) -> system_state& {
-        position_m.array() /= other.position_m.array();
-        velocity_m_s.array() /= other.velocity_m_s.array();
-        attitude.coeffs().array() /= other.attitude.coeffs().array();
-        angular_velocity_m_s.array() /= other.angular_velocity_m_s.array();
-        rod_magnetizations.array() /= other.rod_magnetizations.array();
-        return *this;
-    }
+    // quaternion derivative: 0.5 * q * omega
+    [[nodiscard]] static auto compute_attitude_derivative(const quat& q_att, const vec3& omega) -> vec4;
 };
 
 inline auto operator+(double scalar, const system_state& state) -> system_state {

@@ -19,10 +19,11 @@ namespace aos {
 void state_observer_properties::from_toml(const toml::table& table) {
     exclude_elements   = table["exclude_elements"].value_or(false);
     exclude_magnitudes = table["exclude_magnitudes"].value_or(false);
+    precission         = table["precission"].value_or(default_precission);
 }
 
-state_observer::state_observer(const std::string& filename, std::size_t num_rods, const state_observer_properties& props)
-    : _num_rods(num_rods), _include_elements(not props.exclude_elements), _include_magnitudes(not props.exclude_magnitudes) {
+state_observer::state_observer(const std::string& filename, std::size_t num_rods, const state_observer_properties& properties)
+    : _num_rods(num_rods), _include_elements(not properties.exclude_elements), _include_magnitudes(not properties.exclude_magnitudes) {
     boost::filesystem::path file_path(filename);
     if (file_path.has_parent_path()) {
         boost::filesystem::create_directories(file_path.parent_path());
@@ -33,7 +34,7 @@ state_observer::state_observer(const std::string& filename, std::size_t num_rods
         throw std::runtime_error("Observer could not open output file: " + filename);
     }
 
-    *_file << std::fixed << std::setprecision(3);
+    *_file << std::fixed << std::setprecision(properties.precission);
     *_file << "time";
 
     if (_include_magnitudes) {

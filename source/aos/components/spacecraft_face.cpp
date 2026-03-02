@@ -2,6 +2,7 @@
 
 #include "aos/core/constants.hpp"
 #include "aos/core/types.hpp"
+#include "aos/environment/environment.hpp"
 
 #include <toml++/impl/table.hpp>
 
@@ -26,19 +27,29 @@ void spacecraft_face::from_toml(const toml::table& table) {
             vec->get(2)->value_or(0.0);
     }
 
-    surface_area_m2  = table["surface_area_m2"].value_or(0.0);
-    drag_coefficient = table["drag_coefficient"].value_or(default_drag_coefficient);
-    reflectivity     = table["reflectivity"].value_or(default_reflectivity);
+    surface_area_m2                 = table["surface_area_m2"].value_or(0.0);
+    drag_coefficient                = table["drag_coefficient"].value_or(default_drag_coefficient);
+    specular_reflection_coefficient = table["specular_reflection_coefficient"].value_or(0.0);
+    diffuse_reflection_coefficient  = table["diffuse_reflection_coefficient"].value_or(0.0);
 }
 
 void spacecraft_face::debug_print() const {
-    std::cout << "--  spacecraft face  --"                                                                                                     //
-              << "\n  center of pressure: " << center_of_pressure_m.x() << ' ' << center_of_pressure_m.y() << ' ' << center_of_pressure_m.z()  //
-              << "\n  surface normal:     " << surface_normal.x() << ' ' << surface_normal.y() << ' ' << surface_normal.z()                    //
-              << "\n  surface area:       " << surface_area_m2                                                                                 //
-              << "\n  drag coefficient:   " << drag_coefficient                                                                                //
-              << "\n  reflectivity:       " << reflectivity                                                                                    //
+    std::cout << "--  spacecraft face  --"                                                                                                                  //
+              << "\n  center of pressure:              " << center_of_pressure_m.x() << ' ' << center_of_pressure_m.y() << ' ' << center_of_pressure_m.z()  //
+              << "\n  surface normal:                  " << surface_normal.x() << ' ' << surface_normal.y() << ' ' << surface_normal.z()                    //
+              << "\n  surface area:                    " << surface_area_m2                                                                                 //
+              << "\n  drag coefficient:                " << drag_coefficient                                                                                //
+              << "\n  specular reflection coefficient: " << specular_reflection_coefficient                                                                 //
+              << "\n  diffuse reflection coefficient:  " << diffuse_reflection_coefficient                                                                  //
               << '\n';
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+auto spacecraft_face::compute_force(const environment_data& data, const vec3& v_body, const vec3& s_body, const vec3& omega_body) const -> vec3 {
+    const vec3 v_rel_body  = compute_v_rel_body(v_body, omega_body);
+    const vec3 f_drag_body = compute_force_drag_body(data.atmospheric_density_kg_m3, v_rel_body);
+    const vec3 f_srp_body  = compute_force_srp_body(data.solar_pressure_Pa, s_body, data.shadow_factor);
+    return f_drag_body + f_srp_body;
 }
 
 auto spacecraft_face::compute_force_srp_body(double pressure, const vec3& s_body, double shadow_factor) const -> vec3 {
@@ -46,7 +57,12 @@ auto spacecraft_face::compute_force_srp_body(double pressure, const vec3& s_body
     if (cos_alpha <= 0.0 || shadow_factor <= 0.0) {
         return vec3::Zero();
     }
-    return s_body * (pressure * surface_area_m2 * cos_alpha * shadow_factor * reflectivity);
+
+    const double scalar        = pressure * surface_area_m2 * cos_alpha * shadow_factor;
+    const vec3   f_sun_dir     = -s_body * scalar * (1.0 - specular_reflection_coefficient);
+    const double normal_scalar = scalar * (2.0 * specular_reflection_coefficient * cos_alpha + (2.0 / 3.0) * diffuse_reflection_coefficient);
+    const vec3   f_normal_dir  = -surface_normal * normal_scalar;
+    return f_sun_dir + f_normal_dir;
 }
 
 auto spacecraft_face::compute_force_drag_body(double density, const vec3& v_rel_body) const -> vec3 {
