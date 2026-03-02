@@ -90,6 +90,8 @@ target_sources(pmaos_core PRIVATE
     "source/aos/verify/hysteresis_observer.hpp"
     "source/aos/verify/hysteresis.cpp"
     "source/aos/verify/hysteresis.hpp"
+    "source/aos/verify/verification_observer.cpp"
+    "source/aos/verify/verification_observer.hpp"
 )
 
 #
@@ -103,3 +105,7 @@ target_link_libraries(pmaos_run PRIVATE pmaos_core)
 add_executable(pmaos_vh "source/verify_hysteresis.cpp")
 set_target_properties(pmaos_vh PROPERTIES CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
 target_link_libraries(pmaos_vh PRIVATE pmaos_core)
+
+add_executable(pmaos_vs "source/verify_simulation.cpp")
+set_target_properties(pmaos_vs PROPERTIES CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+target_link_libraries(pmaos_vs PRIVATE pmaos_core)

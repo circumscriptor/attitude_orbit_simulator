@@ -6,6 +6,7 @@
 #include "aos/environment/environment.hpp"
 #include "aos/environment/orbital_mechanics.hpp"
 #include "aos/simulation/config.hpp"
+#include "aos/simulation/dynamics.hpp"
 #include "aos/simulation/observer.hpp"
 #include "aos/simulation/spacecraft_dynamics.hpp"
 
@@ -22,28 +23,40 @@
 #include <memory>
 #include <print>
 #include <string>
+#include <utility>
 
 namespace aos {
 
-simulation::simulation(const std::string& output_filename, const simulation_properties& params)
-    : _satellite(std::make_shared<spacecraft>(params.satellite)),
-      _environment(environment::create(params.environment)),
-      _dynamics(std::make_shared<spacecraft_dynamics>(_satellite, _environment)),
-      _observer(std::make_shared<observer>(output_filename, _satellite->rods().size(), params.observer)),
-      _t_start(params.t_start),
-      _t_end(params.t_end),
+simulation::simulation(const std::string& output_filename, const simulation_properties& properties)
+    : simulation(properties,
+                 std::make_shared<spacecraft>(properties.satellite),
+                 environment::create(properties.environment),
+                 std::make_shared<spacecraft_dynamics>(_satellite, _environment),
+                 std::make_shared<observer>(output_filename, properties.satellite.rods.size(), properties.observer)) {}
+
+simulation::simulation(const simulation_properties& properties,
+                       std::shared_ptr<spacecraft>  sat,
+                       std::shared_ptr<environment> env,
+                       std::shared_ptr<dynamics>    dyn,
+                       std::shared_ptr<observer>    obs)
+    : _satellite(std::move(sat)),
+      _environment(std::move(env)),
+      _dynamics(std::move(dyn)),
+      _observer(std::move(obs)),
+      _t_start(properties.t_start),
+      _t_end(properties.t_end),
       _t_now(_t_start),
-      _dt_initial(params.dt_initial),
-      _checkpoint_interval(params.checkpoint_interval),
-      _absolute_error(params.absolute_error),
-      _relative_error(params.relative_error),
-      _stepper_function(params.stepper_function) {
-    const auto [position, velocity]     = orbital_converter::to_cartesian(params.orbit);
+      _dt_initial(properties.dt_initial),
+      _checkpoint_interval(properties.checkpoint_interval),
+      _absolute_error(properties.absolute_error),
+      _relative_error(properties.relative_error),
+      _stepper_function(properties.stepper_function) {
+    const auto [position, velocity]     = orbital_converter::to_cartesian(properties.orbit);
     _current_state.position_m           = position;
     _current_state.velocity_m_s         = velocity;
     _current_state.attitude             = aos::quat::Identity();
-    _current_state.angular_velocity_m_s = params.angular_velocity;
-    _current_state.rod_magnetizations.resize(static_cast<std::ptrdiff_t>(params.satellite.rods.size()));
+    _current_state.angular_velocity_m_s = properties.angular_velocity;
+    _current_state.rod_magnetizations.resize(static_cast<std::ptrdiff_t>(properties.satellite.rods.size()));
     _current_state.rod_magnetizations.setZero();
 }
 
@@ -58,14 +71,14 @@ void simulation::run() {
     using stepper_type_dp5 = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
     using stepper_type_k54 = runge_kutta_cash_karp54<system_state, double, system_state, double, vector_space_algebra>;
 
-    _observer->write_header();
-    _observer->write(_current_state, _t_start);
+    _observer->write_header() << '\n';
+    _observer->write(_current_state, _t_start) << '\n';
 
     auto system = [this](const system_state& current_state, system_state& state_derivative, double t_sec) {
         _dynamics->step(current_state, state_derivative, t_sec);
     };
 
-    auto observe = [this](const system_state& state, double time) { _observer->write(state, time); };
+    auto observe = [this](const system_state& state, double time) { _observer->write(state, time) << '\n'; };
 
     auto run_integration_loop = [&](auto& stepper) {
         using boost::numeric::odeint::integrate_adaptive;

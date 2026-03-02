@@ -9,6 +9,7 @@
 
 #include <cstddef>
 #include <fstream>
+#include <ostream>
 #include <string>
 
 namespace aos {
@@ -34,8 +35,8 @@ public:
     explicit observer(const std::string& filename, std::size_t num_rods, const observer_properties& properties);
     virtual ~observer();
 
-    virtual void write_header();
-    virtual void write(const system_state& state, double time);
+    virtual auto write_header() -> std::ostream&;
+    virtual auto write(const system_state& state, double time) -> std::ostream&;
 
 protected:
 

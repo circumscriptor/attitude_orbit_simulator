@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iomanip>
 #include <ios>
+#include <ostream>
 #include <stdexcept>
 #include <string>
 
@@ -37,7 +38,7 @@ observer::observer(const std::string& filename, std::size_t num_rods, const obse
 
 observer::~observer() = default;
 
-void observer::write_header() {
+auto observer::write_header() -> std::ostream& {
     _file << "time";
 
     if (_include_magnitudes) {
@@ -56,10 +57,11 @@ void observer::write_header() {
     for (std::size_t i = 0; i < _num_rods; ++i) {
         _file << ",M_" << (i + 1);
     }
-    _file << "\n";
+
+    return _file;
 }
 
-void observer::write(const system_state& state, double time) {
+auto observer::write(const system_state& state, double time) -> std::ostream& {
     _file << time;
 
     if (_include_magnitudes) {
@@ -87,7 +89,8 @@ void observer::write(const system_state& state, double time) {
     for (std::size_t i = 0; i < _num_rods; ++i) {
         _file << ',' << state.rod_magnetizations(static_cast<int>(i));
     }
-    _file << '\n';
+
+    return _file;
 }
 
 auto observer::file() -> std::ofstream& {

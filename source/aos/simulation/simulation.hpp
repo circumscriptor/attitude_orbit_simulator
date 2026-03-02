@@ -15,7 +15,12 @@ namespace aos {
 class simulation {
 public:
 
-    simulation(const std::string& output_filename, const simulation_properties& params);
+    simulation(const std::string& output_filename, const simulation_properties& properties);
+    simulation(const simulation_properties& properties,
+               std::shared_ptr<spacecraft>  sat,
+               std::shared_ptr<environment> env,
+               std::shared_ptr<dynamics>    dyn,
+               std::shared_ptr<observer>    obs);
 
     void run();
 

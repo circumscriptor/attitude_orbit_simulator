@@ -1,123 +1,83 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-import argparse
-import sys
 
-# Define shorthand groups for easy CLI use
-GROUPS = {
-    "pos": ["r_x", "r_y", "r_z", "r_mag"],
-    "vel": ["v_x", "v_y", "v_z", "v_mag"],
-    "quat": ["q_w", "q_x", "q_y", "q_z"],
-    "euler": ["roll_deg", "pitch_deg", "yaw_deg"],
-    "omega": ["omega_x", "omega_y", "omega_z"],
-    "nadir": ["nadir_error_deg"],
-    "rods": ["M_"],  # Special case: matches any column starting with M_
-}
+def visualize_satellite_data(csv_file):
+    # Load data
+    df = pd.read_csv(csv_file)
+    t = df['time']
 
+    # Create a multi-panel figure
+    fig, axs = plt.subplots(4, 2, figsize=(15, 20), constrained_layout=True)
+    fig.suptitle(f"Satellite Simulation Analysis: {csv_file}", fontsize=16)
 
-def resolve_requested_columns(requested, available):
-    """Maps group names or specific column names to actual available columns."""
-    to_plot = []
+    # 1. Angular Velocity (Body Frame)
+    axs[0, 0].plot(t, df['w_x'], label='ωx')
+    axs[0, 0].plot(t, df['w_y'], label='ωy')
+    axs[0, 0].plot(t, df['w_z'], label='ωz')
+    axs[0, 0].set_title("Angular Velocity [rad/s]")
+    axs[0, 0].legend()
+    axs[0, 0].grid(True)
 
-    for item in requested:
-        if item in GROUPS:
-            # Add all columns in the group that exist in the CSV
-            if item == "rods":
-                to_plot.extend([c for c in available if c.startswith("M_")])
-            else:
-                to_plot.extend([c for c in GROUPS[item] if c in available])
-        elif item in available:
-            to_plot.append(item)
-        else:
-            print(f"Warning: '{item}' not found in CSV or as a valid group name.")
+    # 2. Attitude Quaternions
+    axs[0, 1].plot(t, df['q_w'], label='qw')
+    axs[0, 1].plot(t, df['q_x'], label='qx')
+    axs[0, 1].plot(t, df['q_y'], label='qy')
+    axs[0, 1].plot(t, df['q_z'], label='qz')
+    axs[0, 1].set_title("Attitude Quaternions")
+    axs[0, 1].legend()
+    axs[0, 1].grid(True)
 
-    return sorted(list(set(to_plot)), key=lambda x: available.index(x))
+    # 3. Magnetic Torque Components
+    axs[1, 0].plot(t, df['t_mag_x'], label='τ_mag_x')
+    axs[1, 0].plot(t, df['t_mag_y'], label='τ_mag_y')
+    axs[1, 0].plot(t, df['t_mag_z'], label='τ_mag_z')
+    axs[1, 0].set_title("Magnetic Torque [Nm]")
+    axs[1, 0].legend()
+    axs[1, 0].grid(True)
 
+    # 4. Gravity Gradient Torque
+    axs[1, 1].plot(t, df['t_grav_x'], label='τ_grav_x')
+    axs[1, 1].plot(t, df['t_grav_y'], label='τ_grav_y')
+    axs[1, 1].plot(t, df['t_grav_z'], label='τ_grav_z')
+    axs[1, 1].set_title("Gravity Gradient Torque [Nm]")
+    axs[1, 1].legend()
+    axs[1, 1].grid(True)
 
-def group_columns_for_plotting(columns):
-    """Groups columns back into logical subplots (e.g., all quats together)."""
-    plot_groups = {}
-    for col in columns:
-        found_group = False
-        for g_name, g_cols in GROUPS.items():
-            if g_name == "rods" and col.startswith("M_"):
-                plot_groups.setdefault("Rod Magnetization", []).append(col)
-                found_group = True
-                break
-            elif col in g_cols:
-                plot_groups.setdefault(g_name.upper(), []).append(col)
-                found_group = True
-                break
+    # 5. Environmental Vectors Magnitudes (Verification)
+    mag_norm = np.sqrt(df['mag_x']**2 + df['mag_y']**2 + df['mag_z']**2)
+    sun_norm = np.sqrt(df['sun_x']**2 + df['sun_y']**2 + df['sun_z']**2)
+    axs[2, 0].plot(t, mag_norm, label='|B| (Tesla)', color='blue')
+    axs[2, 0].set_ylabel('Magnetic Field [T]', color='blue')
+    ax2_0_twin = axs[2, 0].twinx()
+    ax2_0_twin.plot(t, sun_norm, label='|Sun| (m)', color='orange')
+    ax2_0_twin.set_ylabel('Sun Distance [m]', color='orange')
+    axs[2, 0].set_title("Environmental Field Magnitudes")
+    axs[2, 0].grid(True)
 
-        if not found_group:
-            plot_groups.setdefault("Other", []).append(col)
-    return plot_groups
+    # 6. Shadow Factor & SRP Context
+    axs[2, 1].fill_between(t, 0, df['shadow'], alpha=0.3, color='gray', label='Shadow Factor')
+    axs[2, 1].set_ylim(-0.1, 1.1)
+    axs[2, 1].set_title("Eclipse/Sunlight (1=Sun, 0=Umbra)")
+    axs[2, 1].grid(True)
 
+    # 7. Rod Magnetizations (Hysteresis state)
+    axs[3, 0].plot(t, df['M_1'], label='Rod 1')
+    axs[3, 0].plot(t, df['M_2'], label='Rod 2')
+    axs[3, 0].plot(t, df['M_3'], label='Rod 3')
+    if 'M_4' in df: axs[3, 0].plot(t, df['M_4'], label='Rod 4')
+    axs[3, 0].set_title("Rod Magnetizations [Am^2]")
+    axs[3, 0].legend()
+    axs[3, 0].grid(True)
 
-def main():
-    parser = argparse.ArgumentParser(description="AOS Universal Verification Plotter")
-    parser.add_argument("filename", help="CSV file to plot")
-    parser.add_argument(
-        "-c",
-        "--cols",
-        nargs="+",
-        default=["pos", "vel", "quat", "euler", "omega", "nadir", "rods"],
-        help="Select groups (pos, vel, quat, euler, omega, nadir, rods) or specific column names.",
-    )
-    parser.add_argument(
-        "--list",
-        action="store_true",
-        help="List all available columns in the CSV and exit.",
-    )
+    # 8. Orbit Path (ECI Projection)
+    axs[3, 1].plot(df['r_x'], df['r_y'])
+    axs[3, 1].set_aspect('equal')
+    axs[3, 1].set_title("Orbital Path (XY Projection) [m]")
+    axs[3, 1].grid(True)
 
-    args = parser.parse_args()
-
-    try:
-        df = pd.read_csv(args.filename)
-        df.columns = df.columns.str.strip()
-    except Exception as e:
-        print(f"Error: Could not read {args.filename}: {e}")
-        sys.exit(1)
-
-    available = list(df.columns)
-
-    if args.list:
-        print("Available columns:", ", ".join(available))
-        sys.exit(0)
-
-    # 1. Handle automatic magnitude calculation if components exist but mags don't
-    if "r_mag" not in available and all(x in available for x in ["r_x", "r_y", "r_z"]):
-        df["r_mag"] = np.sqrt(df["r_x"] ** 2 + df["r_y"] ** 2 + df["r_z"] ** 2)
-        available.append("r_mag")
-
-    # 2. Resolve what the user wants to see
-    selected_cols = resolve_requested_columns(args.cols, available)
-    if not selected_cols:
-        print("No valid columns selected for plotting.")
-        sys.exit(1)
-
-    plot_data = group_columns_for_plotting(selected_cols)
-
-    # 3. Dynamic Plotting
-    n_rows = len(plot_data)
-    fig, axes = plt.subplots(n_rows, 1, figsize=(12, 3.5 * n_rows), sharex=True)
-    if n_rows == 1:
-        axes = [axes]
-
-    for ax, (title, cols) in zip(axes, plot_data.items()):
-        for c in cols:
-            ax.plot(df["time"], df[c], label=c, alpha=0.8)
-
-        ax.set_title(title)
-        ax.set_ylabel("Value")
-        ax.grid(True, alpha=0.3)
-        ax.legend(loc="right", fontsize="small")
-
-    plt.xlabel("Time [s]")
-    plt.tight_layout()
     plt.show()
 
-
 if __name__ == "__main__":
-    main()
+    # Ensure your filename matches the exported CSV
+    visualize_satellite_data("output.csv")

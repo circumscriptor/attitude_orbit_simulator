@@ -163,12 +163,6 @@ auto environment::create(const environment_properties& properties) -> std::share
 }
 
 auto environment_impl::compute_effects(double t_sec, const vec3& r_eci_m, const vec3& v_eci_m_s) const -> environment_effects {
-    // if (std::isnan(r_eci_m.x()) || std::isnan(v_eci_m_s.x())) {
-    //     std::println(stderr, "[FATAL] environment_model received NaN state at t={:.4f}\n  Pos: [{:f}, {:f}, {:f}]\n  Vel: [{:f}, {:f}, {:f}]", t_sec,
-    //                  r_eci_m.x(), r_eci_m.y(), r_eci_m.z(), v_eci_m_s.x(), v_eci_m_s.y(), v_eci_m_s.z());
-    //     std::exit(1);
-    // }
-
     // compute fields at current position
     cache_transform(t_sec, r_eci_m);
 
@@ -211,10 +205,6 @@ auto environment_impl::earth_mu() const -> double {
 }
 
 void environment_impl::cache_transform(double t_sec, const vec3& r_eci_m) const {
-    // if (std::isnan(r_eci_m.x()) || std::abs(r_eci_m.norm()) > 1e8) {
-    //     std::println(stderr, "[CRITICAL] ECI State Explosion at t={:.3f}: [{:f}, {:f}, {:f}]", t_sec, r_eci_m.x(), r_eci_m.y(), r_eci_m.z());
-    // }
-
     _cache.current_year = _start_year_decimal + (t_sec / seconds_per_year);
 
     const double days_j2000 = (_cache.current_year - 2000.0) * 365.25;
@@ -238,13 +228,6 @@ void environment_impl::cache_transform(double t_sec, const vec3& r_eci_m) const 
     _earth.Reverse(_cache.r_ecef_m.x(), _cache.r_ecef_m.y(), _cache.r_ecef_m.z(),  // geocentric
                    _cache.lat_deg, _cache.lon_deg, _cache.alt_m,                   // geodetic
                    _cache.rotation_matrix_buffer);                                 //
-
-    // if (std::isnan(_cache.lat_deg) || std::isnan(_cache.alt_m)) {
-    //     std::println(stderr,
-    //                  "[TRANSFORM ERROR] NaN detected at t={:.3f}\n  ECI:  [{:e}, {:e}, {:e}]\n  ECEF: [{:e}, {:e}, {:e}]\n  Lat: {:f}, Lon: {:f}, Alt: {:f}",
-    //                  t_sec, r_eci_m.x(), r_eci_m.y(), r_eci_m.z(), _cache.r_ecef_m.x(), _cache.r_ecef_m.y(), _cache.r_ecef_m.z(), _cache.lat_deg,
-    //                  _cache.lon_deg, _cache.alt_m);
-    // }
 
     const auto& m = _cache.rotation_matrix_buffer;
     _cache.R_enu_to_ecef << m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8];  // NOLINT(readability-magic-numbers)
