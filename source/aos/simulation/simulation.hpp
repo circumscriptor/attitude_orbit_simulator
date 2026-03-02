@@ -15,7 +15,7 @@ namespace aos {
 class simulation {
 public:
 
-    simulation(const std::string& output_filename, const simulation_parameters& params);
+    simulation(const std::string& output_filename, const simulation_properties& params);
 
     void run();
 

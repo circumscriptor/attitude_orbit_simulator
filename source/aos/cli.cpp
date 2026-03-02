@@ -15,7 +15,7 @@
 
 namespace aos {
 
-auto parse_cli(int argc, char** argv, simulation_parameters& params, std::string& output_path) -> bool {
+auto parse_cli(int argc, char** argv, simulation_properties& properties, std::string& output_path) -> bool {
     std::string config_path = "config.toml";
     output_path             = "output.csv";
 
@@ -58,8 +58,8 @@ auto parse_cli(int argc, char** argv, simulation_parameters& params, std::string
 
     try {
         auto table = toml::parse_file(config_path);
-        params.from_toml(table);
-        params.debug_print();
+        properties.from_toml(table);
+        properties.debug_print();
         return true;
     } catch (const toml::parse_error& err) {
         std::println(stderr, "TOML Error: {}", err.description());

@@ -25,7 +25,7 @@
 
 namespace aos {
 
-simulation::simulation(const std::string& output_filename, const simulation_parameters& params)
+simulation::simulation(const std::string& output_filename, const simulation_properties& params)
     : _satellite(std::make_shared<spacecraft>(params.satellite)),
       _environment(std::make_shared<environment>(params.environment)),
       _dynamics(std::make_shared<spacecraft_dynamics>(_satellite, _environment)),

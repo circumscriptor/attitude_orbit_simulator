@@ -95,16 +95,13 @@ target_sources(pmaos_core PRIVATE
 )
 
 #
-# Executable
+# Executables
 #
 
 add_executable(pmaos_run "source/main.cpp")
+set_target_properties(pmaos_run PROPERTIES CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+target_link_libraries(pmaos_run PRIVATE pmaos_core)
 
-set_target_properties(pmaos_run PROPERTIES
-    CXX_SCAN_FOR_MODULES OFF
-    INTERPROCEDURAL_OPTIMIZATION_RELEASE ON
-)
-
-target_link_libraries(pmaos_run PRIVATE
-    pmaos_core
-)
+add_executable(pmaos_vh "source/verify_hysteresis.cpp")
+set_target_properties(pmaos_vh PROPERTIES CXX_SCAN_FOR_MODULES OFF INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+target_link_libraries(pmaos_vh PRIVATE pmaos_core)

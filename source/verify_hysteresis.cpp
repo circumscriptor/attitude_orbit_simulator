@@ -1,9 +1,8 @@
 #include "aos/cli.hpp"
 #include "aos/simulation/config.hpp"
-#include "aos/simulation/simulation.hpp"
+#include "aos/verify/hysteresis.hpp"
 
 #include <exception>
-#include <memory>
 #include <print>
 #include <string>
 
@@ -15,7 +14,7 @@ auto main(int argc, char** argv) -> int {
     }
 
     try {
-        std::make_unique<aos::simulation>(output_path, properties)->run();
+        aos::verify_hysteresis(output_path, properties.satellite.hysteresis);
         return 0;
     } catch (const std::exception& ex) {
         std::println(stderr, "Error: {}", ex.what());

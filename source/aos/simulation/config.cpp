@@ -13,7 +13,7 @@ namespace aos {
 //  {"N52", 1.45},
 //  {"N35SH", 1.19}};
 
-void simulation_parameters::from_toml(const toml::table& table) {
+void simulation_properties::from_toml(const toml::table& table) {
     // NOLINTBEGIN(readability-magic-numbers)
 
     if (const auto* sat = table["satellite"].as_table()) {
@@ -50,7 +50,7 @@ void simulation_parameters::from_toml(const toml::table& table) {
     // NOLINTEND(readability-magic-numbers)
 }
 
-void simulation_parameters::debug_print() const {
+void simulation_properties::debug_print() const {
     std::cout << std::boolalpha;
 
     satellite.debug_print();

@@ -13,7 +13,7 @@
 
 namespace aos {
 
-struct simulation_parameters {
+struct simulation_properties {
     spacecraft_properties        satellite;
     keplerian_elements           orbit;
     state_observer_properties    observer;
