@@ -23,7 +23,7 @@ namespace aos {
 // NOLINTBEGIN(readability-magic-numbers)
 
 void spacecraft_uniform::from_toml(const toml::table& table) {
-    if (const auto* vec = table["dimensions_m"].as_array()) {
+    if (const auto* vec = table["dimensions"].as_array()) {
         dimensions_m <<                                      //
             vec->get(0)->value_or(default_spacecraft_size),  //
             vec->get(1)->value_or(default_spacecraft_size),  //
@@ -36,9 +36,11 @@ void spacecraft_uniform::from_toml(const toml::table& table) {
 }
 
 void spacecraft_uniform::debug_print() const {
-    std::cout << "--  spacecraft (uniform) shape  --"                                                                //
-              << "\n  dimensions:       " << dimensions_m.x() << ' ' << dimensions_m.y() << ' ' << dimensions_m.z()  //
-              << "\n  drag coefficient: " << drag_coefficient                                                        //
+    std::cout << "--  spacecraft (uniform) shape  --"                                                                               //
+              << "\n  dimensions:                      " << dimensions_m.x() << ' ' << dimensions_m.y() << ' ' << dimensions_m.z()  //
+              << "\n  drag coefficient:                " << drag_coefficient                                                        //
+              << "\n  specular reflection coefficient: " << specular_reflection_coefficient                                         //
+              << "\n  diffuse reflection coefficient:  " << diffuse_reflection_coefficient                                          //
               << '\n';
 }
 
@@ -79,7 +81,7 @@ void spacecraft_custom::debug_print() const {
 }
 
 void spacecraft_properties::from_toml(const toml::table& table) {
-    mass_kg = table["mass_kg"].value_or(default_spacecraft_mass);
+    mass_kg = table["mass"].value_or(default_spacecraft_mass);
 
     if (const auto* uniform = table["uniform"].as_table()) {
         shape.emplace<spacecraft_uniform>().from_toml(*uniform);
@@ -215,8 +217,7 @@ auto spacecraft::compute_gravity_gradient_torque(const vec3& r_body, double eart
 }
 
 // NOLINTBEGIN(bugprone-easily-swappable-parameters)
-auto spacecraft::compute_face_effects(const environment_effects& env, const quat& q_att, const quat& q_inv, const vec3& omega_body) const
-    -> spacecraft_face_effects {
+auto spacecraft::compute_face_effects(const environment_effects& env, const quat& q_att, const quat& q_inv, const vec3& omega_body) const -> face_effects {
     vec3 torque_body_sum = vec3::Zero();
     vec3 force_body_sum  = vec3::Zero();
 
@@ -234,20 +235,20 @@ auto spacecraft::compute_face_effects(const environment_effects& env, const quat
     };
 }
 
-auto spacecraft::compute_faces_effect_raw(const environment_effects& env, const quat& q_inv, const vec3& omega_body) const -> spacecraft_face_effects_raw {
-    spacecraft_face_effects_raw result;
+auto spacecraft::compute_faces_effect_raw(const environment_effects& env, const quat& q_inv, const vec3& omega_body) const -> face_effects_with_forces {
+    face_effects_with_forces result;
 
     const vec3 s_body = (q_inv * env.r_sun_eci).normalized();
     const vec3 v_body = q_inv * env.v_earth_rel;
     for (size_t i = 0; i < _faces.size(); ++i) {
         const auto& face   = _faces.at(i);
-        const vec3  f_body = face.compute_force(env, v_body, s_body, omega_body);  // drag + srp
+        const auto  f      = face.compute_forces(env, v_body, s_body, omega_body);  // drag + srp
+        const vec3  f_body = f.force_drag_body + f.force_srp_body;
         const vec3  t_body = face.center_of_pressure_m.cross(f_body);
 
         result.force_body += f_body;
         result.torque_body += t_body;
-        result.forces_body.at(i)  = f_body;
-        result.torques_body.at(i) = t_body;
+        result.forces_body.at(i) = f;
     }
 
     return result;

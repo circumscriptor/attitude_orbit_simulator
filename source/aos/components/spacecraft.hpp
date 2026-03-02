@@ -77,11 +77,10 @@ public:
     [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_body, double earth_mu) const -> vec3;
 
     // compute drag and srp torque+force
-    [[nodiscard]] auto compute_face_effects(const environment_effects& env, const quat& q_att, const quat& q_inv, const vec3& omega_body) const
-        -> spacecraft_face_effects;
+    [[nodiscard]] auto compute_face_effects(const environment_effects& env, const quat& q_att, const quat& q_inv, const vec3& omega_body) const -> face_effects;
 
     // compute drag and srp torque+force
-    [[nodiscard]] auto compute_faces_effect_raw(const environment_effects& env, const quat& q_inv, const vec3& omega_body) const -> spacecraft_face_effects_raw;
+    [[nodiscard]] auto compute_faces_effect_raw(const environment_effects& env, const quat& q_inv, const vec3& omega_body) const -> face_effects_with_forces;
 
     // compute total rod torque exerted by all rods
     [[nodiscard]] auto compute_rod_torques(const vecX& rod_magnetizations, const vec3& b_body) const -> vec3;

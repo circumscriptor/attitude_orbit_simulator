@@ -16,17 +16,21 @@ namespace aos {
 
 static constexpr size_t spacecraft_num_faces = 6;  // Cube
 
-struct spacecraft_face_effects {
+struct face_effects {
     vec3 torque_body;  //!< [Nm] Torque in body frame
     vec3 force_eci;    //!< [N] Force applied to satellite in ECI
 };
 
-struct spacecraft_face_effects_raw {
+struct face_forces {
+    vec3 force_drag_body;
+    vec3 force_srp_body;
+};
+
+struct face_effects_with_forces {
     vec3 torque_body;  //!< [Nm] Torque in body frame
     vec3 force_body;   //!< [N] Force applied to satellite in body frame
 
-    std::array<vec3, spacecraft_num_faces> torques_body;  // Per-face torque in body frame
-    std::array<vec3, spacecraft_num_faces> forces_body;   // Per-face force in body frame
+    std::array<face_forces, spacecraft_num_faces> forces_body;  // Per-face forces in body frame
 };
 
 struct spacecraft_face {
@@ -42,6 +46,7 @@ struct spacecraft_face {
     void debug_print() const;
 
     [[nodiscard]] auto compute_force(const environment_effects& data, const vec3& v_body, const vec3& s_body, const vec3& omega_body) const -> vec3;
+    [[nodiscard]] auto compute_forces(const environment_effects& data, const vec3& v_body, const vec3& s_body, const vec3& omega_body) const -> face_forces;
     [[nodiscard]] auto compute_force_srp_body(double pressure, const vec3& s_body, double shadow_factor) const -> vec3;
     [[nodiscard]] auto compute_force_drag_body(double density, const vec3& v_rel_body) const -> vec3;
     [[nodiscard]] auto compute_v_rel_body(const vec3& v_com_body, const vec3& omega_body) const -> vec3;

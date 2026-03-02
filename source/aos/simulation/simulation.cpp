@@ -72,7 +72,6 @@ void simulation::run() {
     using stepper_type_k54 = runge_kutta_cash_karp54<system_state, double, system_state, double, vector_space_algebra>;
 
     _observer->write_header() << '\n';
-    // _observer->write(_current_state, _t_start) << '\n';
 
     auto system = [this](const system_state& current_state, system_state& state_derivative, double t_sec) {
         _dynamics->step(current_state, state_derivative, t_sec);
@@ -90,6 +89,7 @@ void simulation::run() {
         } else {
             std::println("Starting simulation with checkpoints");
 
+            _observer->write(_current_state, _t_start) << '\n';
             while (_t_now < _t_end) {
                 const double section_period = std::min(_checkpoint_interval, _t_end - _t_now);
 
@@ -99,7 +99,7 @@ void simulation::run() {
                 fix_integration_errors();
 
                 _t_now += section_period;
-                _observer->write(_current_state, _t_now);
+                _observer->write(_current_state, _t_now) << '\n';
                 // observer.flush();  // comment when not needed
                 std::print("Checkpoint: {} s / {} s\r", _t_now, _t_end);
             }

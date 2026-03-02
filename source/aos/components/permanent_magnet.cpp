@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <numbers>
+#include <print>
 #include <stdexcept>
 #include <type_traits>
 #include <variant>
@@ -15,8 +16,8 @@ namespace aos {
 
 // NOLINTBEGIN(readability-magic-numbers)
 void permanent_magnet_cylindrical::from_toml(const toml::table& table) {
-    length_m = table["length_m"].value_or(0.05);
-    radius_m = table["radius_m"].value_or(0.005);
+    length_m = table["length"].value_or(0.05);
+    radius_m = table["radius"].value_or(0.005);
 }
 
 void permanent_magnet_cylindrical::debug_print() const {
@@ -41,7 +42,7 @@ void permanent_magnet_rectangular::debug_print() const {
 }
 
 void permanent_magnet_properties::from_toml(const toml::table& table) {
-    remanence_t           = table["remanence_t"].value_or(1.21);
+    remanence_t           = table["remanence"].value_or(1.21);
     relative_permeability = table["relative_permeability"].value_or(1.0);
 
     if (const auto* vec = table["orientation"].as_array()) {
@@ -88,6 +89,10 @@ permanent_magnet::permanent_magnet(const permanent_magnet_properties& properties
     }
 
     _magnetic_moment_body = compute_magnetic_moment(_remanence_t, _volume_m3, _demagnetization_factor, _relative_permeability, _orientation_body);
+
+    std::println("Permanent magnet remanence: {}", _remanence_t);
+    std::println("Permanent magnet demagnitization factor: {}", _demagnetization_factor);
+    std::println("Permanent magnet magnetic moment (body frame): {}, {}, {}", _magnetic_moment_body.x(), _magnetic_moment_body.y(), _magnetic_moment_body.z());
 }
 
 auto permanent_magnet::magnetic_moment() const -> vec3 {

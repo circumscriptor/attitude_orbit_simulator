@@ -156,7 +156,7 @@ def plot_torque_envelopes(t, df, save=False, prefix="output", dpi=150):
     for name, cols in torques.items():
         if all(c in df.columns for c in cols):
             mag = np.linalg.norm(df[cols], axis=1)
-            axs[0].semilogy(t, np.clip(mag, 1e-12, None), lw=1, label=name)
+            axs[0].semilogy(t, np.clip(mag, 1e-13, None), lw=1, label=name)
 
     axs[0].set_title("Torque Magnitude Comparison (Log Scale)")
     axs[0].set_ylabel("Torque [Nm]")
@@ -318,7 +318,7 @@ def plot_per_face_effects(t, df, save=False, prefix="output", dpi=150):
     plt.suptitle("Per-Face Surface Effects (Body Frame Magnitudes)", fontsize=14, fontweight='bold')
 
     # Graceful fallback if older CSVs are loaded
-    if 'f_f0_x' not in df.columns:
+    if 'd_f0_x' not in df.columns:
         axs[0].text(0.5, 0.5, "Per-face data not found in CSV", ha='center', va='center')
         if save:
             plt.savefig(f"{prefix}_07_per_face.png", dpi=dpi)
@@ -330,25 +330,25 @@ def plot_per_face_effects(t, df, save=False, prefix="output", dpi=150):
     colors = plt.cm.tab10(np.linspace(0, 1, 6))
 
     for i, color in enumerate(colors):
-        # 1. Force Magnitude per face
-        f_cols =[f'f_f{i}_x', f'f_f{i}_y', f'f_f{i}_z']
+        # 1. Drag Magnitude per face
+        f_cols =[f'd_f{i}_x', f'd_f{i}_y', f'd_f{i}_z']
         if all(col in df.columns for col in f_cols):
             f_mag = np.linalg.norm(df[f_cols], axis=1)
             axs[0].plot(t, f_mag, color=color, lw=1.2, label=f'Face {i}')
 
-        # 2. Torque Magnitude per face
-        t_cols =[f't_f{i}_x', f't_f{i}_y', f't_f{i}_z']
+        # 2. SRP Magnitude per face
+        t_cols =[f's_f{i}_x', f's_f{i}_y', f's_f{i}_z']
         if all(col in df.columns for col in t_cols):
             t_mag = np.linalg.norm(df[t_cols], axis=1)
             axs[1].plot(t, t_mag, color=color, lw=1.2, label=f'Face {i}')
 
-    axs[0].set_title("Aerodynamic + SRP Force Magnitude per Face")
+    axs[0].set_title("Aerodynamic Force Magnitude per Face")
     axs[0].set_ylabel("Force [N]")
     axs[0].legend(loc='upper right', ncol=6)
     axs[0].grid(True, alpha=0.3)
 
-    axs[1].set_title("Aerodynamic + SRP Torque Magnitude per Face")
-    axs[1].set_ylabel("Torque [Nm]")
+    axs[1].set_title("SRP Force Magnitude per Face")
+    axs[1].set_ylabel("Force [N]")
     axs[1].legend(loc='upper right', ncol=6)
     axs[1].grid(True, alpha=0.3)
 

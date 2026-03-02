@@ -38,7 +38,7 @@ void environment_properties::from_toml(const toml::table& table) {
 }
 
 void environment_properties::debug_print() const {
-    std::cout << "--  spacecraft (custom) shape  --"                     //
+    std::cout << "--  environmnet properties  --"                        //
               << "\n  start year:            " << start_year_decimal     //
               << "\n  gravity model name:    " << gravity_model_name     //
               << "\n  gravity model path:    " << gravity_model_path     //
@@ -46,9 +46,9 @@ void environment_properties::debug_print() const {
               << "\n  magnetic model path:   " << magnetic_model_path    //
               << "\n  weather data path:     " << weather_data_path      //
               << "\n  gravity model degree:  " << gravity_model_degree   //
-              << "\n  gravity model degree:  " << gravity_model_order    //
+              << "\n  gravity model order:   " << gravity_model_order    //
               << "\n  magnetic model degree: " << magnetic_model_degree  //
-              << "\n  magnetic model degree: " << magnetic_model_order   //
+              << "\n  magnetic model order:  " << magnetic_model_order   //
               << '\n';
 }
 
