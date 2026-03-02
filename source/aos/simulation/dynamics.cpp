@@ -5,7 +5,6 @@
 #include "aos/environment/environment.hpp"
 
 #include <algorithm>
-#include <cmath>
 #include <cstddef>
 
 namespace aos {
@@ -22,13 +21,14 @@ void spacecraft_dynamics::operator()(const system_state& current_state, system_s
     state_derivative.velocity_m_s = env_data.gravity_eci_m_s2;
 
     const mat3x3 R_eci_to_body    = q_att.toRotationMatrix().transpose();  // NOLINT(readability-identifier-naming)
+    const vec3   r_body           = R_eci_to_body * r_eci;
     const vec3   b_body           = R_eci_to_body * env_data.magnetic_field_eci_T;
     const vec3   b_dot_orbital    = R_eci_to_body * env_data.magnetic_field_dot_eci_T_s;
     const vec3   b_dot_rotational = -omega_body.cross(b_body);
     const vec3   b_dot_body       = b_dot_orbital + b_dot_rotational;
     const vec3   rods_torque      = compute_rod_effects(current_state.rod_magnetizations, b_body, b_dot_body, state_derivative.rod_magnetizations);
     const auto   face_effects     = compute_face_effects(env_data, q_att, v_eci, r_eci, omega_body);
-    const vec3   net_torque       = compute_other_torques(omega_body, b_body, r_eci, R_eci_to_body) + rods_torque + face_effects.torque_body;
+    const vec3   net_torque       = compute_other_torques(omega_body, b_body, r_body) + rods_torque + face_effects.torque_body;
 
     // if (std::isnan(net_torque.x()) || std::isnan(state_derivative.angular_velocity_m_s.x())) {
     //     std::println(stderr, "[DYNAMICS ERROR] NaN detected at t={:.4f}", t_global);
@@ -99,30 +99,12 @@ auto spacecraft_dynamics::compute_face_effects(const environment_data& data,
 // NOLINTEND(bugprone-easily-swappable-parameters)
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto spacecraft_dynamics::compute_other_torques(const vec3& omega, const vec3& b_body, const vec3& r_eci, const mat3x3& eci_to_body) const -> vec3 {
+auto spacecraft_dynamics::compute_other_torques(const vec3& omega, const vec3& b_body, const vec3& r_body) const -> vec3 {
     vec3 torque = vec3::Zero();
-
-    // permanent magnet
-    torque += _spacecraft->magnet().magnetic_moment().cross(b_body);
-
-    // gyroscopic (rigid body coupling): -omega x (I * omega)
-    torque -= omega.cross(_spacecraft->inertia_tensor_kg_m2() * omega);
-
-    // gravity gradient
-    torque += compute_gravity_gradient_torque(r_eci, eci_to_body);
+    torque += _spacecraft->magnet().compute_torque(b_body);
+    torque += _spacecraft->compute_gyroscopic_torque(omega);
+    torque += _spacecraft->compute_gravity_gradient_torque(r_body, _environment->earth_mu());
     return torque;
-}
-
-auto spacecraft_dynamics::compute_gravity_gradient_torque(const vec3& r_eci, const mat3x3& eci_to_body) const -> vec3 {
-    // position to body frame: r_body = R * r_eci
-    const vec3 r_body = eci_to_body * r_eci;
-
-    const double r_sq  = r_body.squaredNorm();
-    const double r_val = std::sqrt(r_sq);
-
-    // tau_gg = (3*mu / r^5) * (r_body x (I * r_body))
-    const double coef = (3.0 * _environment->earth_mu()) / (r_sq * r_sq * r_val);
-    return coef * r_body.cross(_spacecraft->inertia_tensor_kg_m2() * r_body);
 }
 
 auto spacecraft_dynamics::compute_attitude_derivative(const quat& q_att, const vec3& omega) -> vecX {

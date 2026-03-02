@@ -8,6 +8,7 @@
 
 #include <toml++/impl/table.hpp>
 
+#include <cmath>
 #include <cstddef>
 #include <iostream>
 #include <span>
@@ -27,6 +28,7 @@ void spacecraft_uniform::from_toml(const toml::table& table) {
     }
 
     drag_coefficient = table["drag_coeffcient"].value_or(default_drag_coefficient);
+    reflectivity     = table["reflectivity"].value_or(default_reflectivity);
 }
 
 void spacecraft_uniform::debug_print() const {
@@ -113,7 +115,6 @@ void spacecraft_properties::debug_print() const {
     for (const auto& hysteresis_rod : rods) {
         hysteresis_rod.debug_print();
     }
-    std::cout << '\n';
 }
 
 // NOLINTEND(readability-magic-numbers)
@@ -129,7 +130,7 @@ spacecraft::spacecraft(const spacecraft_properties& properties) : _mass_kg(prope
             using shape_type = std::decay_t<decltype(shape)>;
 
             if constexpr (std::is_same_v<shape_type, spacecraft_uniform>) {
-                uniform(_mass_kg, shape.dimensions_m, shape.drag_coefficient);
+                uniform(_mass_kg, shape);
             } else if constexpr (std::is_same_v<shape_type, spacecraft_custom>) {
                 _inertia_tensor_kg_m2 = shape.inertia;
                 _faces                = shape.faces;
@@ -164,36 +165,58 @@ auto spacecraft::rods() const -> std::span<const hysteresis_rod> {
     return _rods;
 }
 
-void spacecraft::uniform(double mass_kg, const vec3& dim_m, double drag_coefficient) {
-    const auto face_surface_area_x = dim_m.y() * dim_m.z();
-    const auto face_surface_area_y = dim_m.x() * dim_m.z();
-    const auto face_surface_area_z = dim_m.x() * dim_m.y();
+auto spacecraft::compute_gyroscopic_torque(const vec3& omega) const -> vec3 {
+    return -omega.cross(_inertia_tensor_kg_m2 * omega);
+}
+
+auto spacecraft::compute_gravity_gradient_torque(const vec3& r_body, double earth_mu) const -> vec3 {
+    const double r_sq  = r_body.squaredNorm();
+    const double r_mag = std::sqrt(r_sq);
+
+    // tau_gg = (3 * mu / r^5) * (r_body × (I * r_body))
+    const double coef = (3.0 * earth_mu) / (r_sq * r_sq * r_mag);
+    return coef * r_body.cross(_inertia_tensor_kg_m2 * r_body);
+}
+
+void spacecraft::uniform(double mass_kg, const spacecraft_uniform& shape) {
+    const auto& dim_m               = shape.dimensions_m;
+    const auto& drag_coefficient    = shape.drag_coefficient;
+    const auto& reflectivity        = shape.reflectivity;
+    const auto  face_surface_area_x = dim_m.y() * dim_m.z();
+    const auto  face_surface_area_y = dim_m.x() * dim_m.z();
+    const auto  face_surface_area_z = dim_m.x() * dim_m.y();
 
     // NOLINTBEGIN(readability-magic-numbers)
     _faces[0].surface_area_m2      = face_surface_area_x;
     _faces[0].surface_normal       = vec3(1, 0, 0);
     _faces[0].center_of_pressure_m = _faces[0].surface_normal * dim_m.x() * 0.5;
     _faces[0].drag_coefficient     = drag_coefficient;
+    _faces[0].reflectivity         = reflectivity;
     _faces[1].surface_area_m2      = face_surface_area_x;
     _faces[1].surface_normal       = vec3(-1, 0, 0);
     _faces[1].center_of_pressure_m = _faces[1].surface_normal * dim_m.x() * 0.5;
     _faces[1].drag_coefficient     = drag_coefficient;
+    _faces[1].reflectivity         = reflectivity;
     _faces[2].surface_area_m2      = face_surface_area_y;
     _faces[2].surface_normal       = vec3(0, 1, 0);
     _faces[2].center_of_pressure_m = _faces[2].surface_normal * dim_m.y() * 0.5;
     _faces[2].drag_coefficient     = drag_coefficient;
+    _faces[2].reflectivity         = reflectivity;
     _faces[3].surface_area_m2      = face_surface_area_y;
     _faces[3].surface_normal       = vec3(0, -1, 0);
     _faces[3].center_of_pressure_m = _faces[3].surface_normal * dim_m.y() * 0.5;
     _faces[3].drag_coefficient     = drag_coefficient;
+    _faces[3].reflectivity         = reflectivity;
     _faces[4].surface_area_m2      = face_surface_area_z;
     _faces[4].surface_normal       = vec3(0, 0, 1);
     _faces[4].center_of_pressure_m = _faces[4].surface_normal * dim_m.z() * 0.5;
     _faces[4].drag_coefficient     = drag_coefficient;
+    _faces[4].reflectivity         = reflectivity;
     _faces[5].surface_area_m2      = face_surface_area_z;
     _faces[5].surface_normal       = vec3(0, 0, -1);
     _faces[5].center_of_pressure_m = _faces[5].surface_normal * dim_m.z() * 0.5;
     _faces[5].drag_coefficient     = drag_coefficient;
+    _faces[5].reflectivity         = reflectivity;
     // NOLINTEND(readability-magic-numbers)
 
     _inertia_tensor_kg_m2 = compute_inertia_tensor(mass_kg, dim_m.x(), dim_m.y(), dim_m.z());

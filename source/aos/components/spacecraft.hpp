@@ -20,6 +20,7 @@ namespace aos {
 struct spacecraft_uniform {
     vec3   dimensions_m;
     double drag_coefficient;
+    double reflectivity;
 
     void from_toml(const toml::table& table);
 
@@ -61,17 +62,22 @@ public:
     [[nodiscard]] auto magnet() const -> const permanent_magnet&;
     [[nodiscard]] auto rods() const -> std::span<const hysteresis_rod>;
 
+    // compute gyroscopic torque -omega × (I * ω)
+    [[nodiscard]] auto compute_gyroscopic_torque(const vec3& omega) const -> vec3;
+
+    [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_body, double earth_mu) const -> vec3;
+
 protected:
 
-    void uniform(double mass_kg, const vec3& dim_m, double drag_coefficient);
+    void uniform(double mass_kg, const spacecraft_uniform& shape);
 
     [[nodiscard]] static auto compute_inertia_tensor(double m_kg, double a, double b, double c) -> mat3x3;
 
 private:
 
     double                      _mass_kg;                       // [kg] Mass
-    mat3x3                      _inertia_tensor_kg_m2;          // [kg*m^2] Pre-computed for physics
-    mat3x3                      _inertia_tensor_kg_m2_inverse;  // [1/(kg*m^2)] Pre-computed
+    mat3x3                      _inertia_tensor_kg_m2;          // [kg*m^2] Inertia
+    mat3x3                      _inertia_tensor_kg_m2_inverse;  // [1/(kg*m^2)] Inverse inertia
     spacecraft_faces            _faces;
     permanent_magnet            _magnet;
     std::vector<hysteresis_rod> _rods;

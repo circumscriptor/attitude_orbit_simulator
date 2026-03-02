@@ -46,29 +46,44 @@ struct permanent_magnet_properties {
 class permanent_magnet {
 public:
 
-    static constexpr double default_temp_coeff = -0.0002;  // [-] Default temperature coefficient
-    static constexpr double default_temp_ref   = 20.0;     // [deg celsius] Default reference temperature
+    static constexpr double default_temperature_coefficient = -0.0002;  // [-] Default temperature coefficient
+    static constexpr double default_temperature_reference   = 20.0;     // [deg C] Default reference temperature
 
     explicit permanent_magnet(const permanent_magnet_properties& properties);
 
-    // compute magnetic moment based on the current state of the magnet
     [[nodiscard]] auto magnetic_moment() const -> vec3;
+
+    // compute torque (m x B)
+    [[nodiscard]] auto compute_torque(const vec3& b_field_body) const -> vec3;
+
+    // compute energy
+    [[nodiscard]] auto compute_potential_energy(const vec3& b_field_body) const -> double;
+
     // compute magnetic moment using temperature coefficient
-    [[nodiscard]] auto magnetic_moment_at_temperature(double temp_celsius, double temp_coeff = default_temp_coeff, double ref_temp = default_temp_ref) -> vec3;
+    [[nodiscard]] auto compute_magnetic_moment_at_temperature(double temp_celsius,
+                                                              double temp_coeff = default_temperature_coefficient,
+                                                              double temp_ref   = default_temperature_reference) -> vec3;
 
 protected:
 
+    void set_rectangular(const permanent_magnet_rectangular& shape);
+    void set_cylindrical(const permanent_magnet_cylindrical& shape);
+
     // compute magnetic moment from the state of permanent magnet
-    [[nodiscard]] static auto compute_magnetic_moment(double remanence, double vol, double demag, double mu_r, const vec3& orientation) -> vec3;
+    [[nodiscard]] static auto compute_magnetic_moment(double      remanence,
+                                                      double      volume,
+                                                      double      demagnitization_factor,
+                                                      double      relative_permeability,
+                                                      const vec3& orientation) -> vec3;
 
 private:
 
-    double _remanence_t;             // [Tesla]
-    double _volume_m3;               // [m^3]
-    double _demagnetization_factor;  //
-    double _relative_permeability;   //
-    vec3   _orientation_body;        // Unit vector
-    vec3   _magnetic_moment_body;    // [A·m^2]
+    double _remanence_t{};             // [T] Remanent magnetization (Br)
+    double _volume_m3{};               // [m^3] Material volume
+    double _demagnetization_factor{};  // [-] Geometry-dependent factor (N)
+    double _relative_permeability{};   // [-] Material permeability (mu_r)
+    vec3   _orientation_body;          // [-] Unit vector of magnetization direction
+    vec3   _magnetic_moment_body;      // [Am^2] Total magnetic dipole moment (m)
 };
 
 }  // namespace aos

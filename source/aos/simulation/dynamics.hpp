@@ -39,10 +39,7 @@ protected:
         -> face_effects;
 
     // sums permanent magnet, gyroscopic, and gravity gradient torques
-    [[nodiscard]] auto compute_other_torques(const vec3& omega, const vec3& b_body, const vec3& r_eci, const mat3x3& eci_to_body) const -> vec3;
-
-    // gravity gradient torque
-    [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_eci, const mat3x3& eci_to_body) const -> vec3;
+    [[nodiscard]] auto compute_other_torques(const vec3& omega, const vec3& b_body, const vec3& r_body) const -> vec3;
 
     // quaternion derivative: 0.5 * q * omega
     [[nodiscard]] static auto compute_attitude_derivative(const quat& q_att, const vec3& omega) -> vecX;

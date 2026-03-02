@@ -3,7 +3,7 @@
 #include "aos/simulation/simulation.hpp"
 
 #include <exception>
-#include <iostream>
+#include <print>
 #include <string>
 
 auto main(int argc, char** argv) -> int {
@@ -15,9 +15,9 @@ auto main(int argc, char** argv) -> int {
 
     try {
         aos::run_simulation(output_path, params);
+        return 0;
     } catch (const std::exception& ex) {
-        std::cerr << "Error: " << ex.what() << '\n';
+        std::println(stderr, "Error: {}", ex.what());
         return 1;
     }
-    return 0;
 }
