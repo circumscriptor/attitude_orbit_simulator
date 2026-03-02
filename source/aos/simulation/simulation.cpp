@@ -132,7 +132,7 @@ void simulation::fix_integration_errors() {
     _current_state.attitude.normalize();  // fix drift
 
     // in case of integrator overshot
-    const auto rods = _satellite->rods();
+    const auto rods = _satellite->hystresis().rods();
     for (std::ptrdiff_t i = 0; i < _current_state.rod_magnetizations.size(); ++i) {
         const auto& hysteresis = rods[i].hysteresis();
 

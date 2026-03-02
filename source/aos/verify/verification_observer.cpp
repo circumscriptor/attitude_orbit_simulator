@@ -18,7 +18,7 @@ verification_observer::verification_observer(const std::string&                 
                                              std::shared_ptr<const spacecraft>  sat,
                                              std::shared_ptr<const environment> env,
                                              const observer_properties&         props)
-    : observer(filename, sat->rods().size(), props), _sat(std::move(sat)), _env(std::move(env)) {}
+    : observer(filename, sat->hystresis().rods().size(), props), _sat(std::move(sat)), _env(std::move(env)) {}
 
 auto verification_observer::write_header() -> std::ostream& {
     return observer::write_header() << ",sun_x,sun_y,sun_z,mag_x,mag_y,mag_z,mag_dot_x,mag_dot_y,mag_dot_z,grav_x,grav_y,grav_z,"
@@ -41,8 +41,8 @@ auto verification_observer::write(const system_state& state, double time) -> std
     const vec3 t_mag      = _sat->magnet().compute_torque(b_body);
     const vec3 t_grav     = _sat->compute_gravity_gradient_torque(r_body, _env->earth_mu());
     const vec3 t_gyro     = _sat->compute_gyroscopic_torque(state.angular_velocity_m_s);
-    const vec3 t_rods     = _sat->compute_rod_torques(state.rod_magnetizations, b_body);
-    const auto face_eff   = _sat->compute_faces_effects_with_forces(env, q_inv, state.angular_velocity_m_s);
+    const vec3 t_rods     = _sat->hystresis().compute_rod_torques(state.rod_magnetizations, b_body);
+    const auto face_eff   = _sat->faces().compute_faces_effects_with_forces(env, q_inv, state.angular_velocity_m_s);
 
     // NOLINTBEGIN(readability-magic-numbers)
 

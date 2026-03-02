@@ -1,45 +1,22 @@
 #pragma once
 
-#include "spacecraft_face.hpp"
-
 #include "aos/components/hysteresis_rod.hpp"
+#include "aos/components/hysteresis_rods.hpp"
 #include "aos/components/permanent_magnet.hpp"
+#include "aos/components/spacecraft_faces.hpp"
+#include "aos/components/spacecraft_shape.hpp"
 #include "aos/core/state.hpp"
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
 
-#include <span>
-#include <variant>
-#include <vector>
-
 namespace aos {
 
-struct spacecraft_uniform {
-    vec3   dimensions_m;
-    double drag_coefficient{};
-    double specular_reflection_coefficient{};
-    double diffuse_reflection_coefficient{};
-
-    void from_toml(const toml::table& table);
-    void debug_print() const;
-};
-
-struct spacecraft_custom {
-    mat3x3           inertia;
-    spacecraft_faces faces;
-
-    void from_toml(const toml::table& table);
-    void debug_print() const;
-};
-
-using spacecraft_shape = std::variant<spacecraft_uniform, spacecraft_custom>;
-
 struct spacecraft_properties {
-    double                                 mass_kg;
-    spacecraft_shape                       shape;
-    hysteresis_parameters                  hysteresis;
-    permanent_magnet_properties            magnet;
-    std::vector<hysteresis_rod_properties> rods;
+    double                      mass_kg;
+    spacecraft_shape            shape;
+    hysteresis_parameters       hysteresis;
+    permanent_magnet_properties magnet;
+    hysteresis_rods_properties  rods;
 
     void from_toml(const toml::table& table);
     void debug_print() const;
@@ -53,9 +30,9 @@ public:
     [[nodiscard]] auto mass_kg() const -> double;
     [[nodiscard]] auto inertia_tensor_kg_m2() const -> const mat3x3&;
     [[nodiscard]] auto inertia_tensor_kg_m2_inverse() const -> const mat3x3&;
-    [[nodiscard]] auto faces() const -> std::span<const spacecraft_face>;
+    [[nodiscard]] auto faces() const -> const spacecraft_faces&;
     [[nodiscard]] auto magnet() const -> const permanent_magnet&;
-    [[nodiscard]] auto rods() const -> std::span<const hysteresis_rod>;
+    [[nodiscard]] auto hystresis() const -> const hysteresis_rods&;
 
     void derivative(const environment_effects& env, double earth_mu, const system_state& current_state, system_state& state_derivative) const;
 
@@ -68,33 +45,18 @@ public:
     // compute gravity gradient torque
     [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_body, double earth_mu) const -> vec3;
 
-    // compute drag and srp torque+force
-    [[nodiscard]] auto compute_face_effects(const environment_effects& env, const quat& q_att, const quat& q_inv, const vec3& omega_body) const -> face_effects;
-
-    // compute drag and srp torque+force
-    [[nodiscard]] auto compute_faces_effects_with_forces(const environment_effects& env, const quat& q_inv, const vec3& omega_body) const
-        -> face_effects_with_forces;
-
-    // compute total rod torque exerted by all rods
-    [[nodiscard]] auto compute_rod_torques(const vecX& rod_magnetizations, const vec3& b_body) const -> vec3;
-
-    // compute dM/dt for each rod, write dM/dt values into the dm_dt_out
-    void compute_rod_derivatives(const vecX& rod_magnetizations, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const;
-
 protected:
-
-    void uniform(double mass_kg, const spacecraft_uniform& shape);
 
     [[nodiscard]] static auto compute_inertia_tensor(double m_kg, double a, double b, double c) -> mat3x3;
 
 private:
 
-    double                      _mass_kg;                       // [kg] Mass
-    mat3x3                      _inertia_tensor_kg_m2;          // [kg*m^2] Inertia
-    mat3x3                      _inertia_tensor_kg_m2_inverse;  // [1/(kg*m^2)] Inverse inertia
-    spacecraft_faces            _faces;
-    permanent_magnet            _magnet;
-    std::vector<hysteresis_rod> _rods;
+    double           _mass_kg;                       // [kg] Mass
+    mat3x3           _inertia_tensor_kg_m2;          // [kg*m^2] Inertia
+    mat3x3           _inertia_tensor_kg_m2_inverse;  // [1/(kg*m^2)] Inverse inertia
+    spacecraft_faces _faces;
+    permanent_magnet _magnet;
+    hysteresis_rods  _hystresis;
 };
 
 }  // namespace aos

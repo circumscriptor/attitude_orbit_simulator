@@ -47,6 +47,6 @@ struct spacecraft_face {
     [[nodiscard]] auto compute_v_rel_body(const vec3& v_com_body, const vec3& omega_body) const -> vec3;
 };
 
-using spacecraft_faces = std::array<spacecraft_face, spacecraft_num_faces>;
+using spacecraft_face_array = std::array<spacecraft_face, spacecraft_num_faces>;
 
 }  // namespace aos
