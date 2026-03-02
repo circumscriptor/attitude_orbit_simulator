@@ -15,8 +15,8 @@
 namespace aos {
 
 struct spacecraft_face_effects {
-    vec3 torque_body;
-    vec3 force_eci;
+    vec3 torque_body;  //!< [Nm] Torque in body frame
+    vec3 force_eci;    //!< [N] Force applied to satellite in ECI
 };
 
 struct spacecraft_face {

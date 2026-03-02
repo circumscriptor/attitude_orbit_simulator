@@ -80,8 +80,11 @@ public:
     [[nodiscard]] auto compute_face_effects(const environment_effects& env, const quat& q_att, const quat& q_inv, const vec3& omega_body) const
         -> spacecraft_face_effects;
 
-    // compute total rod torque and dM/dt for each rod, return the total torque exerted by all rods, write dM/dt values into the dm_dt_out
-    [[nodiscard]] auto compute_rod_effects(const vecX& rod_magnetizations, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3;
+    // compute total rod torque exerted by all rods
+    [[nodiscard]] auto compute_rod_torques(const vecX& rod_magnetizations, const vec3& b_body) const -> vec3;
+
+    // compute dM/dt for each rod, write dM/dt values into the dm_dt_out
+    void compute_rod_derivatives(const vecX& rod_magnetizations, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const;
 
 protected:
 

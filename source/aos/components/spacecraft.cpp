@@ -10,7 +10,6 @@
 
 #include <toml++/impl/table.hpp>
 
-#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
@@ -181,7 +180,7 @@ void spacecraft::derivative(const environment_effects& env, double earth_mu, con
     const vec3  b_dot_orbital    = q_inv * env.magnetic_field_dot_eci_T_s;
     const vec3  b_dot_rotational = -omega_body.cross(b_body);
     const vec3  b_dot_body       = b_dot_orbital + b_dot_rotational;
-    const vec3  rods_torque      = compute_rod_effects(current_state.rod_magnetizations, b_body, b_dot_body, state_derivative.rod_magnetizations);
+    const vec3  rods_torque      = compute_rod_torques(current_state.rod_magnetizations, b_body);
     const auto  face_effects     = compute_face_effects(env, q_att, q_inv, omega_body);
     const vec3  net_torque       = compute_torques(omega_body, b_body, r_body, earth_mu) + rods_torque + face_effects.torque_body;
 
@@ -190,6 +189,7 @@ void spacecraft::derivative(const environment_effects& env, double earth_mu, con
     state_derivative.velocity_m_s += face_effects.force_eci / mass_kg();
     state_derivative.angular_velocity_m_s = _inertia_tensor_kg_m2_inverse * net_torque;
     state_derivative.attitude.coeffs()    = system_state::compute_attitude_derivative(q_att, omega_body);
+    compute_rod_derivatives(current_state.rod_magnetizations, b_body, b_dot_body, state_derivative.rod_magnetizations);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
@@ -235,20 +235,25 @@ auto spacecraft::compute_face_effects(const environment_effects& env, const quat
 }
 // NOLINTEND(bugprone-easily-swappable-parameters)
 
-auto spacecraft::compute_rod_effects(const vecX& rod_magnetizations, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const -> vec3 {
-    const auto num_rods = std::min(static_cast<std::ptrdiff_t>(_rods.size()), rod_magnetizations.size());
+auto spacecraft::compute_rod_torques(const vecX& rod_magnetizations, const vec3& b_body) const -> vec3 {
+    const auto num_rods = static_cast<std::ptrdiff_t>(_rods.size());
+    assert(rod_magnetizations.size() == num_rods);
 
+    vec3 torque_sum = vec3::Zero();
+    for (std::ptrdiff_t i = 0; i < num_rods; ++i) {
+        torque_sum += _rods[i].magnetic_moment(rod_magnetizations(i), b_body).cross(b_body);
+    }
+    return torque_sum;
+}
+
+void spacecraft::compute_rod_derivatives(const vecX& rod_magnetizations, const vec3& b_body, const vec3& b_dot_body, vecX& dm_dt_out) const {
+    const auto num_rods = static_cast<std::ptrdiff_t>(_rods.size());
+    assert(rod_magnetizations.size() == num_rods);
     assert(dm_dt_out.size() == num_rods);
 
-    vec3 total_torque = vec3::Zero();
     for (std::ptrdiff_t i = 0; i < num_rods; ++i) {
-        const double m_irr = rod_magnetizations(i);
-        // dM_irr/dt
-        dm_dt_out(i) = _rods[i].magnetization_derivative(m_irr, b_body, b_dot_body);
-        // tau = m_dipole x B
-        total_torque += _rods[i].magnetic_moment(m_irr, b_body).cross(b_body);
+        dm_dt_out(i) = _rods[i].magnetization_derivative(rod_magnetizations(i), b_body, b_dot_body);
     }
-    return total_torque;
 }
 
 void spacecraft::uniform(double mass_kg, const spacecraft_uniform& shape) {
