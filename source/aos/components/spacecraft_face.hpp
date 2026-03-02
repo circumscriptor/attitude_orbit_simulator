@@ -4,11 +4,6 @@
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
 
-// clang-format off
-#include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
-
 #include <array>
 #include <cstddef>
 

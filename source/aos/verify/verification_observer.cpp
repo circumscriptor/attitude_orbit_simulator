@@ -42,7 +42,7 @@ auto verification_observer::write(const system_state& state, double time) -> std
     const vec3 t_grav     = _sat->compute_gravity_gradient_torque(r_body, _env->earth_mu());
     const vec3 t_gyro     = _sat->compute_gyroscopic_torque(state.angular_velocity_m_s);
     const vec3 t_rods     = _sat->compute_rod_torques(state.rod_magnetizations, b_body);
-    const auto face_eff   = _sat->compute_faces_effect_raw(env, q_inv, state.angular_velocity_m_s);
+    const auto face_eff   = _sat->compute_faces_effects_with_forces(env, q_inv, state.angular_velocity_m_s);
 
     // NOLINTBEGIN(readability-magic-numbers)
 

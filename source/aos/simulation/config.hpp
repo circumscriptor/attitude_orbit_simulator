@@ -6,11 +6,6 @@
 #include "aos/environment/orbital_mechanics.hpp"
 #include "aos/simulation/observer.hpp"
 
-// clang-format off
-#include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
-
 namespace aos {
 
 struct simulation_properties {
@@ -29,7 +24,6 @@ struct simulation_properties {
     double checkpoint_interval{};
 
     void from_toml(const toml::table& table);
-
     void debug_print() const;
 };
 

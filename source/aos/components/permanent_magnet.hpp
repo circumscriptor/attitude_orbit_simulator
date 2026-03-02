@@ -2,11 +2,6 @@
 
 #include "aos/core/types.hpp"
 
-// clang-format off
-#include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
-
 #include <variant>
 
 namespace aos {

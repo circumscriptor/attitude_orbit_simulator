@@ -2,11 +2,6 @@
 
 #include "aos/core/types.hpp"
 
-// clang-format off
-#include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
-
 #include <memory>
 #include <string>
 
@@ -38,7 +33,6 @@ struct environment_properties {
     int         magnetic_model_order;
 
     void from_toml(const toml::table& table);
-
     void debug_print() const;
 };
 

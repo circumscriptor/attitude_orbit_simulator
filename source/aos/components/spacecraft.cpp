@@ -8,7 +8,10 @@
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
 
+// clang-format off
+#include <toml++/toml.hpp>
 #include <toml++/impl/table.hpp>
+// clang-format on
 
 #include <cassert>
 #include <cmath>
@@ -235,7 +238,8 @@ auto spacecraft::compute_face_effects(const environment_effects& env, const quat
     };
 }
 
-auto spacecraft::compute_faces_effect_raw(const environment_effects& env, const quat& q_inv, const vec3& omega_body) const -> face_effects_with_forces {
+auto spacecraft::compute_faces_effects_with_forces(const environment_effects& env, const quat& q_inv, const vec3& omega_body) const
+    -> face_effects_with_forces {
     face_effects_with_forces result;
 
     const vec3 s_body = (q_inv * env.r_sun_eci).normalized();

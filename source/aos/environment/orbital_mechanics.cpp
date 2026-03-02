@@ -3,7 +3,11 @@
 #include "aos/core/types.hpp"
 
 #include <GeographicLib/Constants.hpp>
+
+// clang-format off
+#include <toml++/toml.hpp>
 #include <toml++/impl/table.hpp>
+// clang-format on
 
 #include <cmath>
 #include <cstdlib>

@@ -46,9 +46,9 @@ target_link_libraries(pmaos_core
         Boost::boost # for odeint
         GeographicLib::GeographicLib
         nrlmsise-00::nrlmsise-00
+        tomlplusplus::tomlplusplus
     PUBLIC
         Eigen3::Eigen
-        tomlplusplus::tomlplusplus
 )
 
 target_sources(pmaos_core PRIVATE
@@ -66,6 +66,8 @@ target_sources(pmaos_core PRIVATE
     "source/aos/core/state.cpp"
     "source/aos/core/state.hpp"
     "source/aos/core/types.hpp"
+    "source/aos/environment/details/environment_impl.cpp"
+    "source/aos/environment/details/environment_impl.hpp"
     "source/aos/environment/environment.cpp"
     "source/aos/environment/environment.hpp"
     "source/aos/environment/nrlmsise.cpp"

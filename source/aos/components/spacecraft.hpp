@@ -8,11 +8,6 @@
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
 
-// clang-format off
-#include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
-
 #include <span>
 #include <variant>
 #include <vector>
@@ -26,7 +21,6 @@ struct spacecraft_uniform {
     double diffuse_reflection_coefficient{};
 
     void from_toml(const toml::table& table);
-
     void debug_print() const;
 };
 
@@ -35,7 +29,6 @@ struct spacecraft_custom {
     spacecraft_faces faces;
 
     void from_toml(const toml::table& table);
-
     void debug_print() const;
 };
 
@@ -49,7 +42,6 @@ struct spacecraft_properties {
     std::vector<hysteresis_rod_properties> rods;
 
     void from_toml(const toml::table& table);
-
     void debug_print() const;
 };
 
@@ -80,7 +72,8 @@ public:
     [[nodiscard]] auto compute_face_effects(const environment_effects& env, const quat& q_att, const quat& q_inv, const vec3& omega_body) const -> face_effects;
 
     // compute drag and srp torque+force
-    [[nodiscard]] auto compute_faces_effect_raw(const environment_effects& env, const quat& q_inv, const vec3& omega_body) const -> face_effects_with_forces;
+    [[nodiscard]] auto compute_faces_effects_with_forces(const environment_effects& env, const quat& q_inv, const vec3& omega_body) const
+        -> face_effects_with_forces;
 
     // compute total rod torque exerted by all rods
     [[nodiscard]] auto compute_rod_torques(const vecX& rod_magnetizations, const vec3& b_body) const -> vec3;

@@ -3,6 +3,10 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 
+namespace toml::inline v3 {
+class table;
+}  // namespace toml::inline v3
+
 namespace aos {
 
 // NOLINTBEGIN

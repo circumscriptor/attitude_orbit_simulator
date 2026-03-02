@@ -2,11 +2,6 @@
 
 #include "aos/core/types.hpp"  // Assuming vec3 is here
 
-// clang-format off
-#include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
-
 #include <utility>
 
 namespace aos {
@@ -20,7 +15,6 @@ struct keplerian_elements {
     double mean_anomaly_rad{};      // M (Initial placement)
 
     void from_toml(const toml::table& table);
-
     void debug_print() const;
 };
 
