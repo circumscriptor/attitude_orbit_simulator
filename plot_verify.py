@@ -218,6 +218,35 @@ def plot_nadir_pointing_error(t, df, save=False, prefix="output", dpi=150):
         plt.close()
         print(f"Saved: {filename} at {dpi} DPI")
 
+def plot_dynamics_context(t, df, save=False, prefix="output", dpi=150):
+    """Figure 6: Relative Velocity and Gravity Acceleration."""
+    fig, axs = plt.subplots(2, 1, figsize=(14, 8), sharex=True)
+    plt.suptitle("Orbital Dynamics Context", fontsize=14, fontweight='bold')
+
+    # 1. Relative Velocity (v_rel)
+    v_rel_norm = np.linalg.norm(df[['v_rel_x', 'v_rel_y', 'v_rel_z']], axis=1)
+    axs[0].plot(t, df[['v_rel_x', 'v_rel_y', 'v_rel_z']], lw=1, alpha=0.7)
+    axs[0].plot(t, v_rel_norm, 'k--', lw=1.2, label='Total Magnitude')
+    axs[0].set_title("Velocity Relative to Atmosphere [m/s]")
+    axs[0].legend(['vx_rel', 'vy_rel', 'vz_rel', 'Norm'], loc='upper right', ncol=4)
+
+    # 2. Gravity Acceleration (grav)
+    axs[1].plot(t, df[['grav_x', 'grav_y', 'grav_z']], lw=1)
+    axs[1].set_title("Gravity Acceleration Vector [m/s²]")
+    axs[1].set_ylabel("Accel [m/s²]")
+
+    for ax in axs: ax.grid(True, alpha=0.3)
+    plt.xlabel("Time [s]")
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+    if save:
+        filename = f"{prefix}_dynamics.png"
+        plt.savefig(filename, dpi=dpi)
+        plt.close()
+        print(f"Saved: {filename} at {dpi} DPI")
+    else:
+        maximize_window()
+
 def main():
     parser = argparse.ArgumentParser(description="Satellite Telemetry Plotter")
     parser.add_argument("csv_file", nargs="?", default="output.csv", help="Path to CSV")
@@ -239,6 +268,7 @@ def main():
         plot_environment(t, df, save=args.save, prefix=base_name, dpi=args.dpi)
         plot_3d_orbit(df, save=args.save, prefix=base_name, dpi=args.dpi)
         plot_nadir_pointing_error(t, df, save=args.save, prefix=base_name, dpi=args.dpi)
+        plot_dynamics_context(t, df, save=args.save, prefix=base_name, dpi=args.dpi)
 
         if not args.save:
             plt.show()
