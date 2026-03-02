@@ -98,6 +98,8 @@ target_sources(pmaos_core PRIVATE
     "source/aos/simulation/observer.hpp"
     "source/aos/simulation/simulation.cpp"
     "source/aos/simulation/simulation.hpp"
+    "source/aos/verify/details/verification_observer_impl.cpp"
+    "source/aos/verify/details/verification_observer_impl.hpp"
     "source/aos/verify/hysteresis_loop_dynamics.cpp"
     "source/aos/verify/hysteresis_loop_dynamics.hpp"
     "source/aos/verify/hysteresis_observer.cpp"

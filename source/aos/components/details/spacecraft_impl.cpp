@@ -57,7 +57,7 @@ void spacecraft_impl::derivative(const environment_effects& env, const system_st
 
     state_derivative.position_m   = v_eci;
     state_derivative.velocity_m_s = env.gravity_eci_m_s2;
-    state_derivative.velocity_m_s += face_effects.force_eci / mass_kg();
+    state_derivative.velocity_m_s += face_effects.force_eci / _mass_kg;
     state_derivative.angular_velocity_m_s = _inertia.inverse() * net_torque;
     state_derivative.attitude.coeffs()    = system_state::compute_attitude_derivative(q_att, omega_body);
     _hystresis.compute_rod_derivatives(current_state.rod_magnetizations, b_body, b_dot_body, state_derivative.rod_magnetizations);

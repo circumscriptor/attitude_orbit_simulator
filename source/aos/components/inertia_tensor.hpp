@@ -9,6 +9,8 @@ class inertia_tensor {
 public:
 
     inertia_tensor(double mass_kg, const spacecraft_shape& shape);
+    inertia_tensor(double mass_kg, const spacecraft_uniform& shape);
+    explicit inertia_tensor(const spacecraft_custom& shape);
 
     [[nodiscard]] auto value() const -> const mat3x3&;
     [[nodiscard]] auto inverse() const -> const mat3x3&;

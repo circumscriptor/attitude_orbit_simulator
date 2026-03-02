@@ -23,6 +23,12 @@ inertia_tensor::inertia_tensor(double mass_kg, const spacecraft_shape& shape) {
     _inertia_tensor_kg_m2_inverse = _inertia_tensor_kg_m2.inverse();
 }
 
+inertia_tensor::inertia_tensor(double mass_kg, const spacecraft_uniform& shape)
+    : _inertia_tensor_kg_m2(compute_inertia_tensor(mass_kg, shape.dimensions_m.x(), shape.dimensions_m.y(), shape.dimensions_m.z())),
+      _inertia_tensor_kg_m2_inverse(_inertia_tensor_kg_m2.inverse()) {}
+
+inertia_tensor::inertia_tensor(const spacecraft_custom& shape) : _inertia_tensor_kg_m2(shape.inertia), _inertia_tensor_kg_m2_inverse(shape.inertia.inverse()) {}
+
 auto inertia_tensor::value() const -> const mat3x3& {
     return _inertia_tensor_kg_m2;
 }

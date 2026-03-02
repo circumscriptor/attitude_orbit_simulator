@@ -22,7 +22,7 @@ auto main(int argc, char** argv) -> int {
         auto satellite   = aos::spacecraft::create(properties.satellite);
         auto environment = aos::environment::create(properties.environment);
         auto dynamics    = aos::dynamics::create(satellite, environment);
-        auto observer    = std::make_shared<aos::verification_observer>(output_path, satellite, environment, properties.observer);
+        auto observer    = aos::verification_observer::create(output_path, satellite, environment, properties.observer);
         std::make_unique<aos::simulation>(properties, satellite, environment, dynamics, observer)->run();
         return 0;
     } catch (const std::exception& ex) {
