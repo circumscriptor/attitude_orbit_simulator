@@ -1,31 +1,29 @@
 #pragma once
 
-#include "aos/components/spacecraft.hpp"
 #include "aos/core/state.hpp"
-#include "aos/environment/environment.hpp"
-
-#include <Eigen/src/Core/Matrix.h>
-
-#include <memory>
 
 namespace aos {
 
-/** @brief Functor that calculates the time derivative of the spacecraft's state */
-class spacecraft_dynamics {
+class dynamics {
 public:
 
-    spacecraft_dynamics(std::shared_ptr<const spacecraft> spacecraft_model, std::shared_ptr<const environment_model> environment_model);
+    dynamics(const dynamics&)                    = delete;
+    dynamics(dynamics&&)                         = delete;
+    auto operator=(const dynamics&) -> dynamics& = delete;
+    auto operator=(dynamics&&) -> dynamics&      = delete;
 
-    /** @brief The main operator called by the ODE solver */
-    void operator()(const system_state& current_state, system_state& state_derivative, double t_sec) const;
+    dynamics();
+    virtual ~dynamics();
 
-    void set_global_time_offset(double offset_s);
+    virtual void step(const system_state& current_state, system_state& state_derivative, double t_sec) const = 0;
+
+    [[nodiscard]]
+    auto get_time_offset() const noexcept -> double;
+    void set_time_offset(double offset_s);
 
 private:
 
-    std::shared_ptr<const spacecraft>        _spacecraft;
-    std::shared_ptr<const environment_model> _environment;
-    double                                   _global_time_offset{};
+    double _time_offset{};
 };
 
 }  // namespace aos

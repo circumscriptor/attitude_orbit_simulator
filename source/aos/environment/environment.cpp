@@ -49,7 +49,7 @@ void environment_model_properties::debug_print() const {
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-environment_model::environment_model(const environment_model_properties& properties)
+environment::environment(const environment_model_properties& properties)
     : _start_year_decimal(properties.start_year_decimal),
       _earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f()),
       _gravity_model(properties.gravity_model_name, properties.gravity_model_path, properties.gravity_model_degree, properties.gravity_model_order),
@@ -78,9 +78,9 @@ environment_model::environment_model(const environment_model_properties& propert
                  _gravity_model.Order());
 }
 
-environment_model::~environment_model() = default;
+environment::~environment() = default;
 
-auto environment_model::calculate(double t_sec, const vec3& r_eci_m, const vec3& v_eci_m_s) const -> environment_data {
+auto environment::compute_effects(double t_sec, const vec3& r_eci_m, const vec3& v_eci_m_s) const -> environment_effects {
     // if (std::isnan(r_eci_m.x()) || std::isnan(v_eci_m_s.x())) {
     //     std::println(stderr, "[FATAL] environment_model received NaN state at t={:.4f}\n  Pos: [{:f}, {:f}, {:f}]\n  Vel: [{:f}, {:f}, {:f}]", t_sec,
     //                  r_eci_m.x(), r_eci_m.y(), r_eci_m.z(), v_eci_m_s.x(), v_eci_m_s.y(), v_eci_m_s.z());
@@ -94,6 +94,7 @@ auto environment_model::calculate(double t_sec, const vec3& r_eci_m, const vec3&
     const auto d       = atmospheric_density();
     const auto g_earth = gravitational_field();
     const auto g_sun   = solar_perturbation(r_eci_m, _cache.r_sun_eci);
+    const auto v_rel   = earth_relative_v(v_eci_m_s, r_eci_m);
     const auto g_total = g_earth + g_sun;
 
     const vec3&  r_sun    = _cache.r_sun_eci;
@@ -117,48 +118,17 @@ auto environment_model::calculate(double t_sec, const vec3& r_eci_m, const vec3&
         .gravity_eci_m_s2           = g_total,
         .atmospheric_density_kg_m3  = d,
         .r_sun_eci                  = r_sun,
+        .v_earth_rel                = v_rel,
         .shadow_factor              = shadow,
         .solar_pressure_Pa          = pressure,
     };
 }
 
-auto environment_model::earth_mu() const -> double {
+auto environment::earth_mu() const -> double {
     return _gravity_model.MassConstant();
 }
 
-// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto environment_model::earth_relative_v(const vec3& v_eci_m_s, const vec3& r_eci_m) -> vec3 {
-    const vec3 omega_earth_eci(0.0, 0.0, earth_rotation_rate_rad_s);  // Earth rotation vector in ECI
-    const vec3 v_atm_eci = omega_earth_eci.cross(r_eci_m);            // Linear velocity of the atmosphere at position r_eci
-    return v_eci_m_s - v_atm_eci;                                     // Velocity of satellite relative to the air
-}
-
-auto environment_model::atmospheric_density() const -> double {
-    return _atmospheric_model.density_at(_cache.current_year, _cache.lat_deg, _cache.lon_deg, _cache.alt_m);
-}
-
-auto environment_model::magnetic_field() const -> vec3 {
-    double bx{};
-    double by{};
-    double bz{};
-
-    _magnetic_model(_cache.current_year,                           // time
-                    _cache.lat_deg, _cache.lon_deg, _cache.alt_m,  // geodetic
-                    bx, by, bz);                                   // field (ENU)
-    return _cache.R_enu_to_eci * vec3(bx * nanotesla_to_tesla, by * nanotesla_to_tesla, bz * nanotesla_to_tesla);
-}
-
-auto environment_model::gravitational_field() const -> vec3 {
-    double gx_ecef{};
-    double gy_ecef{};
-    double gz_ecef{};
-
-    _gravity_model.V(_cache.r_ecef_m.x(), _cache.r_ecef_m.y(), _cache.r_ecef_m.z(),  // geocentric
-                     gx_ecef, gy_ecef, gz_ecef);                                     // acceleration
-    return _cache.R_ecef_to_eci * vec3(gx_ecef, gy_ecef, gz_ecef);
-}
-
-void environment_model::cache_transform(double t_sec, const vec3& r_eci_m) const {
+void environment::cache_transform(double t_sec, const vec3& r_eci_m) const {
     // if (std::isnan(r_eci_m.x()) || std::abs(r_eci_m.norm()) > 1e8) {
     //     std::println(stderr, "[CRITICAL] ECI State Explosion at t={:.3f}: [{:f}, {:f}, {:f}]", t_sec, r_eci_m.x(), r_eci_m.y(), r_eci_m.z());
     // }
@@ -199,7 +169,39 @@ void environment_model::cache_transform(double t_sec, const vec3& r_eci_m) const
     _cache.R_enu_to_eci = _cache.R_ecef_to_eci * _cache.R_enu_to_ecef;
 }
 
-auto environment_model::sun_position_eci(double days_since_j2000) -> vec3 {
+auto environment::atmospheric_density() const -> double {
+    return _atmospheric_model.density_at(_cache.current_year, _cache.lat_deg, _cache.lon_deg, _cache.alt_m);
+}
+
+auto environment::magnetic_field() const -> vec3 {
+    double bx{};
+    double by{};
+    double bz{};
+
+    _magnetic_model(_cache.current_year,                           // time
+                    _cache.lat_deg, _cache.lon_deg, _cache.alt_m,  // geodetic
+                    bx, by, bz);                                   // field (ENU)
+    return _cache.R_enu_to_eci * vec3(bx * nanotesla_to_tesla, by * nanotesla_to_tesla, bz * nanotesla_to_tesla);
+}
+
+auto environment::gravitational_field() const -> vec3 {
+    double gx_ecef{};
+    double gy_ecef{};
+    double gz_ecef{};
+
+    _gravity_model.V(_cache.r_ecef_m.x(), _cache.r_ecef_m.y(), _cache.r_ecef_m.z(),  // geocentric
+                     gx_ecef, gy_ecef, gz_ecef);                                     // acceleration
+    return _cache.R_ecef_to_eci * vec3(gx_ecef, gy_ecef, gz_ecef);
+}
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+auto environment::earth_relative_v(const vec3& v_eci_m_s, const vec3& r_eci_m) -> vec3 {
+    const vec3 omega_earth_eci(0.0, 0.0, earth_rotation_rate_rad_s);  // Earth rotation vector in ECI
+    const vec3 v_atm_eci = omega_earth_eci.cross(r_eci_m);            // Linear velocity of the atmosphere at position r_eci
+    return v_eci_m_s - v_atm_eci;                                     // Velocity of satellite relative to the air
+}
+
+auto environment::sun_position_eci(double days_since_j2000) -> vec3 {
     const double g       = (357.528 + 0.9856003 * days_since_j2000) * deg_to_rad;
     const double l       = (280.460 + 0.9856474 * days_since_j2000) * deg_to_rad;
     const double sin_g   = std::sin(g);
@@ -219,7 +221,7 @@ auto environment_model::sun_position_eci(double days_since_j2000) -> vec3 {
     };
 }
 
-auto environment_model::solar_perturbation(const vec3& r_sat_eci, const vec3& r_sun_eci) -> vec3 {
+auto environment::solar_perturbation(const vec3& r_sat_eci, const vec3& r_sun_eci) -> vec3 {
     const vec3   r_rel    = r_sun_eci - r_sat_eci;
     const double d_rel_sq = r_rel.squaredNorm();
     const double d_sun_sq = r_sun_eci.squaredNorm();
@@ -230,7 +232,7 @@ auto environment_model::solar_perturbation(const vec3& r_sat_eci, const vec3& r_
     return sun_mu_m3_s2 * ((r_rel / d_rel_cubed) - (r_sun_eci / d_sun_cubed));
 }
 
-auto environment_model::earth_shadow_factor(const vec3& r_sat, const vec3& r_sun) -> double {
+auto environment::earth_shadow_factor(const vec3& r_sat, const vec3& r_sun) -> double {
     const double d_sat     = r_sat.norm();
     const vec3   unit_sat  = r_sat / d_sat;
     const vec3   unit_sun  = r_sun.normalized();

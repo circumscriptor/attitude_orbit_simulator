@@ -3,6 +3,7 @@
 #include "aos/simulation/simulation.hpp"
 
 #include <exception>
+#include <memory>
 #include <print>
 #include <string>
 
@@ -14,7 +15,7 @@ auto main(int argc, char** argv) -> int {
     }
 
     try {
-        aos::run_simulation(output_path, params);
+        std::make_unique<aos::simulation>(output_path, params)->run();
         return 0;
     } catch (const std::exception& ex) {
         std::println(stderr, "Error: {}", ex.what());

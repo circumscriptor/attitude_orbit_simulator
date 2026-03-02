@@ -84,16 +84,14 @@ target_sources(pmaos_core PRIVATE
     "source/aos/simulation/observer.hpp"
     "source/aos/simulation/simulation.cpp"
     "source/aos/simulation/simulation.hpp"
-    "source/aos/verify/attitude.cpp"
-    "source/aos/verify/attitude.hpp"
+    "source/aos/simulation/spacecraft_dynamics.cpp"
+    "source/aos/simulation/spacecraft_dynamics.hpp"
     "source/aos/verify/hysteresis_loop_dynamics.cpp"
     "source/aos/verify/hysteresis_loop_dynamics.hpp"
+    "source/aos/verify/hysteresis_observer.cpp"
+    "source/aos/verify/hysteresis_observer.hpp"
     "source/aos/verify/hysteresis.cpp"
     "source/aos/verify/hysteresis.hpp"
-    "source/aos/verify/observers.cpp"
-    "source/aos/verify/observers.hpp"
-    "source/aos/verify/orbit.cpp"
-    "source/aos/verify/orbit.hpp"
 )
 
 #

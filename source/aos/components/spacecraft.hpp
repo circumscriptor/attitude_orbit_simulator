@@ -65,7 +65,7 @@ public:
     [[nodiscard]] auto magnet() const -> const permanent_magnet&;
     [[nodiscard]] auto rods() const -> std::span<const hysteresis_rod>;
 
-    void derivative(const environment_data& env_data, double earth_mu, const system_state& current_state, system_state& state_derivative) const;
+    void derivative(const environment_effects& env, double earth_mu, const system_state& current_state, system_state& state_derivative) const;
 
     // sums permanent magnet, gyroscopic, and gravity gradient torques
     [[nodiscard]] auto compute_torques(const vec3& omega, const vec3& b_body, const vec3& r_body, double earth_mu) const -> vec3;
@@ -77,7 +77,7 @@ public:
     [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_body, double earth_mu) const -> vec3;
 
     // compute drag and srp torque+force
-    [[nodiscard]] auto compute_face_effects(const environment_data& data, const quat& q_att, const vec3& v_eci, const vec3& r_eci, const vec3& omega_body) const
+    [[nodiscard]] auto compute_face_effects(const environment_effects& env, const quat& q_att, const quat& q_inv, const vec3& omega_body) const
         -> spacecraft_face_effects;
 
     // compute total rod torque and dM/dt for each rod, return the total torque exerted by all rods, write dM/dt values into the dm_dt_out

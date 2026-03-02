@@ -3,7 +3,7 @@
 #include "aos/components/hysteresis_rod.hpp"
 #include "aos/core/constants.hpp"
 #include "aos/verify/hysteresis_loop_dynamics.hpp"
-#include "aos/verify/observers.hpp"
+#include "aos/verify/hysteresis_observer.hpp"
 
 #include <boost/numeric/odeint.hpp>
 #include <boost/numeric/odeint/integrate/integrate_adaptive.hpp>
@@ -30,7 +30,7 @@ void verify_hysteresis(const std::string& output_filename, const hysteresis_para
     };
     const hysteresis_rod           rod(properties);  // Volume and orientation don't matter here
     const hysteresis_loop_dynamics dynamics(rod);
-    const bh_observer              observer(output_filename);
+    const hysteresis_observer      observer(output_filename);
 
     hysteresis_state_type m_initial{0.0};
 

@@ -45,7 +45,7 @@ void spacecraft_face::debug_print() const {
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto spacecraft_face::compute_force(const environment_data& data, const vec3& v_body, const vec3& s_body, const vec3& omega_body) const -> vec3 {
+auto spacecraft_face::compute_force(const environment_effects& data, const vec3& v_body, const vec3& s_body, const vec3& omega_body) const -> vec3 {
     const vec3 v_rel_body  = compute_v_rel_body(v_body, omega_body);
     const vec3 f_drag_body = compute_force_drag_body(data.atmospheric_density_kg_m3, v_rel_body);
     const vec3 f_srp_body  = compute_force_srp_body(data.solar_pressure_Pa, s_body, data.shadow_factor);

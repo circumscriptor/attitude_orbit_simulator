@@ -17,13 +17,14 @@
 
 namespace aos {
 
-struct environment_data {
+struct environment_effects {
     // NOLINTBEGIN(readability-identifier-naming)
-    vec3   magnetic_field_eci_T;        // [Tesla] - B
-    vec3   magnetic_field_dot_eci_T_s;  // [Tesla/s] - (dB/dt) Material Derivative
-    vec3   gravity_eci_m_s2;            // [m/s^2] - Total Acceleration
-    double atmospheric_density_kg_m3;   // [kg/m^3] - Density of Gasses including Anomalous Oxygen
+    vec3   magnetic_field_eci_T;        // [Tesla] B Magnetic field
+    vec3   magnetic_field_dot_eci_T_s;  // [Tesla/s] dB/dt Magnetic field time derivative
+    vec3   gravity_eci_m_s2;            // [m/s^2] Total acceleration
+    double atmospheric_density_kg_m3;   // [kg/m^3] Density of gasses including Anomalous Oxygen
     vec3   r_sun_eci;                   // [m] Position of Sun relative to Earth
+    vec3   v_earth_rel;                 // [m/s] Earth-Spacecraft relative speed
     double shadow_factor;               // [-] 1.0 = Sun, 0.0 = Umbra, (0,1) = Penumbra
     double solar_pressure_Pa;           // [N/m^2] Radiation pressure at current distance
     // NOLINTEND(readability-identifier-naming)
@@ -46,35 +47,21 @@ struct environment_model_properties {
     void debug_print() const;
 };
 
-class environment_model {
+class environment {
 public:
 
-    environment_model(const environment_model&)                    = delete;
-    environment_model(environment_model&&)                         = delete;
-    auto operator=(const environment_model&) -> environment_model& = delete;
-    auto operator=(environment_model&&) -> environment_model&      = delete;
+    environment(const environment&)                    = delete;
+    environment(environment&&)                         = delete;
+    auto operator=(const environment&) -> environment& = delete;
+    auto operator=(environment&&) -> environment&      = delete;
 
-    explicit environment_model(const environment_model_properties& properties);
-    virtual ~environment_model();
+    explicit environment(const environment_model_properties& properties);
+    virtual ~environment();
 
-    /**
-     * @brief Compute environmental effects
-     * @param t_sec Global simulation time
-     * @param r_eci_m Position vector in ECI frame
-     * @param v_eci_m_s Velocity vector in ECI frame (required for magnetic gradient)
-     */
-    [[nodiscard]] auto calculate(double t_sec, const vec3& r_eci_m, const vec3& v_eci_m_s) const -> environment_data;
+    /** compute environmental effects */
+    [[nodiscard]] auto compute_effects(double t_sec, const vec3& r_eci_m, const vec3& v_eci_m_s) const -> environment_effects;
 
     [[nodiscard]] auto earth_mu() const -> double;
-
-    /** @brief Get spacecraft velocity relative to earth rotation */
-    [[nodiscard]] static auto earth_relative_v(const vec3& v_eci_m_s, const vec3& r_eci_m) -> vec3;
-
-    [[nodiscard]] static auto sun_position_eci(double days_since_j2000) -> vec3;
-
-    [[nodiscard]] static auto solar_perturbation(const vec3& r_sat_eci, const vec3& r_sun_eci) -> vec3;
-
-    [[nodiscard]] static auto earth_shadow_factor(const vec3& r_sat, const vec3& r_sun) -> double;
 
 protected:
 
@@ -109,6 +96,14 @@ protected:
 
     /** Cache coordinate transformation results and matrices */
     void cache_transform(double t_sec, const vec3& r_eci_m) const;
+
+    [[nodiscard]] static auto earth_relative_v(const vec3& v_eci_m_s, const vec3& r_eci_m) -> vec3;
+
+    [[nodiscard]] static auto sun_position_eci(double days_since_j2000) -> vec3;
+
+    [[nodiscard]] static auto solar_perturbation(const vec3& r_sat_eci, const vec3& r_sun_eci) -> vec3;
+
+    [[nodiscard]] static auto earth_shadow_factor(const vec3& r_sat, const vec3& r_sun) -> double;
 
 private:
 

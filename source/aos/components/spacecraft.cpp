@@ -170,23 +170,23 @@ auto spacecraft::rods() const -> std::span<const hysteresis_rod> {
     return _rods;
 }
 
-void spacecraft::derivative(const environment_data& env_data, double earth_mu, const system_state& current_state, system_state& state_derivative) const {
+void spacecraft::derivative(const environment_effects& env, double earth_mu, const system_state& current_state, system_state& state_derivative) const {
     const vec3& r_eci            = current_state.position_m;
     const vec3& v_eci            = current_state.velocity_m_s;
     const quat  q_att            = current_state.attitude.normalized();  // normalize to prevent drift
     const vec3& omega_body       = current_state.angular_velocity_m_s;
     const quat  q_inv            = q_att.conjugate();
     const vec3  r_body           = q_inv * r_eci;
-    const vec3  b_body           = q_inv * env_data.magnetic_field_eci_T;
-    const vec3  b_dot_orbital    = q_inv * env_data.magnetic_field_dot_eci_T_s;
+    const vec3  b_body           = q_inv * env.magnetic_field_eci_T;
+    const vec3  b_dot_orbital    = q_inv * env.magnetic_field_dot_eci_T_s;
     const vec3  b_dot_rotational = -omega_body.cross(b_body);
     const vec3  b_dot_body       = b_dot_orbital + b_dot_rotational;
     const vec3  rods_torque      = compute_rod_effects(current_state.rod_magnetizations, b_body, b_dot_body, state_derivative.rod_magnetizations);
-    const auto  face_effects     = compute_face_effects(env_data, q_att, v_eci, r_eci, omega_body);
+    const auto  face_effects     = compute_face_effects(env, q_att, q_inv, omega_body);
     const vec3  net_torque       = compute_torques(omega_body, b_body, r_body, earth_mu) + rods_torque + face_effects.torque_body;
 
     state_derivative.position_m   = v_eci;
-    state_derivative.velocity_m_s = env_data.gravity_eci_m_s2;
+    state_derivative.velocity_m_s = env.gravity_eci_m_s2;
     state_derivative.velocity_m_s += face_effects.force_eci / mass_kg();
     state_derivative.angular_velocity_m_s = _inertia_tensor_kg_m2_inverse * net_torque;
     state_derivative.attitude.coeffs()    = system_state::compute_attitude_derivative(q_att, omega_body);
@@ -215,17 +215,15 @@ auto spacecraft::compute_gravity_gradient_torque(const vec3& r_body, double eart
 }
 
 // NOLINTBEGIN(bugprone-easily-swappable-parameters)
-auto spacecraft::compute_face_effects(const environment_data& data, const quat& q_att, const vec3& v_eci, const vec3& r_eci, const vec3& omega_body) const
+auto spacecraft::compute_face_effects(const environment_effects& env, const quat& q_att, const quat& q_inv, const vec3& omega_body) const
     -> spacecraft_face_effects {
     vec3 torque_body_sum = vec3::Zero();
     vec3 force_body_sum  = vec3::Zero();
 
-    const quat q_inv  = q_att.conjugate();
-    const vec3 s_body = (q_inv * data.r_sun_eci).normalized();
-    const vec3 v_body = q_inv * environment_model::earth_relative_v(v_eci, r_eci);
-
+    const vec3 s_body = (q_inv * env.r_sun_eci).normalized();
+    const vec3 v_body = q_inv * env.v_earth_rel;
     for (const auto& face : _faces) {
-        const vec3 f_body = face.compute_force(data, v_body, s_body, omega_body);  // drag + srp
+        const vec3 f_body = face.compute_force(env, v_body, s_body, omega_body);  // drag + srp
         force_body_sum += f_body;
         torque_body_sum += face.center_of_pressure_m.cross(f_body);
     }

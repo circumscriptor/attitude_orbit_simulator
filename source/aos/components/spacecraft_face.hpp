@@ -33,7 +33,7 @@ struct spacecraft_face {
 
     void debug_print() const;
 
-    [[nodiscard]] auto compute_force(const environment_data& data, const vec3& v_body, const vec3& s_body, const vec3& omega_body) const -> vec3;
+    [[nodiscard]] auto compute_force(const environment_effects& data, const vec3& v_body, const vec3& s_body, const vec3& omega_body) const -> vec3;
     [[nodiscard]] auto compute_force_srp_body(double pressure, const vec3& s_body, double shadow_factor) const -> vec3;
     [[nodiscard]] auto compute_force_drag_body(double density, const vec3& v_rel_body) const -> vec3;
     [[nodiscard]] auto compute_v_rel_body(const vec3& v_com_body, const vec3& omega_body) const -> vec3;
