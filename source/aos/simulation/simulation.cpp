@@ -110,7 +110,7 @@ void run_simulation(const std::string& output_filename, const simulation_paramet
             run_integration_loop(stepper);
         } break;
         default: {
-            std::println("unknown stepper function: {}", params.stepper_function);
+            std::println("Unknown stepper function: {}", params.stepper_function);
             break;
         }
     }

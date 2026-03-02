@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.30)
-project(AttitudeOrbitSimulator)
+project(PassiveMagneticAttitudeOrbitSimulator)
 
 # list(APPEND CMAKE_MODULE_PATH "/usr/share/cmake/geographiclib")
 
@@ -17,31 +17,31 @@ add_subdirectory(third-party)
 # Library
 #
 
-add_library(attitude_orbit_simulator_core STATIC)
+add_library(pmaos_core STATIC)
 
-set_target_properties(attitude_orbit_simulator_core PROPERTIES
+set_target_properties(pmaos_core PROPERTIES
     CXX_SCAN_FOR_MODULES OFF
     INTERPROCEDURAL_OPTIMIZATION_RELEASE ON
 )
 
-target_compile_definitions(attitude_orbit_simulator_core PRIVATE
+target_compile_definitions(pmaos_core PRIVATE
     WEATHER_DATA_PATH="${SPACE_WEATHER_FILE_PATH}"
 )
 
-target_compile_features(attitude_orbit_simulator_core PUBLIC
+target_compile_features(pmaos_core PUBLIC
     cxx_std_23
 )
 
-target_compile_options(attitude_orbit_simulator_core PUBLIC
+target_compile_options(pmaos_core PUBLIC
     -Wall
     -Wextra
 )
 
-target_include_directories(attitude_orbit_simulator_core PUBLIC
+target_include_directories(pmaos_core PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/source"
 )
 
-target_link_libraries(attitude_orbit_simulator_core
+target_link_libraries(pmaos_core
     PRIVATE
         Boost::filesystem
         Boost::program_options
@@ -53,7 +53,9 @@ target_link_libraries(attitude_orbit_simulator_core
         tomlplusplus::tomlplusplus
 )
 
-target_sources(attitude_orbit_simulator_core PRIVATE
+target_sources(pmaos_core PRIVATE
+    "source/aos/cli.cpp"
+    "source/aos/cli.hpp"
     "source/aos/components/hysteresis_rod.cpp"
     "source/aos/components/hysteresis_rod.hpp"
     "source/aos/components/permanent_magnet.cpp"
@@ -97,12 +99,13 @@ target_sources(attitude_orbit_simulator_core PRIVATE
 # Executable
 #
 
-add_executable(attitude_orbit_simulator "source/main.cpp")
+add_executable(pmaos_run "source/main.cpp")
 
-set_target_properties(attitude_orbit_simulator PROPERTIES
+set_target_properties(pmaos_run PROPERTIES
     CXX_SCAN_FOR_MODULES OFF
+    INTERPROCEDURAL_OPTIMIZATION_RELEASE ON
 )
 
-target_link_libraries(attitude_orbit_simulator PRIVATE
-    attitude_orbit_simulator_core
+target_link_libraries(pmaos_run PRIVATE
+    pmaos_core
 )
