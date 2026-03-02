@@ -9,12 +9,11 @@
 
 #include <cstddef>
 #include <fstream>
-#include <memory>
 #include <string>
 
 namespace aos {
 
-struct state_observer_properties {
+struct observer_properties {
     static constexpr int default_precission = 5;
 
     bool exclude_elements{};              // per-element entries
@@ -24,21 +23,30 @@ struct state_observer_properties {
     void from_toml(const toml::table& table);
 };
 
-class state_observer {
+class observer {
 public:
 
-    explicit state_observer(const std::string& filename, std::size_t num_rods, const state_observer_properties& properties);
+    observer(const observer&)                    = delete;
+    observer(observer&&)                         = delete;
+    auto operator=(const observer&) -> observer& = delete;
+    auto operator=(observer&&) -> observer&      = delete;
 
-    void operator()(const system_state& state, double time) const;
+    explicit observer(const std::string& filename, std::size_t num_rods, const observer_properties& properties);
+    virtual ~observer();
 
-    void flush();
+    virtual void write_header();
+    virtual void write(const system_state& state, double time);
+
+protected:
+
+    auto file() -> std::ofstream&;
 
 private:
 
-    std::shared_ptr<std::ofstream> _file;
-    std::size_t                    _num_rods;
-    bool                           _include_elements;
-    bool                           _include_magnitudes;
+    std::ofstream _file;
+    std::size_t   _num_rods;
+    bool          _include_elements;
+    bool          _include_magnitudes;
 };
 
 }  // namespace aos

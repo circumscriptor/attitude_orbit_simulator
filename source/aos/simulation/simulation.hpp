@@ -28,8 +28,8 @@ private:
     std::shared_ptr<spacecraft>  _satellite;
     std::shared_ptr<environment> _environment;
     std::shared_ptr<dynamics>    _dynamics;
+    std::shared_ptr<observer>    _observer;
     system_state                 _current_state;
-    state_observer               _observer;
     double                       _t_start;
     double                       _t_end;
     double                       _t_now;

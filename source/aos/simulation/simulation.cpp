@@ -27,9 +27,9 @@ namespace aos {
 
 simulation::simulation(const std::string& output_filename, const simulation_properties& params)
     : _satellite(std::make_shared<spacecraft>(params.satellite)),
-      _environment(std::make_shared<environment>(params.environment)),
+      _environment(environment::create(params.environment)),
       _dynamics(std::make_shared<spacecraft_dynamics>(_satellite, _environment)),
-      _observer(output_filename, _satellite->rods().size(), params.observer),
+      _observer(std::make_shared<observer>(output_filename, _satellite->rods().size(), params.observer)),
       _t_start(params.t_start),
       _t_end(params.t_end),
       _t_now(_t_start),
@@ -58,11 +58,14 @@ void simulation::run() {
     using stepper_type_dp5 = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
     using stepper_type_k54 = runge_kutta_cash_karp54<system_state, double, system_state, double, vector_space_algebra>;
 
-    _observer(_current_state, _t_start);
+    _observer->write_header();
+    _observer->write(_current_state, _t_start);
 
     auto system = [this](const system_state& current_state, system_state& state_derivative, double t_sec) {
         _dynamics->step(current_state, state_derivative, t_sec);
     };
+
+    auto observe = [this](const system_state& state, double time) { _observer->write(state, time); };
 
     auto run_integration_loop = [&](auto& stepper) {
         using boost::numeric::odeint::integrate_adaptive;
@@ -70,7 +73,7 @@ void simulation::run() {
         if (_checkpoint_interval < 1.0) {
             std::println("Starting simulation");
             _dynamics->set_time_offset(0.0);
-            integrate_adaptive(stepper, system, _current_state, _t_start, _t_end, _dt_initial, _observer);
+            integrate_adaptive(stepper, system, _current_state, _t_start, _t_end, _dt_initial, observe);
         } else {
             std::println("Starting simulation with checkpoints");
 
@@ -83,7 +86,7 @@ void simulation::run() {
                 fix_integration_errors();
 
                 _t_now += section_period;
-                _observer(_current_state, _t_now);
+                _observer->write(_current_state, _t_now);
                 // observer.flush();  // comment when not needed
                 std::print("Checkpoint: {} s / {} s\r", _t_now, _t_end);
             }

@@ -43,13 +43,11 @@ target_include_directories(pmaos_core PUBLIC
 
 target_link_libraries(pmaos_core
     PRIVATE
-        Boost::filesystem
-        Boost::program_options
-    PUBLIC
-        Boost::boost
-        Eigen3::Eigen
+        Boost::boost # for odeint
         GeographicLib::GeographicLib
         nrlmsise-00::nrlmsise-00
+    PUBLIC
+        Eigen3::Eigen
         tomlplusplus::tomlplusplus
 )
 

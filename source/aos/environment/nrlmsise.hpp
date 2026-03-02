@@ -20,7 +20,7 @@ struct nrlmsise {
 
     explicit nrlmsise(const std::filesystem::path& filepath);
 
-    /** Compute atmospheric density at a specific spacetime point */
+    // compute atmospheric density at a specific spacetime point
     [[nodiscard]] auto density_at(double year_decimal, double lat_deg, double lon_deg, double alt_m) const -> double;
 };
 

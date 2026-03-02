@@ -14,10 +14,10 @@
 namespace aos {
 
 struct simulation_properties {
-    spacecraft_properties        satellite;
-    keplerian_elements           orbit;
-    state_observer_properties    observer;
-    environment_model_properties environment;
+    spacecraft_properties  satellite;
+    keplerian_elements     orbit;
+    observer_properties    observer;
+    environment_properties environment;
 
     vec3   angular_velocity;
     double t_start{};

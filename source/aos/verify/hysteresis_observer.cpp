@@ -3,10 +3,8 @@
 #include "aos/core/constants.hpp"
 #include "aos/verify/hysteresis_loop_dynamics.hpp"
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <ios>
@@ -18,9 +16,9 @@
 namespace aos {
 
 hysteresis_observer::hysteresis_observer(const std::string& filename) {
-    boost::filesystem::path file_path(filename);
+    std::filesystem::path file_path(filename);
     if (file_path.has_parent_path()) {
-        boost::filesystem::create_directories(file_path.parent_path());
+        std::filesystem::create_directories(file_path.parent_path());
     }
 
     _file = std::make_shared<std::ofstream>(filename);
