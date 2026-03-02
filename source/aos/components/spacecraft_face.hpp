@@ -14,14 +14,22 @@
 
 namespace aos {
 
+static constexpr size_t spacecraft_num_faces = 6;  // Cube
+
 struct spacecraft_face_effects {
     vec3 torque_body;  //!< [Nm] Torque in body frame
     vec3 force_eci;    //!< [N] Force applied to satellite in ECI
 };
 
-struct spacecraft_face {
-    static constexpr size_t num_faces = 6;  // Cube
+struct spacecraft_face_effects_raw {
+    vec3 torque_body;  //!< [Nm] Torque in body frame
+    vec3 force_body;   //!< [N] Force applied to satellite in body frame
 
+    std::array<vec3, spacecraft_num_faces> torques_body;  // Per-face torque in body frame
+    std::array<vec3, spacecraft_num_faces> forces_body;   // Per-face force in body frame
+};
+
+struct spacecraft_face {
     vec3   center_of_pressure_m;                        //!< [m] Face center relative to spacecraft center
     vec3   surface_normal;                              //!< [-] Face normal (outward)
     double surface_area_m2{};                           //!< [m^2] Face surface area
@@ -39,6 +47,6 @@ struct spacecraft_face {
     [[nodiscard]] auto compute_v_rel_body(const vec3& v_com_body, const vec3& omega_body) const -> vec3;
 };
 
-using spacecraft_faces = std::array<spacecraft_face, spacecraft_face::num_faces>;
+using spacecraft_faces = std::array<spacecraft_face, spacecraft_num_faces>;
 
 }  // namespace aos

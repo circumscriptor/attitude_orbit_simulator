@@ -70,12 +70,9 @@ auto hysteresis_parameters::hymu80() -> hysteresis_parameters {
 }
 
 hysteresis_rod::hysteresis_rod(const hysteresis_rod_properties& properties, const hysteresis_parameters& params)
-    : _volume(properties.volume_m3), _orientation_body(properties.orientation), _hysteresis(properties.hysteresis ? *properties.hysteresis : params) {
-    if (_orientation_body.norm() < epsilon_vector) {
-        throw std::runtime_error("Hysteresis rod orientation must be non-zero");
-    }
-    _orientation_body.normalize();
-
+    : _volume(properties.volume_m3),
+      _orientation_body(properties.orientation.normalized()),
+      _hysteresis(properties.hysteresis ? *properties.hysteresis : params) {
     if (_volume <= 0.0) {
         throw std::runtime_error("Volume must be positive");
     }

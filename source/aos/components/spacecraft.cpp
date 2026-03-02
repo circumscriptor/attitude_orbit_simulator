@@ -233,6 +233,25 @@ auto spacecraft::compute_face_effects(const environment_effects& env, const quat
         .force_eci   = q_att * force_body_sum,
     };
 }
+
+auto spacecraft::compute_faces_effect_raw(const environment_effects& env, const quat& q_inv, const vec3& omega_body) const -> spacecraft_face_effects_raw {
+    spacecraft_face_effects_raw result;
+
+    const vec3 s_body = (q_inv * env.r_sun_eci).normalized();
+    const vec3 v_body = q_inv * env.v_earth_rel;
+    for (size_t i = 0; i < _faces.size(); ++i) {
+        const auto& face   = _faces.at(i);
+        const vec3  f_body = face.compute_force(env, v_body, s_body, omega_body);  // drag + srp
+        const vec3  t_body = face.center_of_pressure_m.cross(f_body);
+
+        result.force_body += f_body;
+        result.torque_body += t_body;
+        result.forces_body.at(i)  = f_body;
+        result.torques_body.at(i) = t_body;
+    }
+
+    return result;
+}
 // NOLINTEND(bugprone-easily-swappable-parameters)
 
 auto spacecraft::compute_rod_torques(const vecX& rod_magnetizations, const vec3& b_body) const -> vec3 {
