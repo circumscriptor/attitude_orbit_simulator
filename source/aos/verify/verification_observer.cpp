@@ -4,6 +4,7 @@
 #include "aos/core/state.hpp"
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
+#include "aos/simulation/details/observer_impl.hpp"
 #include "aos/simulation/observer.hpp"
 
 #include <memory>
@@ -18,17 +19,17 @@ verification_observer::verification_observer(const std::string&                 
                                              std::shared_ptr<const spacecraft>  sat,
                                              std::shared_ptr<const environment> env,
                                              const observer_properties&         props)
-    : observer(filename, sat->hystresis().rods().size(), props), _sat(std::move(sat)), _env(std::move(env)) {}
+    : observer_impl(filename, sat->hystresis().rods().size(), props), _sat(std::move(sat)), _env(std::move(env)) {}
 
 auto verification_observer::write_header() -> std::ostream& {
-    return observer::write_header() << ",sun_x,sun_y,sun_z,mag_x,mag_y,mag_z,mag_dot_x,mag_dot_y,mag_dot_z,grav_x,grav_y,grav_z,"
-                                       "t_mag_x,t_mag_y,t_mag_z,t_grav_x,t_grav_y,t_grav_z,t_gyro_x,t_gyro_y,t_gyro_z,"
-                                       "t_rods_x,t_rods_y,t_rods_z,t_face_x,t_face_y,t_face_z,f_face_x,f_face_y,f_face_z,"
-                                       "d_f0_x,d_f0_y,d_f0_z,d_f1_x,d_f1_y,d_f1_z,d_f2_x,d_f2_y,d_f2_z,"
-                                       "d_f3_x,d_f3_y,d_f3_z,d_f4_x,d_f4_y,d_f4_z,d_f5_x,d_f5_y,d_f5_z,"
-                                       "s_f0_x,s_f0_y,s_f0_z,s_f1_x,s_f1_y,s_f1_z,s_f2_x,s_f2_y,s_f2_z,"
-                                       "s_f3_x,s_f3_y,s_f3_z,s_f4_x,s_f4_y,s_f4_z,s_f5_x,s_f5_y,s_f5_z,"
-                                       "rho,shadow,solar_p,v_rel_x,v_rel_y,v_rel_z";
+    return observer_impl::write_header() << ",sun_x,sun_y,sun_z,mag_x,mag_y,mag_z,mag_dot_x,mag_dot_y,mag_dot_z,grav_x,grav_y,grav_z,"
+                                            "t_mag_x,t_mag_y,t_mag_z,t_grav_x,t_grav_y,t_grav_z,t_gyro_x,t_gyro_y,t_gyro_z,"
+                                            "t_rods_x,t_rods_y,t_rods_z,t_face_x,t_face_y,t_face_z,f_face_x,f_face_y,f_face_z,"
+                                            "d_f0_x,d_f0_y,d_f0_z,d_f1_x,d_f1_y,d_f1_z,d_f2_x,d_f2_y,d_f2_z,"
+                                            "d_f3_x,d_f3_y,d_f3_z,d_f4_x,d_f4_y,d_f4_z,d_f5_x,d_f5_y,d_f5_z,"
+                                            "s_f0_x,s_f0_y,s_f0_z,s_f1_x,s_f1_y,s_f1_z,s_f2_x,s_f2_y,s_f2_z,"
+                                            "s_f3_x,s_f3_y,s_f3_z,s_f4_x,s_f4_y,s_f4_z,s_f5_x,s_f5_y,s_f5_z,"
+                                            "rho,shadow,solar_p,v_rel_x,v_rel_y,v_rel_z";
 }
 
 auto verification_observer::write(const system_state& state, double time) -> std::ostream& {
@@ -39,14 +40,14 @@ auto verification_observer::write(const system_state& state, double time) -> std
     const vec3 b_dot_orb  = q_inv * env.magnetic_field_dot_eci_T_s;
     const vec3 b_dot_body = b_dot_orb - state.angular_velocity_m_s.cross(b_body);
     const vec3 t_mag      = _sat->magnet().compute_torque(b_body);
-    const vec3 t_grav     = _sat->compute_gravity_gradient_torque(r_body, _env->earth_mu());
-    const vec3 t_gyro     = _sat->compute_gyroscopic_torque(state.angular_velocity_m_s);
+    const vec3 t_grav     = _sat->inertia().compute_gravity_gradient_torque(r_body, env.earth_mu);
+    const vec3 t_gyro     = _sat->inertia().compute_gyroscopic_torque(state.angular_velocity_m_s);
     const vec3 t_rods     = _sat->hystresis().compute_rod_torques(state.rod_magnetizations, b_body);
     const auto face_eff   = _sat->faces().compute_faces_effects_with_forces(env, q_inv, state.angular_velocity_m_s);
 
     // NOLINTBEGIN(readability-magic-numbers)
 
-    auto& f = observer::write(state, time);
+    auto& f = observer_impl::write(state, time);
     std::print(f,
                ",{},{},{},{},{},{},{},{},{},{},{},{},"                   // Sun + Mag + Grav
                "{},{},{},{},{},{},{},{},{},"                             // Mag + Grav + Gyro Torques

@@ -24,7 +24,6 @@ public:
     ~environment_impl() override;
 
     [[nodiscard]] auto compute_effects(double t_sec, const vec3& r_eci_m, const vec3& v_eci_m_s) const -> environment_effects override;
-    [[nodiscard]] auto earth_mu() const -> double override;
 
 protected:
 

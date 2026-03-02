@@ -17,6 +17,7 @@ struct environment_effects {
     vec3   v_earth_rel;                 // [m/s] Earth-Spacecraft relative speed
     double shadow_factor;               // [-] 1.0 = Sun, 0.0 = Umbra, (0,1) = Penumbra
     double solar_pressure_Pa;           // [N/m^2] Radiation pressure at current distance
+    double earth_mu;                    // [?] Earth mass
     // NOLINTEND(readability-identifier-naming)
 };
 
@@ -49,8 +50,6 @@ public:
 
     // compute environmental effects
     [[nodiscard]] virtual auto compute_effects(double t_sec, const vec3& r_eci_m, const vec3& v_eci_m_s) const -> environment_effects = 0;
-
-    [[nodiscard]] virtual auto earth_mu() const -> double = 0;
 
     static auto create(const environment_properties& properties) -> std::shared_ptr<environment>;
 };

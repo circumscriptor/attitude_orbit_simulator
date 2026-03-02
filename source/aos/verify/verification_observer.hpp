@@ -1,6 +1,7 @@
 #include "aos/components/spacecraft.hpp"
 #include "aos/core/state.hpp"
 #include "aos/environment/environment.hpp"
+#include "aos/simulation/details/observer_impl.hpp"
 #include "aos/simulation/observer.hpp"
 
 #include <memory>
@@ -9,7 +10,7 @@
 
 namespace aos {
 
-class verification_observer : public observer {
+class verification_observer : public observer_impl {
 public:
 
     verification_observer(const std::string&                 filename,

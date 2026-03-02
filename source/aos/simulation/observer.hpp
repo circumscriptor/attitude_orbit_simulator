@@ -1,14 +1,10 @@
 #pragma once
 
 #include "aos/core/state.hpp"
-
-// clang-format off
-#include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
+#include "aos/core/types.hpp"
 
 #include <cstddef>
-#include <fstream>
+#include <memory>
 #include <ostream>
 #include <string>
 
@@ -27,27 +23,18 @@ struct observer_properties {
 class observer {
 public:
 
+    observer()                                   = default;
     observer(const observer&)                    = delete;
     observer(observer&&)                         = delete;
     auto operator=(const observer&) -> observer& = delete;
     auto operator=(observer&&) -> observer&      = delete;
 
-    explicit observer(const std::string& filename, std::size_t num_rods, const observer_properties& properties);
     virtual ~observer();
 
-    virtual auto write_header() -> std::ostream&;
-    virtual auto write(const system_state& state, double time) -> std::ostream&;
+    virtual auto write_header() -> std::ostream&                                = 0;
+    virtual auto write(const system_state& state, double time) -> std::ostream& = 0;
 
-protected:
-
-    auto file() -> std::ofstream&;
-
-private:
-
-    std::ofstream _file;
-    std::size_t   _num_rods;
-    bool          _include_elements;
-    bool          _include_magnitudes;
+    static auto create(const std::string& filename, std::size_t num_rods, const observer_properties& properties) -> std::shared_ptr<observer>;
 };
 
 }  // namespace aos

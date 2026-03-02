@@ -2,8 +2,8 @@
 #include "aos/components/spacecraft.hpp"
 #include "aos/environment/environment.hpp"
 #include "aos/simulation/config.hpp"
+#include "aos/simulation/dynamics.hpp"
 #include "aos/simulation/simulation.hpp"
-#include "aos/simulation/spacecraft_dynamics.hpp"
 #include "aos/verify/verification_observer.hpp"
 
 #include <exception>
@@ -19,9 +19,9 @@ auto main(int argc, char** argv) -> int {
     }
 
     try {
-        auto satellite   = std::make_shared<aos::spacecraft>(properties.satellite);
+        auto satellite   = aos::spacecraft::create(properties.satellite);
         auto environment = aos::environment::create(properties.environment);
-        auto dynamics    = std::make_shared<aos::spacecraft_dynamics>(satellite, environment);
+        auto dynamics    = aos::dynamics::create(satellite, environment);
         auto observer    = std::make_shared<aos::verification_observer>(output_path, satellite, environment, properties.observer);
         std::make_unique<aos::simulation>(properties, satellite, environment, dynamics, observer)->run();
         return 0;

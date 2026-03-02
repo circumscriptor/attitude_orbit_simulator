@@ -8,7 +8,6 @@
 #include "aos/simulation/config.hpp"
 #include "aos/simulation/dynamics.hpp"
 #include "aos/simulation/observer.hpp"
-#include "aos/simulation/spacecraft_dynamics.hpp"
 
 #include <boost/numeric/odeint.hpp>
 #include <boost/numeric/odeint/algebra/vector_space_algebra.hpp>
@@ -29,10 +28,10 @@ namespace aos {
 
 simulation::simulation(const std::string& output_filename, const simulation_properties& properties)
     : simulation(properties,
-                 std::make_shared<spacecraft>(properties.satellite),
+                 spacecraft::create(properties.satellite),
                  environment::create(properties.environment),
-                 std::make_shared<spacecraft_dynamics>(_satellite, _environment),
-                 std::make_shared<observer>(output_filename, properties.satellite.rods.size(), properties.observer)) {}
+                 dynamics::create(_satellite, _environment),
+                 observer::create(output_filename, properties.satellite.rods.size(), properties.observer)) {}
 
 simulation::simulation(const simulation_properties& properties,
                        std::shared_ptr<spacecraft>  sat,

@@ -1,0 +1,32 @@
+#pragma once
+
+#include "aos/components/spacecraft_shape.hpp"
+#include "aos/core/types.hpp"
+
+namespace aos {
+
+class inertia_tensor {
+public:
+
+    inertia_tensor(double mass_kg, const spacecraft_shape& shape);
+
+    [[nodiscard]] auto value() const -> const mat3x3&;
+    [[nodiscard]] auto inverse() const -> const mat3x3&;
+
+    // compute gyroscopic torque [-omega × (I * ω)]
+    [[nodiscard]] auto compute_gyroscopic_torque(const vec3& omega) const -> vec3;
+
+    // compute gravity gradient torque
+    [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_body, double earth_mu) const -> vec3;
+
+protected:
+
+    [[nodiscard]] static auto compute_inertia_tensor(double m_kg, double a, double b, double c) -> mat3x3;
+
+private:
+
+    mat3x3 _inertia_tensor_kg_m2;          // [kg*m^2] Inertia
+    mat3x3 _inertia_tensor_kg_m2_inverse;  // [1/(kg*m^2)] Inverse inertia
+};
+
+}  // namespace aos

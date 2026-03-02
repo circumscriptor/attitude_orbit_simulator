@@ -2,7 +2,12 @@
 
 #include "aos/core/state.hpp"
 
+#include <memory>
+
 namespace aos {
+
+class spacecraft;
+class environment;
 
 class dynamics {
 public:
@@ -20,6 +25,8 @@ public:
     [[nodiscard]]
     auto get_time_offset() const noexcept -> double;
     void set_time_offset(double offset_s);
+
+    static auto create(std::shared_ptr<const spacecraft> spacecraft, std::shared_ptr<const environment> environment) -> std::shared_ptr<dynamics>;
 
 private:
 

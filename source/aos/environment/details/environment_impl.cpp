@@ -64,6 +64,7 @@ auto environment_impl::compute_effects(double t_sec, const vec3& r_eci_m, const 
     const double d_sun_sq = r_sun.squaredNorm();
     const double pressure = solar_pressure_1au * (au_to_m_2 / d_sun_sq);
     const double shadow   = earth_shadow_factor(r_eci_m, r_sun);
+    const double earth_mu = _gravity_model.MassConstant();
 
     // compute fields at future position for gradient calculation
     const double t_next = t_sec + dt_gradient;
@@ -84,11 +85,8 @@ auto environment_impl::compute_effects(double t_sec, const vec3& r_eci_m, const 
         .v_earth_rel                = v_rel,
         .shadow_factor              = shadow,
         .solar_pressure_Pa          = pressure,
+        .earth_mu                   = earth_mu,
     };
-}
-
-auto environment_impl::earth_mu() const -> double {
-    return _gravity_model.MassConstant();
 }
 
 void environment_impl::cache_transform(double t_sec, const vec3& r_eci_m) const {

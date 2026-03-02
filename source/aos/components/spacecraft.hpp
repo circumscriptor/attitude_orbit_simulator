@@ -2,12 +2,15 @@
 
 #include "aos/components/hysteresis_rod.hpp"
 #include "aos/components/hysteresis_rods.hpp"
+#include "aos/components/inertia_tensor.hpp"
 #include "aos/components/permanent_magnet.hpp"
 #include "aos/components/spacecraft_faces.hpp"
 #include "aos/components/spacecraft_shape.hpp"
 #include "aos/core/state.hpp"
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
+
+#include <memory>
 
 namespace aos {
 
@@ -25,38 +28,23 @@ struct spacecraft_properties {
 class spacecraft {
 public:
 
-    explicit spacecraft(const spacecraft_properties& properties);
+    spacecraft()                                     = default;
+    spacecraft(const spacecraft&)                    = delete;
+    spacecraft(spacecraft&&)                         = delete;
+    auto operator=(const spacecraft&) -> spacecraft& = delete;
+    auto operator=(spacecraft&&) -> spacecraft&      = delete;
 
-    [[nodiscard]] auto mass_kg() const -> double;
-    [[nodiscard]] auto inertia_tensor_kg_m2() const -> const mat3x3&;
-    [[nodiscard]] auto inertia_tensor_kg_m2_inverse() const -> const mat3x3&;
-    [[nodiscard]] auto faces() const -> const spacecraft_faces&;
-    [[nodiscard]] auto magnet() const -> const permanent_magnet&;
-    [[nodiscard]] auto hystresis() const -> const hysteresis_rods&;
+    virtual ~spacecraft();
 
-    void derivative(const environment_effects& env, double earth_mu, const system_state& current_state, system_state& state_derivative) const;
+    [[nodiscard]] virtual auto mass_kg() const -> double                   = 0;
+    [[nodiscard]] virtual auto inertia() const -> const inertia_tensor&    = 0;
+    [[nodiscard]] virtual auto faces() const -> const spacecraft_faces&    = 0;
+    [[nodiscard]] virtual auto magnet() const -> const permanent_magnet&   = 0;
+    [[nodiscard]] virtual auto hystresis() const -> const hysteresis_rods& = 0;
 
-    // sums permanent magnet, gyroscopic, and gravity gradient torques
-    [[nodiscard]] auto compute_torques(const vec3& omega, const vec3& b_body, const vec3& r_body, double earth_mu) const -> vec3;
+    virtual void derivative(const environment_effects& env, const system_state& current_state, system_state& state_derivative) const = 0;
 
-    // compute gyroscopic torque [-omega × (I * ω)]
-    [[nodiscard]] auto compute_gyroscopic_torque(const vec3& omega) const -> vec3;
-
-    // compute gravity gradient torque
-    [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_body, double earth_mu) const -> vec3;
-
-protected:
-
-    [[nodiscard]] static auto compute_inertia_tensor(double m_kg, double a, double b, double c) -> mat3x3;
-
-private:
-
-    double           _mass_kg;                       // [kg] Mass
-    mat3x3           _inertia_tensor_kg_m2;          // [kg*m^2] Inertia
-    mat3x3           _inertia_tensor_kg_m2_inverse;  // [1/(kg*m^2)] Inverse inertia
-    spacecraft_faces _faces;
-    permanent_magnet _magnet;
-    hysteresis_rods  _hystresis;
+    static auto create(const spacecraft_properties& properties) -> std::shared_ptr<spacecraft>;
 };
 
 }  // namespace aos

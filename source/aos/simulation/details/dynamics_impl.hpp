@@ -9,16 +9,16 @@
 
 namespace aos {
 
-class spacecraft_dynamics : public dynamics {
+class dynamics_impl : public dynamics {
 public:
 
-    spacecraft_dynamics(const spacecraft_dynamics&)                    = delete;
-    spacecraft_dynamics(spacecraft_dynamics&&)                         = delete;
-    auto operator=(const spacecraft_dynamics&) -> spacecraft_dynamics& = delete;
-    auto operator=(spacecraft_dynamics&&) -> spacecraft_dynamics&      = delete;
+    dynamics_impl(const dynamics_impl&)                    = delete;
+    dynamics_impl(dynamics_impl&&)                         = delete;
+    auto operator=(const dynamics_impl&) -> dynamics_impl& = delete;
+    auto operator=(dynamics_impl&&) -> dynamics_impl&      = delete;
 
-    spacecraft_dynamics(std::shared_ptr<const spacecraft> spacecraft_model, std::shared_ptr<const environment> environment_model);
-    ~spacecraft_dynamics() override;
+    dynamics_impl(std::shared_ptr<const spacecraft> spacecraft_model, std::shared_ptr<const environment> environment_model);
+    ~dynamics_impl() override;
 
     void step(const system_state& current_state, system_state& state_derivative, double t_sec) const override;
 
