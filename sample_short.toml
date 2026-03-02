@@ -1,0 +1,47 @@
+t_start = 0
+t_end = 12000
+dt_initial = 0.1
+checkpoint_interval = 0.0
+angular_velocity = [0.2, 0.2, 0.2]
+stepper_function = 1               # 0 = k54, 1 = dp5, 2 = f78
+
+[satellite]
+mass = 1.3
+hysteresis = { ms = 750000, a = 12.0, k = 1.2, c = 0.02, alpha = 1.0e-5 }
+
+[satellite.uniform]
+dimensions = [0.1, 0.1, 0.1]
+drag_coefficient = 2.2
+specular_reflection_coefficient = 0.1
+diffuse_reflection_coefficient = 0.2
+
+[satellite.magnet]
+remanence = 1.0
+relative_permeability = 1.05
+orientation = [0.0, 0.0, 1.0]
+cylindrical = { length = 0.015, radius = 0.002 }
+
+[[satellite.rods]]
+volume_m3 = 2.0e-7
+orientation = [1.0, 0.0, 0.0]
+
+[[satellite.rods]]
+volume_m3 = 2.0e-7
+orientation = [0.0, 1.0, 0.0]
+
+[orbit]
+semi_major_axis_m = 6818137.0
+eccentricity = 0.001
+inclination_rad = 1.396263
+raan_rad = 0.0
+arg_of_periapsis_rad = 0.0
+mean_anomaly_rad = 0.0
+
+[environment]
+start_year_decimal = 2026.5
+gravity_model_degree = 12
+gravity_model_order = 12
+
+[observer]
+exclude_elements = false
+exclude_magnitudes = false
