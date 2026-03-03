@@ -176,6 +176,7 @@ def analyze_and_plot(args):
         return
 
     results =[]
+    time_series_data = {}
 
     for csv_file in sorted(csv_files):
         csv_path = os.path.join(args.output_dir, csv_file)
@@ -185,7 +186,7 @@ def analyze_and_plot(args):
             with open(toml_path, "r") as f:
                 config = toml.load(f)
                 sweep_val = config.get("_sweep_metadata", {}).get("value", np.nan)
-        except:
+        except Exception:
             continue
 
         try:
@@ -201,6 +202,15 @@ def analyze_and_plot(args):
                 "Settling Time (Days)": settle_time / 86400.0 if not np.isnan(settle_time) else np.nan,
                 "Final Tumble (rad/s)": final_tumble
             })
+
+            # Store sub-sampled time series data for Plotly visualization
+            if "time" in df.columns and w_mag is not None and not np.isnan(sweep_val):
+                step = max(1, len(df) // 1000)  # Max ~1000 points per line for HTML performance
+                time_series_data[sweep_val] = {
+                    "time_days": df["time"].iloc[::step] / 86400.0,
+                    "w_mag": w_mag.iloc[::step]
+                }
+
         except Exception as e:
             print(f"Error parsing {csv_file}: {e}")
 
@@ -226,7 +236,7 @@ def analyze_and_plot(args):
     if not unstable.empty:
         # Plot unstable points at a high arbitrary Y value just to show they failed
         max_y = stable["Settling Time (Days)"].max() if not stable.empty else 14
-        plt.scatter(unstable["Sweep Value"], [max_y * 1.1] * len(unstable), color='red', marker='x', s=100, label='Failed to Stabilize')
+        plt.scatter(unstable["Sweep Value"],[max_y * 1.1] * len(unstable), color='red', marker='x', s=100, label='Failed to Stabilize')
 
     plt.title(f"Sensitivity Analysis: Settling Time vs {args.variable}\nGenerated: {current_time}")
     plt.xlabel(f"{args.variable} Value")
@@ -252,7 +262,59 @@ def analyze_and_plot(args):
     plt.savefig(os.path.join(args.output_dir, f"plot_{args.variable}_final_tumble.png"), dpi=150)
     plt.close()
 
-    print(f"Plots saved to {args.output_dir}/")
+    # --- PLOT 3: Plotly Interactive Angular Velocity Envelope ---
+    try:
+        import plotly.graph_objects as go
+        import plotly.express as px
+
+        fig_html = go.Figure()
+
+        # Generate a color scale based on the number of sweep steps
+        sorted_vals = sorted(time_series_data.keys())
+        colors = px.colors.sample_colorscale("Viridis",[n / max(1, len(sorted_vals)-1) for n in range(len(sorted_vals))])
+
+        for i, val in enumerate(sorted_vals):
+            data = time_series_data[val]
+
+            # Format the label nicely (use scientific notation for very small numbers like volume)
+            label_str = f"{args.variable}_{i + 1} = {val:.2e}" if val < 1e-3 else f"{args.variable} = {val:.4g}"
+
+            fig_html.add_trace(go.Scatter(
+                x=data["time_days"],
+                y=data["w_mag"],
+                mode='lines',
+                name=label_str,
+                line=dict(color=colors[i]),
+                opacity=0.8
+            ))
+
+        # Add the threshold horizontal line
+        fig_html.add_hline(
+            y=args.threshold,
+            line_dash="dash",
+            line_color="red",
+            annotation_text=f"Threshold ({args.threshold} rad/s)"
+        )
+
+        fig_html.update_layout(
+            title=f"Angular Velocity Decay per '{args.variable}' Value",
+            xaxis_title="Time (Days)",
+            yaxis_title="Angular Velocity Magnitude (rad/s)",
+            yaxis_type="log",
+            hovermode="closest",
+            template="plotly_white",
+            legend_title_text="Sweep Value"
+        )
+
+        html_path = os.path.join(args.output_dir, f"plot_{args.variable}_tumble_interactive.html")
+        fig_html.write_html(html_path)
+        print(f"Interactive angular velocity plot saved to: {html_path}")
+
+    except ImportError:
+        print("\nNote: 'plotly' is not installed. Skipping interactive HTML plot.")
+        print("To enable interactive plots, run: pip install plotly")
+
+    print(f"\nAll plots saved to directory: '{args.output_dir}/'")
 
 def main():
     parser = argparse.ArgumentParser(description="AOS Parameter Sweep Sensitivity Analysis")
@@ -270,7 +332,7 @@ def main():
     parser.add_argument("-o", "--output-dir", type=str, default="sweep_results", help="Output directory (default: 'sweep_results')")
     parser.add_argument("-d", "--duration", type=str, choices=["2w", "2y"], default="2w", help="Simulation duration (default: 2w)")
     parser.add_argument("-c", "--checkpoint", type=float, default=600.0, help="Checkpoint interval in sec (default: 600.0)")
-    parser.add_argument("-t", "--threshold", type=float, default=0.02, help="Stability threshold [rad/s] (default: 0.02)")
+    parser.add_argument("-t", "--threshold", type=float, default=0.02, help="Stability threshold[rad/s] (default: 0.02)")
 
     args = parser.parse_args()
 
@@ -292,8 +354,6 @@ def main():
 
     # 3. Analyze and Plot
     analyze_and_plot(args)
-
-    # TODO: Plot using plotly each angular velocity
 
 if __name__ == "__main__":
     main()
