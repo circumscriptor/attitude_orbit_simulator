@@ -5,10 +5,14 @@ import argparse
 import subprocess
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 import pytz
+
+# Force matplotlib to not use any Xwindows/Qt backend.
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 # WGS84 Constants
 EARTH_RADIUS_M = 6378137.0
@@ -101,7 +105,7 @@ def generate_sweep_files(args, t_end):
     print(f"Sweeping '{args.variable}' from {args.min} to {args.max} in {args.steps} steps.")
 
     for i, val in enumerate(values):
-        filename = f"sweep_{args.variable}_{i:03d}.toml"
+        filename = f"sweep_{args.variable}_{(i + 1):03d}.toml"
         filepath = os.path.join(args.output_dir, filename)
         csv_path = filepath.replace(".toml", ".csv")
 
@@ -278,7 +282,7 @@ def main():
 
     # 2. Run Simulations
     if toml_files:
-        print(f"\nStarting {len(toml_files)} parallel simulations...")
+        print(f"\nStarting {len(toml_files)} simulations...")
         with ThreadPoolExecutor(max_workers=args.threads) as executor:
             future_to_file = {executor.submit(run_simulation, path): path for path in toml_files}
             for future in as_completed(future_to_file):
@@ -288,6 +292,8 @@ def main():
 
     # 3. Analyze and Plot
     analyze_and_plot(args)
+
+    # TODO: Plot using plotly each angular velocity
 
 if __name__ == "__main__":
     main()
