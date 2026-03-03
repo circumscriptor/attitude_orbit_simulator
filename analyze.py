@@ -5,15 +5,18 @@ import argparse
 import pandas as pd
 import numpy as np
 import toml
-import matplotlib.pyplot as plt
 from datetime import datetime
 import pytz
+
+# Force matplotlib to not use any Xwindows/Qt backend.
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 # WGS84 Constants
 EARTH_RADIUS_M = 6378137.0
 
 def calculate_magnitude(df, prefix):
-    """Calculates magnitude from components if the scalar column doesn't exist."""
     cols =[f"{prefix}_x", f"{prefix}_y", f"{prefix}_z"]
     if prefix in df.columns:
         return df[prefix]
@@ -22,38 +25,33 @@ def calculate_magnitude(df, prefix):
     return None
 
 def get_settling_time(df, threshold=0.02):
-    """Returns the settling time in seconds, or np.nan if it never stabilized."""
     w_mag = calculate_magnitude(df, "w")
     if w_mag is None:
         return np.nan
 
     above_threshold = w_mag > threshold
     if not above_threshold.any():
-        return 0.0  # Started stable
+        return 0.0
 
     last_unstable_idx = above_threshold[::-1].idxmax()
 
-    # If the last unstable point is the very last data point, it never stabilized
     if last_unstable_idx == df.index[-1]:
         return np.nan
 
     return df.loc[last_unstable_idx, "time"]
 
 def process_run(csv_path, toml_path, threshold):
-    """Processes a single Monte Carlo run and extracts metrics and parameters."""
     try:
         df = pd.read_csv(csv_path)
         df.columns = df.columns.str.strip()
     except Exception as e:
         return None, None
 
-    # Skip empty or highly corrupted runs
     if len(df) < 2 or df.isna().sum().sum() > 0:
         return None, None
 
     metrics = {"Run": os.path.basename(csv_path).replace(".csv", "")}
 
-    # --- Extract CSV Metrics ---
     t = df["time"]
     metrics["Duration (Days)"] = (t.iloc[-1] - t.iloc[0]) / 86400.0
 
@@ -76,21 +74,17 @@ def process_run(csv_path, toml_path, threshold):
         metrics["Min Altitude (km)"] = np.nan
         metrics["Deorbited"] = False
 
-    # --- Extract TOML Parameters ---
     try:
         with open(toml_path, "r") as f:
             config = toml.load(f)
-
             sat = config.get("satellite", {})
             metrics["Mass (kg)"] = sat.get("mass", np.nan)
 
-            # Sum up total hysteresis rod volume
             rods = sat.get("rods",[])
-            total_vol = sum(r.get("volume_m3", 0.0) for r in rods)
+            total_vol = sum(r.get("volume", 0.0) for r in rods)
             metrics["Total Rod Volume (m^3)"] = total_vol
             metrics["Num Rods"] = len(rods)
 
-            # Get Magnet Remanence
             magnet = sat.get("magnet", {})
             metrics["Magnet Remanence (T)"] = magnet.get("remanence", np.nan)
 
@@ -100,7 +94,6 @@ def process_run(csv_path, toml_path, threshold):
     return metrics, df
 
 def analyze_directory(directory, threshold):
-    """Scans directory, processes all runs, and returns aggregated DataFrame."""
     csv_files = glob.glob(os.path.join(directory, "*.csv"))
     if not csv_files:
         print(f"Error: No CSV files found in {directory}")
@@ -120,9 +113,8 @@ def analyze_directory(directory, threshold):
         metrics, df = process_run(csv_file, toml_file, threshold)
         if metrics is not None:
             results.append(metrics)
-            # Store time series for plotting (subsampled to save memory)
             if "time" in df.columns and calculate_magnitude(df, "w") is not None:
-                step = max(1, len(df) // 1000) # Max 1000 points per line
+                step = max(1, len(df) // 1000)
                 time_series_data[metrics["Run"]] = {
                     "time_days": df["time"].iloc[::step] / 86400.0,
                     "w_mag": calculate_magnitude(df, "w").iloc[::step]
@@ -131,8 +123,12 @@ def analyze_directory(directory, threshold):
     df_results = pd.DataFrame(results)
     return df_results, time_series_data
 
+def safe_corr(df, col1, col2):
+    if df[col1].std() == 0 or df[col2].std() == 0:
+        return np.nan
+    return df[col1].corr(df[col2])
+
 def print_summary(df_results, threshold):
-    """Prints a neat statistical summary to the console."""
     print("\n" + "="*70)
     print(f" MONTE CARLO SIMULATION SUMMARY (Threshold: {threshold} rad/s)")
     print("="*70)
@@ -160,44 +156,109 @@ def print_summary(df_results, threshold):
 
     print("\n--- PARAMETER CORRELATIONS (w.r.t Settling Time) ---")
     if stabilized > 2:
-        # Calculate correlation ignoring NaNs
-        corr_mass = df_results["Mass (kg)"].corr(df_results["Settling Time (Days)"])
-        corr_vol = df_results["Total Rod Volume (m^3)"].corr(df_results["Settling Time (Days)"])
-        corr_mag = df_results["Magnet Remanence (T)"].corr(df_results["Settling Time (Days)"])
+        df_stab = df_results.dropna(subset=["Settling Time (Days)"])
+        corr_mass = safe_corr(df_stab, "Mass (kg)", "Settling Time (Days)")
+        corr_vol = safe_corr(df_stab, "Total Rod Volume (m^3)", "Settling Time (Days)")
+        corr_mag = safe_corr(df_stab, "Magnet Remanence (T)", "Settling Time (Days)")
 
-        print(f"Mass vs Settling Time        : {corr_mass:+.3f} (Negative is better/faster)")
-        print(f"Hyst. Volume vs Settling Time: {corr_vol:+.3f}")
-        print(f"Magnet Remanence vs Settling : {corr_mag:+.3f}")
+        print(f"Mass vs Settling Time        : {corr_mass:+.3f}" if not np.isnan(corr_mass) else "Mass vs Settling Time        : N/A (No Variance)")
+        print(f"Hyst. Volume vs Settling Time: {corr_vol:+.3f}" if not np.isnan(corr_vol) else "Hyst. Volume vs Settling Time: N/A (No Variance)")
+        print(f"Magnet Remanence vs Settling : {corr_mag:+.3f}" if not np.isnan(corr_mag) else "Magnet Remanence vs Settling : N/A (No Variance)")
 
     print("="*70)
 
 def plot_results(df_results, time_series_data, threshold, output_dir):
-    """Generates comparison plots and saves them."""
-
-    # Context (Time in Slovakia for metadata stamping)
     tz = pytz.timezone('Europe/Bratislava')
     current_time = datetime.now(tz).strftime("%Y-%m-%d %H:%M %Z")
 
-    # 1. Plot Angular Velocity Over Time (Detumbling Envelope)
-    plt.figure(figsize=(10, 6))
-    for run_name, data in time_series_data.items():
-        plt.plot(data["time_days"], data["w_mag"], alpha=0.4, linewidth=1.5)
+    # --- 1. Enhanced Static Envelope Plot ---
+    # Make the plot wider to accommodate the legend on the right side
+    fig, ax = plt.subplots(figsize=(14, 7))
 
-    plt.axhline(threshold, color='red', linestyle='--', label=f'Threshold ({threshold} rad/s)')
-    plt.title(f"Angular Velocity Decay (All Runs)\nGenerated: {current_time}", fontsize=12)
-    plt.xlabel("Time (Days)")
-    plt.ylabel("Angular Velocity Magnitude (rad/s)")
-    plt.yscale("log") # Log scale is best for detumbling visualization
-    plt.grid(True, which="both", ls="--", alpha=0.5)
-    plt.legend()
+    runs = sorted(time_series_data.keys())
+    cmap = plt.get_cmap('tab20') # 20 distinct colors
+
+    # Identify best and worst runs for highlighting
+    best_run, worst_run = None, None
+    if not df_results.empty:
+        settle_times = df_results["Settling Time (Days)"].dropna()
+        if not settle_times.empty:
+            best_run = df_results.loc[settle_times.idxmin(), "Run"]
+            worst_run = df_results.loc[settle_times.idxmax(), "Run"]
+
+    # Plot all runs
+    for i, run_name in enumerate(runs):
+        data = time_series_data[run_name]
+
+        # Highlight specific runs
+        if run_name == best_run:
+            ax.plot(data["time_days"], data["w_mag"], color='green', linewidth=2.5, zorder=10, label=f"Run {run_name} (Fastest)")
+        elif run_name == worst_run:
+            ax.plot(data["time_days"], data["w_mag"], color='red', linewidth=2.5, zorder=10, label=f"Run {run_name} (Slowest)")
+        else:
+            ax.plot(data["time_days"], data["w_mag"], color=cmap(i % 20), alpha=0.6, linewidth=1.0, label=f"Run {run_name}")
+
+    ax.axhline(threshold, color='black', linestyle='--', linewidth=2, label=f'Threshold ({threshold} rad/s)')
+    ax.set_title(f"Angular Velocity Decay (All Runs)\nGenerated: {current_time}", fontsize=12)
+    ax.set_xlabel("Time (Days)")
+    ax.set_ylabel("Angular Velocity Magnitude (rad/s)")
+    ax.set_yscale("log")
+    ax.grid(True, which="both", ls="--", alpha=0.5)
+
+    # Place legend completely outside the plot area. Dynamically adjust columns based on # of runs.
+    ncol = max(1, len(runs) // 20 + 1)
+    ax.legend(bbox_to_anchor=(1.02, 1), loc='upper left', ncol=ncol, fontsize='x-small')
     plt.tight_layout()
     plt.savefig(os.path.join(output_dir, "mc_tumble_envelope.png"), dpi=150)
     plt.close()
 
-    # 2. Scatter Plot: Settling Time vs Total Hysteresis Volume
+    # --- 1b. Interactive Plotly Export (Optional) ---
+    try:
+        import plotly.graph_objects as go
+        fig_html = go.Figure()
+
+        for run_name in runs:
+            data = time_series_data[run_name]
+
+            # Highlight best and worst in HTML too
+            line_opts = {'width': 1, 'color': None}
+            name_label = f"Run {run_name}"
+            opacity = 0.5
+
+            if run_name == best_run:
+                line_opts = {'width': 3, 'color': 'green'}
+                name_label += " (Fastest)"
+                opacity = 1.0
+            elif run_name == worst_run:
+                line_opts = {'width': 3, 'color': 'red'}
+                name_label += " (Slowest)"
+                opacity = 1.0
+
+            fig_html.add_trace(go.Scatter(
+                x=data["time_days"], y=data["w_mag"],
+                mode='lines', name=name_label,
+                line=line_opts, opacity=opacity
+            ))
+
+        fig_html.add_hline(y=threshold, line_dash="dash", line_color="black", annotation_text="Threshold")
+        fig_html.update_layout(
+            title="Interactive Angular Velocity Decay (Hover over lines)",
+            xaxis_title="Time (Days)",
+            yaxis_title="Angular Velocity Magnitude (rad/s)",
+            yaxis_type="log",
+            hovermode="closest",
+            template="plotly_white"
+        )
+        html_path = os.path.join(output_dir, "mc_tumble_interactive.html")
+        fig_html.write_html(html_path)
+        print(f"Generated interactive plot: {html_path}")
+    except ImportError:
+        pass # Plotly is not installed, fail silently.
+
+    # --- 2. Scatter Plot: Settling Time vs Total Hysteresis Volume ---
     plt.figure(figsize=(8, 5))
     scatter = plt.scatter(
-        df_results["Total Rod Volume (m^3)"] * 1e7, # Scale to 10^-7 for readability
+        df_results["Total Rod Volume (m^3)"] * 1e7,
         df_results["Settling Time (Days)"],
         c=df_results["Mass (kg)"],
         cmap='viridis',
@@ -212,7 +273,7 @@ def plot_results(df_results, time_series_data, threshold, output_dir):
     plt.savefig(os.path.join(output_dir, "mc_volume_vs_settling.png"), dpi=150)
     plt.close()
 
-    # 3. Histogram of Settling Times
+    # --- 3. Histogram of Settling Times ---
     plt.figure(figsize=(8, 5))
     settle_times = df_results["Settling Time (Days)"].dropna()
     if not settle_times.empty:
@@ -227,7 +288,7 @@ def plot_results(df_results, time_series_data, threshold, output_dir):
         plt.savefig(os.path.join(output_dir, "mc_settling_histogram.png"), dpi=150)
     plt.close()
 
-    print(f"\nPlots successfully generated and saved to '{output_dir}/'")
+    print(f"Static plots successfully generated and saved to '{output_dir}/'")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Analyze AOS Monte Carlo Results")

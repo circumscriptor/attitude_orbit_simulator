@@ -66,13 +66,11 @@ def generate_mc_variants(args, t_end):
 
         config = get_base_config(t_end, args.checkpoint)
 
-        # 1. CubeSat Form Factor (1U, 2U, or 3U)
-        u_size = random.choice([1, 2, 3])
-        z_dim = round(u_size * 0.1, 2)
-        config["satellite"]["uniform"]["dimensions"] = [0.1, 0.1, z_dim]
+        # TODO: Make one side a bit longer
+        config["satellite"]["uniform"]["dimensions"] = [0.1, 0.1, 0.1]
 
-        # Base mass approx 1.33 kg per U, ±10% variance
-        base_mass = u_size * 1.33
+        # Base mass approx 1.33 kg, ±10% variance
+        base_mass = 1.33
         config["satellite"]["mass"] = round(random.uniform(base_mass * 0.9, base_mass * 1.1), 3)
 
         # 2. Hysteresis Material Parameters (Realistic Soft Magnetic Material e.g., HyMu-80)
@@ -97,11 +95,10 @@ def generate_mc_variants(args, t_end):
                 "radius": round(random.uniform(0.001, 0.003), 4)
             }
         else:
-            # Fixed keys to match C++ 'permanent_magnet_rectangular::from_toml'
             magnet["rectangular"] = {
-                "length_m": round(random.uniform(0.015, 0.05), 4),
-                "width_m": round(random.uniform(0.002, 0.005), 4),
-                "height_m": round(random.uniform(0.002, 0.005), 4)
+                "length": round(random.uniform(0.015, 0.05), 4),
+                "width": round(random.uniform(0.002, 0.005), 4),
+                "height": round(random.uniform(0.002, 0.005), 4)
             }
         config["satellite"]["magnet"] = magnet
 
@@ -116,8 +113,7 @@ def generate_mc_variants(args, t_end):
                 orientation =[0.0, 1.0, 0.0]  # Y-axis
 
             rods.append({
-                # Fixed key to match C++ 'hysteresis_rod_properties::from_toml'
-                "volume_m3": round(random.uniform(5.0e-8, 5.0e-7), 10),
+                "volume": round(random.uniform(5.0e-8, 5.0e-7), 10),
                 "orientation": orientation
             })
 
