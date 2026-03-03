@@ -1,11 +1,9 @@
 #include "spacecraft_shape.hpp"
 
 #include "aos/core/constants.hpp"
+#include "aos/core/types.hpp"
 
-// clang-format off
 #include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
 
 #include <cstddef>
 #include <iostream>
@@ -14,7 +12,7 @@ namespace aos {
 
 // NOLINTBEGIN(readability-magic-numbers)
 
-void spacecraft_uniform::from_toml(const toml::table& table) {
+void spacecraft_uniform::from_toml(const toml_table& table) {
     if (const auto* vec = table["dimensions"].as_array()) {
         dimensions_m <<                                      //
             vec->get(0)->value_or(default_spacecraft_size),  //
@@ -36,7 +34,7 @@ void spacecraft_uniform::debug_print() const {
               << '\n';
 }
 
-void spacecraft_custom::from_toml(const toml::table& table) {
+void spacecraft_custom::from_toml(const toml_table& table) {
     if (const auto* vec = table["inertia"].as_array()) {
         inertia <<                                           //
             vec->get(0)->value_or(default_spacecraft_size),  //

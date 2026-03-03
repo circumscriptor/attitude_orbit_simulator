@@ -13,7 +13,7 @@ struct hysteresis_parameters {
     double c;      // [-] Reversibility coefficient (0..1)
     double alpha;  // [-] Inter-domain coupling coefficient
 
-    void from_toml(const toml::table& table);
+    void from_toml(const toml_table& table);
 
     void debug_print() const;
 
@@ -26,7 +26,7 @@ struct hysteresis_rod_properties {
     // [optional] custom hysteresis for this rod
     std::optional<hysteresis_parameters> hysteresis;
 
-    void from_toml(const toml::table& table);
+    void from_toml(const toml_table& table);
 
     void debug_print() const;
 };

@@ -3,10 +3,7 @@
 #include "aos/core/constants.hpp"
 #include "aos/core/types.hpp"
 
-// clang-format off
 #include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
 
 #include <algorithm>
 #include <cassert>
@@ -16,7 +13,7 @@
 
 namespace aos {
 
-void hysteresis_parameters::from_toml(const toml::table& table) {
+void hysteresis_parameters::from_toml(const toml_table& table) {
     ms    = table["ms"].value_or(0.0);
     a     = table["a"].value_or(0.0);
     k     = table["k"].value_or(0.0);
@@ -34,7 +31,7 @@ void hysteresis_parameters::debug_print() const {
               << '\n';
 }
 
-void hysteresis_rod_properties::from_toml(const toml::table& table) {
+void hysteresis_rod_properties::from_toml(const toml_table& table) {
     volume_m3 = table["volume_m3"].value_or(0.0);
 
     if (const auto* vec = table["orientation"].as_array()) {

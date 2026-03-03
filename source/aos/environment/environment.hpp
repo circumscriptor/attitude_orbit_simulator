@@ -33,7 +33,7 @@ struct environment_properties {
     int         magnetic_model_degree;
     int         magnetic_model_order;
 
-    void from_toml(const toml::table& table);
+    void from_toml(const toml_table& table);
     void debug_print() const;
 };
 

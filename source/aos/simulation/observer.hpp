@@ -17,7 +17,7 @@ struct observer_properties {
     bool exclude_magnitudes{};            // magnitude (vector length) entries
     int  precission{default_precission};  // output number decimal precision
 
-    void from_toml(const toml::table& table);
+    void from_toml(const toml_table& table);
 };
 
 class observer {

@@ -3,11 +3,7 @@
 #include "aos/core/types.hpp"
 
 #include <GeographicLib/Constants.hpp>
-
-// clang-format off
 #include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
 
 #include <cmath>
 #include <cstdlib>
@@ -16,13 +12,13 @@
 
 namespace aos {
 
-void keplerian_elements::from_toml(const toml::table& table) {
-    semi_major_axis_m    = table["semi_major_axis_m"].value_or(0.0);
+void keplerian_elements::from_toml(const toml_table& table) {
+    semi_major_axis_m    = table["semi_major_axis"].value_or(0.0);
     eccentricity         = table["eccentricity"].value_or(0.0);
-    inclination_rad      = table["inclination_rad"].value_or(0.0);
-    raan_rad             = table["raan_rad"].value_or(0.0);
-    arg_of_periapsis_rad = table["arg_of_periapsis_rad"].value_or(0.0);
-    mean_anomaly_rad     = table["mean_anomaly_rad"].value_or(0.0);
+    inclination_rad      = table["inclination"].value_or(0.0);
+    raan_rad             = table["raan"].value_or(0.0);
+    arg_of_periapsis_rad = table["arg_of_periapsis"].value_or(0.0);
+    mean_anomaly_rad     = table["mean_anomaly"].value_or(0.0);
 }
 
 void keplerian_elements::debug_print() const {

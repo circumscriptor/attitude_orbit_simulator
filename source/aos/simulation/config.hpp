@@ -23,7 +23,7 @@ struct simulation_properties {
     int    stepper_function{};
     double checkpoint_interval{};
 
-    void from_toml(const toml::table& table);
+    void from_toml(const toml_table& table);
     void debug_print() const;
 };
 

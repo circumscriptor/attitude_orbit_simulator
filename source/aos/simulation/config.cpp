@@ -1,11 +1,9 @@
 #include "config.hpp"
 
 #include "aos/core/constants.hpp"
+#include "aos/core/types.hpp"
 
-// clang-format off
 #include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
 
 #include <iostream>
 
@@ -16,7 +14,7 @@ namespace aos {
 //  {"N52", 1.45},
 //  {"N35SH", 1.19}};
 
-void simulation_properties::from_toml(const toml::table& table) {
+void simulation_properties::from_toml(const toml_table& table) {
     // NOLINTBEGIN(readability-magic-numbers)
 
     if (const auto* sat = table["satellite"].as_table()) {

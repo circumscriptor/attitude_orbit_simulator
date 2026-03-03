@@ -8,10 +8,7 @@
 #include "aos/core/constants.hpp"
 #include "aos/core/types.hpp"
 
-// clang-format off
 #include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
 
 #include <cassert>
 #include <cstddef>
@@ -21,7 +18,7 @@
 
 namespace aos {
 
-void spacecraft_properties::from_toml(const toml::table& table) {
+void spacecraft_properties::from_toml(const toml_table& table) {
     mass_kg = table["mass"].value_or(default_spacecraft_mass);
 
     if (const auto* uniform = table["uniform"].as_table()) {

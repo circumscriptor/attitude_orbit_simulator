@@ -1,11 +1,9 @@
 #include "environment.hpp"
 
+#include "aos/core/types.hpp"
 #include "aos/environment/details/environment_impl.hpp"
 
-// clang-format off
 #include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
 
 #include <iostream>
 #include <memory>
@@ -13,7 +11,7 @@
 
 namespace aos {
 
-void environment_properties::from_toml(const toml::table& table) {
+void environment_properties::from_toml(const toml_table& table) {
     // NOLINTBEGIN(readability-magic-numbers)
 
     start_year_decimal    = table["start_year_decimal"].value_or(2026.0);

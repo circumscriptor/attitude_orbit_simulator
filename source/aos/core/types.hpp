@@ -18,4 +18,6 @@ using vecX   = Eigen::VectorX<double>;
 using aaxis  = Eigen::AngleAxisd;
 // NOLINTEND
 
+using toml_table = toml::table;
+
 }  // namespace aos

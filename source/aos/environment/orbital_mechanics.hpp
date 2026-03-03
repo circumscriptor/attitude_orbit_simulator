@@ -14,7 +14,7 @@ struct keplerian_elements {
     double arg_of_periapsis_rad{};  // omega (Argument of Periapsis)
     double mean_anomaly_rad{};      // M (Initial placement)
 
-    void from_toml(const toml::table& table);
+    void from_toml(const toml_table& table);
     void debug_print() const;
 };
 

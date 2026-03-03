@@ -3,10 +3,7 @@
 #include "aos/core/constants.hpp"
 #include "aos/core/types.hpp"
 
-// clang-format off
 #include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
 
 #include <iostream>
 #include <numbers>
@@ -18,7 +15,7 @@
 namespace aos {
 
 // NOLINTBEGIN(readability-magic-numbers)
-void permanent_magnet_cylindrical::from_toml(const toml::table& table) {
+void permanent_magnet_cylindrical::from_toml(const toml_table& table) {
     length_m = table["length"].value_or(0.05);
     radius_m = table["radius"].value_or(0.005);
 }
@@ -30,7 +27,7 @@ void permanent_magnet_cylindrical::debug_print() const {
               << '\n';
 }
 
-void permanent_magnet_rectangular::from_toml(const toml::table& table) {
+void permanent_magnet_rectangular::from_toml(const toml_table& table) {
     width_m  = table["width_m"].value_or(0.02);
     height_m = table["height_m"].value_or(0.02);
     length_m = table["length_m"].value_or(0.02);
@@ -44,7 +41,7 @@ void permanent_magnet_rectangular::debug_print() const {
               << '\n';
 }
 
-void permanent_magnet_properties::from_toml(const toml::table& table) {
+void permanent_magnet_properties::from_toml(const toml_table& table) {
     remanence_t           = table["remanence"].value_or(1.21);
     relative_permeability = table["relative_permeability"].value_or(1.0);
 

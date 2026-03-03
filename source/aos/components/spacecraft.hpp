@@ -21,7 +21,7 @@ struct spacecraft_properties {
     permanent_magnet_properties magnet;
     hysteresis_rods_properties  rods;
 
-    void from_toml(const toml::table& table);
+    void from_toml(const toml_table& table);
     void debug_print() const;
 };
 

@@ -36,7 +36,7 @@ struct spacecraft_face {
     double specular_reflection_coefficient{};           //!< [-] Specular reflection coefficient (0..1)
     double diffuse_reflection_coefficient{};            //!< [-] Diffuse reflection coefficient (0..1)
 
-    void from_toml(const toml::table& table);
+    void from_toml(const toml_table& table);
 
     void debug_print() const;
 

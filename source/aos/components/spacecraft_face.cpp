@@ -4,10 +4,7 @@
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
 
-// clang-format off
 #include <toml++/toml.hpp>
-#include <toml++/impl/table.hpp>
-// clang-format on
 
 #include <cmath>
 #include <iostream>
@@ -15,7 +12,7 @@
 
 namespace aos {
 
-void spacecraft_face::from_toml(const toml::table& table) {
+void spacecraft_face::from_toml(const toml_table& table) {
     if (const auto* vec = table["center_of_pressure_m"].as_array()) {
         center_of_pressure_m <<          //
             vec->get(0)->value_or(0.0),  //

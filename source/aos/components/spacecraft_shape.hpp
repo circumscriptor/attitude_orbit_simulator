@@ -13,7 +13,7 @@ struct spacecraft_uniform {
     double specular_reflection_coefficient{};
     double diffuse_reflection_coefficient{};
 
-    void from_toml(const toml::table& table);
+    void from_toml(const toml_table& table);
     void debug_print() const;
 };
 
@@ -21,7 +21,7 @@ struct spacecraft_custom {
     mat3x3                inertia;
     spacecraft_face_array faces;
 
-    void from_toml(const toml::table& table);
+    void from_toml(const toml_table& table);
     void debug_print() const;
 };
 
