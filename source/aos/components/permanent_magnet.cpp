@@ -28,9 +28,9 @@ void permanent_magnet_cylindrical::debug_print() const {
 }
 
 void permanent_magnet_rectangular::from_toml(const toml_table& table) {
-    width_m  = table["width_m"].value_or(0.02);
-    height_m = table["height_m"].value_or(0.02);
-    length_m = table["length_m"].value_or(0.02);
+    width_m  = table["width"].value_or(0.02);
+    height_m = table["height"].value_or(0.02);
+    length_m = table["length"].value_or(0.02);
 }
 
 void permanent_magnet_rectangular::debug_print() const {

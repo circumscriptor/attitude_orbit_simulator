@@ -2,6 +2,7 @@
 .cache/
 build/
 __pycache__/
+analysis/
 
 # Default output (testing)
 output.csv

@@ -32,7 +32,7 @@ void hysteresis_parameters::debug_print() const {
 }
 
 void hysteresis_rod_properties::from_toml(const toml_table& table) {
-    volume_m3 = table["volume_m3"].value_or(0.0);
+    volume_m3 = table["volume"].value_or(0.0);
 
     if (const auto* vec = table["orientation"].as_array()) {
         orientation <<                   //

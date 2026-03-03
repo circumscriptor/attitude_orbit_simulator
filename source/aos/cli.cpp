@@ -16,8 +16,9 @@
 namespace aos {
 
 auto parse_cli(int argc, char** argv, simulation_properties& properties, std::string& output_path) -> bool {
-    std::string config_path = "config.toml";
-    output_path             = "output.csv";
+    std::string config_path   = "config.toml";
+    bool        print_details = false;
+    output_path               = "output.csv";
 
     auto args = std::span(argv, argc)                                                     //
                 | std::views::transform([](char* arg) { return std::string_view(arg); })  //
@@ -34,7 +35,8 @@ auto parse_cli(int argc, char** argv, simulation_properties& properties, std::st
             std::println(
                 "Usage: simulator [config.toml] [options]\n"
                 "Options:\n"
-                "  -o, --output <file>      Output file (default: output.csv)");
+                "  -o, --output <file>      Output file (default: output.csv)"
+                "  -d, --details            Print simulation details");
             return false;
         }
 
@@ -43,6 +45,8 @@ auto parse_cli(int argc, char** argv, simulation_properties& properties, std::st
                 output_path = args[i + 1];
                 skip_count  = 1;
             }
+        } else if (arg == "-d" || arg == "--details") {
+            print_details = true;
         } else if (not arg.starts_with('-')) {
             config_path = arg;
         } else {
@@ -59,7 +63,9 @@ auto parse_cli(int argc, char** argv, simulation_properties& properties, std::st
     try {
         auto table = toml::parse_file(config_path);
         properties.from_toml(table);
-        properties.debug_print();
+        if (print_details) {
+            properties.debug_print();
+        }
         return true;
     } catch (const toml::parse_error& err) {
         std::println(stderr, "TOML Error: {}", err.description());

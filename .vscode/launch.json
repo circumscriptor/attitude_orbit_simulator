@@ -8,10 +8,11 @@
             "type": "lldb",
             "request": "launch",
             "name": "Launch",
-            "program": "${workspaceFolder}/build/attitude_orbit_simulator",
+            "program": "${workspaceFolder}/build/pmaos_run",
             "args": [
-                "--output=${workspaceFolder}/output.csv",
-                "${workspaceFolder}/sample.toml"
+                "--output",
+                "${workspaceFolder}/output.csv",
+                "${workspaceFolder}/analysis/0001.toml"
             ],
             "cwd": "${workspaceFolder}"
         }

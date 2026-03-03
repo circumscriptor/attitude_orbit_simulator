@@ -22,11 +22,11 @@ orientation = [0.0, 0.0, 1.0]
 cylindrical = { length = 0.015, radius = 0.002 }
 
 [[satellite.rods]]
-volume_m3 = 2.0e-7
+volume = 2.0e-7
 orientation = [1.0, 0.0, 0.0]
 
 [[satellite.rods]]
-volume_m3 = 2.0e-7
+volume = 2.0e-7
 orientation = [0.0, 1.0, 0.0]
 
 [orbit]

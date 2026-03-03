@@ -16,11 +16,15 @@ class simulation {
 public:
 
     simulation(const std::string& output_filename, const simulation_properties& properties);
+    simulation(const std::string&                  output_filename,
+               const simulation_properties&        properties,
+               const std::shared_ptr<spacecraft>&  satellite,
+               const std::shared_ptr<environment>& environment);
     simulation(const simulation_properties& properties,
-               std::shared_ptr<spacecraft>  sat,
-               std::shared_ptr<environment> env,
-               std::shared_ptr<dynamics>    dyn,
-               std::shared_ptr<observer>    obs);
+               std::shared_ptr<spacecraft>  satellite,
+               std::shared_ptr<environment> environment,
+               std::shared_ptr<dynamics>    dynamics,
+               std::shared_ptr<observer>    observer);
 
     void run();
 

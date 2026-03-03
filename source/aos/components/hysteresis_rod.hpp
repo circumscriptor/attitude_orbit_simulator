@@ -14,7 +14,6 @@ struct hysteresis_parameters {
     double alpha;  // [-] Inter-domain coupling coefficient
 
     void from_toml(const toml_table& table);
-
     void debug_print() const;
 
     static auto hymu80() -> hysteresis_parameters;
@@ -27,7 +26,6 @@ struct hysteresis_rod_properties {
     std::optional<hysteresis_parameters> hysteresis;
 
     void from_toml(const toml_table& table);
-
     void debug_print() const;
 };
 

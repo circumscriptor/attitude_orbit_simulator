@@ -1,6 +1,7 @@
 #include "simulation.hpp"
 
 #include "aos/components/spacecraft.hpp"
+#include "aos/core/constants.hpp"
 #include "aos/core/state.hpp"
 #include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
@@ -21,27 +22,34 @@
 #include <cstddef>
 #include <memory>
 #include <print>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
 namespace aos {
 
 simulation::simulation(const std::string& output_filename, const simulation_properties& properties)
+    : simulation(output_filename, properties, spacecraft::create(properties.satellite), environment::create(properties.environment)) {}
+
+simulation::simulation(const std::string&                  output_filename,
+                       const simulation_properties&        properties,
+                       const std::shared_ptr<spacecraft>&  satellite,
+                       const std::shared_ptr<environment>& environment)
     : simulation(properties,
-                 spacecraft::create(properties.satellite),
-                 environment::create(properties.environment),
-                 dynamics::create(_satellite, _environment),
+                 satellite,
+                 environment,
+                 dynamics::create(satellite, environment),
                  observer::create(output_filename, properties.satellite.rods.size(), properties.observer)) {}
 
 simulation::simulation(const simulation_properties& properties,
-                       std::shared_ptr<spacecraft>  sat,
-                       std::shared_ptr<environment> env,
-                       std::shared_ptr<dynamics>    dyn,
-                       std::shared_ptr<observer>    obs)
-    : _satellite(std::move(sat)),
-      _environment(std::move(env)),
-      _dynamics(std::move(dyn)),
-      _observer(std::move(obs)),
+                       std::shared_ptr<spacecraft>  satellite,
+                       std::shared_ptr<environment> environment,
+                       std::shared_ptr<dynamics>    dynamics,
+                       std::shared_ptr<observer>    observer)
+    : _satellite(std::move(satellite)),
+      _environment(std::move(environment)),
+      _dynamics(std::move(dynamics)),
+      _observer(std::move(observer)),
       _t_start(properties.t_start),
       _t_end(properties.t_end),
       _t_now(_t_start),
@@ -76,7 +84,17 @@ void simulation::run() {
         _dynamics->step(current_state, state_derivative, t_sec);
     };
 
-    auto observe = [this](const system_state& state, double time) { _observer->write(state, time) << '\n'; };
+    auto observe = [this](const system_state& state, double time) {
+        _observer->write(state, time) << '\n';
+
+        if (state.altitude_m() <= reentry_altitude_m) {
+            throw std::runtime_error("Deorbited");
+        }
+
+        if (state.has_nan()) {
+            throw std::runtime_error("Numerical Instability");
+        }
+    };
 
     auto run_integration_loop = [&](auto& stepper) {
         using boost::numeric::odeint::integrate_adaptive;
@@ -84,7 +102,12 @@ void simulation::run() {
         if (_checkpoint_interval < 1.0) {
             std::println("Starting simulation");
             _dynamics->set_time_offset(0.0);
-            integrate_adaptive(stepper, system, _current_state, _t_start, _t_end, _dt_initial, observe);
+
+            try {
+                integrate_adaptive(stepper, system, _current_state, _t_start, _t_end, _dt_initial, observe);
+            } catch (const std::runtime_error& e) {
+                std::println("\n[Terminated] Simulation stopped early: {}", e.what());
+            }
         } else {
             std::println("Starting simulation with checkpoints");
 
@@ -101,6 +124,17 @@ void simulation::run() {
                 _observer->write(_current_state, _t_now) << '\n';
                 // observer.flush();  // comment when not needed
                 std::print("Checkpoint: {} s / {} s\r", _t_now, _t_end);
+
+                if (const double altitude_m = _current_state.altitude_m(); altitude_m <= reentry_altitude_m) {
+                    const double altitude_km = altitude_m * meter_to_kilometer;
+                    std::println("\n[Terminated] Satellite deorbited at t = {:.1f} s. Altitude: {:.2f} km", _t_now + section_period, altitude_km);
+                    break;
+                }
+
+                if (_current_state.has_nan()) {
+                    std::println("\n[Terminated] Numerical instability (NaN detected) at t = {:.1f} s.", _t_now + section_period);
+                    break;
+                }
             }
         }
     };

@@ -1,5 +1,6 @@
 #include "state.hpp"
 
+#include "aos/core/constants.hpp"
 #include "aos/core/types.hpp"
 
 namespace aos {
@@ -47,6 +48,14 @@ auto system_state::operator/=(const system_state& other) -> system_state& {
     angular_velocity_m_s.array() /= other.angular_velocity_m_s.array();
     rod_magnetizations.array() /= other.rod_magnetizations.array();
     return *this;
+}
+
+auto system_state::altitude_m() const -> double {
+    return position_m.norm() - earth_radius_m;
+}
+
+auto system_state::has_nan() const -> bool {
+    return position_m.hasNaN() || velocity_m_s.hasNaN() || attitude.coeffs().hasNaN() || angular_velocity_m_s.hasNaN() || rod_magnetizations.hasNaN();
 }
 
 auto system_state::compute_attitude_derivative(const quat& q_att, const vec3& omega) -> vec4 {

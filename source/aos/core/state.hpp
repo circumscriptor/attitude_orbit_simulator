@@ -28,6 +28,9 @@ struct system_state {
     auto operator*=(double scalar) -> system_state&;
     auto operator/=(const system_state& other) -> system_state&;
 
+    [[nodiscard]] auto altitude_m() const -> double;
+    [[nodiscard]] auto has_nan() const -> bool;
+
     // quaternion derivative: 0.5 * q * omega
     [[nodiscard]] static auto compute_attitude_derivative(const quat& q_att, const vec3& omega) -> vec4;
 };
