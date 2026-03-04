@@ -28,23 +28,36 @@ struct spacecraft_properties {
 class spacecraft {
 public:
 
-    spacecraft()                                     = default;
     spacecraft(const spacecraft&)                    = delete;
     spacecraft(spacecraft&&)                         = delete;
     auto operator=(const spacecraft&) -> spacecraft& = delete;
     auto operator=(spacecraft&&) -> spacecraft&      = delete;
 
-    virtual ~spacecraft();
+    explicit spacecraft(const spacecraft_properties& properties);
+    ~spacecraft();
 
-    [[nodiscard]] virtual auto mass_kg() const -> double                   = 0;
-    [[nodiscard]] virtual auto inertia() const -> const inertia_tensor&    = 0;
-    [[nodiscard]] virtual auto faces() const -> const spacecraft_faces&    = 0;
-    [[nodiscard]] virtual auto magnet() const -> const permanent_magnet&   = 0;
-    [[nodiscard]] virtual auto hystresis() const -> const hysteresis_rods& = 0;
+    [[nodiscard]] auto mass_kg() const -> double;
+    [[nodiscard]] auto inertia() const -> const inertia_tensor&;
+    [[nodiscard]] auto faces() const -> const spacecraft_faces&;
+    [[nodiscard]] auto magnet() const -> const permanent_magnet&;
+    [[nodiscard]] auto hystresis() const -> const hysteresis_rods&;
 
-    virtual void derivative(const environment_effects& env, const system_state& current_state, system_state& state_derivative) const = 0;
+    void derivative(const environment_effects& env, const system_state& current_state, system_state& state_derivative) const;
 
     static auto create(const spacecraft_properties& properties) -> std::shared_ptr<spacecraft>;
+
+protected:
+
+    // sums permanent magnet, gyroscopic, and gravity gradient torques
+    [[nodiscard]] auto compute_torques(const vec3& omega, const vec3& b_body, const vec3& r_body, double earth_mu) const -> vec3;
+
+private:
+
+    double           _mass_kg;  // [kg] Mass
+    inertia_tensor   _inertia;
+    spacecraft_faces _faces;
+    permanent_magnet _magnet;
+    hysteresis_rods  _hystresis;
 };
 
 }  // namespace aos

@@ -1,6 +1,7 @@
 import os
 import sys
 import toml
+import copy
 import argparse
 import subprocess
 import numpy as np
@@ -17,91 +18,49 @@ import matplotlib.pyplot as plt
 # WGS84 Constants
 EARTH_RADIUS_M = 6378137.0
 
-def get_baseline_config(t_end, checkpoint_interval):
-    """Returns a perfectly stable, baseline 1U CubeSat configuration."""
-    return {
-        "t_start": 0,
-        "t_end": t_end,
-        "dt_initial": 0.1,
-        "checkpoint_interval": checkpoint_interval,
-        "angular_velocity": [0.5, 0.5, 0.5],
-        "stepper_function": 1,
-        "satellite": {
-            "mass": 1.33,
-            "uniform": {
-                "dimensions":[0.1, 0.1, 0.1],
-                "drag_coefficient": 2.2,
-                "specular_reflection_coefficient": 0.1,
-                "diffuse_reflection_coefficient": 0.2
-            },
-            "hysteresis": {
-                "ms": 750000.0,
-                "a": 12.0,
-                "k": 1.5,
-                "c": 0.02,
-                "alpha": 1.0e-5
-            },
-            "magnet": {
-                "remanence": 1.2,
-                "relative_permeability": 1.05,
-                "orientation": [0.0, 0.0, 1.0],
-                "cylindrical": {
-                    "length": 0.02,
-                    "radius": 0.002
-                }
-            },
-            "rods":[
-                {"volume": 2.0e-7, "orientation":[1.0, 0.0, 0.0]},
-                {"volume": 2.0e-7, "orientation":[-1.0, 0.0, 0.0]},
-                {"volume": 2.0e-7, "orientation": [0.0, 1.0, 0.0]},
-                {"volume": 2.0e-7, "orientation":[0.0, -1.0, 0.0]}
-            ]
-        },
-        "orbit": {
-            "semi_major_axis": 6818137.0,
-            "eccentricity": 0.001,
-            "inclination": 1.396263,
-            "raan": 0.0,
-            "arg_of_periapsis": 0.0,
-            "mean_anomaly": 0.0
-        },
-        "environment": {
-            "start_year_decimal": 2026.5,
-            "gravity_model_degree": 12,
-            "gravity_model_order": 12
-        },
-        "observer": {
-            "exclude_elements": False,
-            "exclude_magnitudes": False
-        }
-    }
-
 def apply_variable_sweep(config, variable, value):
-    """Mutates the baseline config with the swept variable."""
+    """Mutates the loaded config with the swept variable."""
+    sat = config.get("satellite", {})
+
     if variable == "mass":
-        config["satellite"]["mass"] = float(value)
+        sat["mass"] = float(value)
     elif variable == "rod_volume":
-        for rod in config["satellite"]["rods"]:
+        # Sweeps the volume of all rods currently defined in the TOML
+        for rod in sat.get("rods",[]):
             rod["volume"] = float(value)
     elif variable == "magnet_remanence":
-        config["satellite"]["magnet"]["remanence"] = float(value)
-    elif variable == "hysteresis_k":
-        config["satellite"]["hysteresis"]["k"] = float(value)
-    elif variable == "hysteresis_a":
-        config["satellite"]["hysteresis"]["a"] = float(value)
-    elif variable == "hysteresis_ms":
-        config["satellite"]["hysteresis"]["ms"] = float(value)
+        if "magnet" not in sat:
+            sat["magnet"] = {}
+        sat["magnet"]["remanence"] = float(value)
+    elif variable.startswith("hysteresis_"):
+        if "hysteresis" not in sat:
+            sat["hysteresis"] = {}
+        key = variable.split("_")[1] # e.g., 'k', 'a', 'ms'
+        sat["hysteresis"][key] = float(value)
     else:
         raise ValueError(f"Unknown sweep variable: {variable}")
 
 def generate_sweep_files(args, t_end):
-    """Generates the TOML files for the parameter sweep."""
+    """Generates the TOML files for the parameter sweep using the input TOML as a base."""
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
+
+    # 1. Load the base TOML
+    try:
+        with open(args.input_toml, "r") as f:
+            base_config = toml.load(f)
+    except Exception as e:
+        print(f"Error reading base TOML file '{args.input_toml}': {e}")
+        sys.exit(1)
+
+    # Initialize the sweep history chain if it doesn't exist
+    if "_sweep_history" not in base_config:
+        base_config["_sweep_history"] =[]
 
     values = np.linspace(args.min, args.max, args.steps)
     files_to_run =[]
 
+    print(f"Loaded base config: '{args.input_toml}'")
     print(f"Sweeping '{args.variable}' from {args.min} to {args.max} in {args.steps} steps.")
 
     for i, val in enumerate(values):
@@ -114,13 +73,28 @@ def generate_sweep_files(args, t_end):
             print(f"Skipping {filename}: Corresponding CSV already exists.")
             continue
 
-        config = get_baseline_config(t_end, args.checkpoint)
+        # Create a fresh copy of the base config for this step
+        config = copy.deepcopy(base_config)
+
+        # Override duration and checkpoint from command line args
+        config["t_end"] = t_end
+        config["checkpoint_interval"] = args.checkpoint
+
+        # Apply the current sweep step
         apply_variable_sweep(config, args.variable, val)
 
-        # We inject the current sweep value into a custom metadata block
-        # so the analyzer can easily read it back
+        # Append to the history chain
+        chain_entry = {
+            "variable": args.variable,
+            "value": float(val),
+            "timestamp": datetime.now(pytz.utc).isoformat()
+        }
+        config["_sweep_history"].append(chain_entry)
+
+        # Inject the current sweep value into a metadata block so the analyzer can easily plot it
         config["_sweep_metadata"] = {"variable": args.variable, "value": float(val)}
 
+        # Save to disk
         with open(filepath, "w") as f:
             toml.dump(config, f)
 
@@ -147,7 +121,7 @@ def run_simulation(toml_path):
 # --- ANALYSIS LOGIC ---
 
 def calculate_magnitude(df, prefix):
-    cols = [f"{prefix}_x", f"{prefix}_y", f"{prefix}_z"]
+    cols =[f"{prefix}_x", f"{prefix}_y", f"{prefix}_z"]
     if prefix in df.columns:
         return df[prefix]
     if all(c in df.columns for c in cols):
@@ -236,7 +210,7 @@ def analyze_and_plot(args):
     if not unstable.empty:
         # Plot unstable points at a high arbitrary Y value just to show they failed
         max_y = stable["Settling Time (Days)"].max() if not stable.empty else 14
-        plt.scatter(unstable["Sweep Value"],[max_y * 1.1] * len(unstable), color='red', marker='x', s=100, label='Failed to Stabilize')
+        plt.scatter(unstable["Sweep Value"], [max_y * 1.1] * len(unstable), color='red', marker='x', s=100, label='Failed to Stabilize')
 
     plt.title(f"Sensitivity Analysis: Settling Time vs {args.variable}\nGenerated: {current_time}")
     plt.xlabel(f"{args.variable} Value")
@@ -319,6 +293,9 @@ def analyze_and_plot(args):
 def main():
     parser = argparse.ArgumentParser(description="AOS Parameter Sweep Sensitivity Analysis")
 
+    # Positional Argument (The input config file)
+    parser.add_argument("input_toml", type=str, help="Path to the base TOML configuration file")
+
     # Sweep Configuration
     parser.add_argument("-v", "--variable", required=True,
                         choices=["mass", "rod_volume", "magnet_remanence", "hysteresis_k", "hysteresis_a", "hysteresis_ms"],
@@ -339,7 +316,7 @@ def main():
     # Parse duration to seconds
     t_end = 2 * 365 * 24 * 3600 if args.duration == "2y" else 2 * 7 * 24 * 3600
 
-    # 1. Generate Configuration Files
+    # 1. Generate Configuration Files from the provided TOML
     toml_files = generate_sweep_files(args, t_end)
 
     # 2. Run Simulations

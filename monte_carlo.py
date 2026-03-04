@@ -1,58 +1,84 @@
 import os
+import sys
 import toml
-import math
 import copy
 import random
 import argparse
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
+import pytz
 
-def get_base_config(t_end, checkpoint_interval):
-    """Returns the base simulation dictionary structure."""
-    return {
-        "t_start": 0,
-        "t_end": t_end,
-        "dt_initial": 0.1,
-        "checkpoint_interval": checkpoint_interval,
-        "angular_velocity":[0.5, 0.5, 0.5],
-        "stepper_function": 1,
-        "satellite": {
-            "mass": 1.3,
-            "hysteresis": {},  # Populated dynamically
-            "uniform": {
-                "dimensions": [0.1, 0.1, 0.1],
-                "drag_coefficient": 2.2,
-                "specular_reflection_coefficient": 0.1,
-                "diffuse_reflection_coefficient": 0.2
-            },
-            "magnet": {}, # Populated dynamically
-            "rods":[]    # Populated dynamically
-        },
-        "orbit": {
-            "semi_major_axis": 6818137.0,
-            "eccentricity": 0.001,
-            "inclination": 1.396263,
-            "raan": 0.0,
-            "arg_of_periapsis": 0.0,
-            "mean_anomaly": 0.0
-        },
-        "environment": {
-            "start_year_decimal": 2026.5,
-            "gravity_model_degree": 12,
-            "gravity_model_order": 12
-        },
-        "observer": {
-            "exclude_elements": False,
-            "exclude_magnitudes": False
-        }
-    }
+def randomize_value(base_value, variance_ratio):
+    """Applies a uniform random variance to a base value."""
+    min_val = base_value * (1.0 - variance_ratio)
+    max_val = base_value * (1.0 + variance_ratio)
+    return random.uniform(min_val, max_val)
+
+def apply_monte_carlo_variance(config, variance):
+    """Mutates the loaded config with randomized values for essential variables."""
+    sat = config.get("satellite", {})
+    mc_log = {}
+
+    # 1. Randomize Mass
+    if "mass" in sat:
+        new_mass = round(randomize_value(sat["mass"], variance), 4)
+        sat["mass"] = new_mass
+        mc_log["mass"] = new_mass
+
+    # 2. Randomize Magnet Properties (Remanence and Dimensions)
+    if "magnet" in sat:
+        mag = sat["magnet"]
+        if "remanence" in mag:
+            new_rem = round(randomize_value(mag["remanence"], variance), 4)
+            mag["remanence"] = new_rem
+            mc_log["magnet_remanence"] = new_rem
+
+        if "cylindrical" in mag:
+            cyl = mag["cylindrical"]
+            if "length" in cyl:
+                cyl["length"] = round(randomize_value(cyl["length"], variance), 5)
+            if "radius" in cyl:
+                cyl["radius"] = round(randomize_value(cyl["radius"], variance), 6)
+        elif "rectangular" in mag:
+            rect = mag["rectangular"]
+            if "length" in rect:
+                rect["length"] = round(randomize_value(rect["length"], variance), 5)
+            if "width" in rect:
+                rect["width"] = round(randomize_value(rect["width"], variance), 5)
+            if "height" in rect:
+                rect["height"] = round(randomize_value(rect["height"], variance), 5)
+
+    # 3. Randomize Hysteresis Rod Volumes
+    if "rods" in sat:
+        mc_log["rods_volume"] = []
+        for rod in sat["rods"]:
+            # Handle both 'volume' and 'volume_m3' depending on which is used in base TOML
+            vol_key = "volume" if "volume" in rod else "volume_m3" if "volume_m3" in rod else None
+            if vol_key:
+                new_vol = round(randomize_value(rod[vol_key], variance), 11)
+                rod[vol_key] = new_vol
+                mc_log["rods_volume"].append(new_vol)
+
+    return mc_log
 
 def generate_mc_variants(args, t_end):
-    """Generates randomized TOML files based on Monte Carlo distributions."""
+    """Generates randomized TOML files based on the input TOML."""
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
+    # Load the base TOML
+    try:
+        with open(args.input_toml, "r") as f:
+            base_config = toml.load(f)
+    except Exception as e:
+        print(f"Error reading base TOML file '{args.input_toml}': {e}")
+        sys.exit(1)
+
     files_to_run =[]
+
+    print(f"Loaded base config: '{args.input_toml}'")
+    print(f"Applying +/- {args.variance * 100:.1f}% variance to essential parameters.")
 
     for i in range(1, args.runs + 1):
         filename = f"{i:04d}.toml"
@@ -64,60 +90,28 @@ def generate_mc_variants(args, t_end):
             print(f"Skipping {filename}: Corresponding CSV '{os.path.basename(csv_path)}' already exists.")
             continue
 
-        config = get_base_config(t_end, args.checkpoint)
+        # Create a fresh copy of the base config for this MC run
+        config = copy.deepcopy(base_config)
 
-        # TODO: Make one side a bit longer
-        config["satellite"]["uniform"]["dimensions"] = [0.1, 0.1, 0.1]
+        # Override simulation duration and checkpoints
+        config["t_end"] = t_end
+        config["checkpoint_interval"] = args.checkpoint
 
-        # Base mass approx 1.33 kg, ±10% variance
-        base_mass = 1.33
-        config["satellite"]["mass"] = round(random.uniform(base_mass * 0.9, base_mass * 1.1), 3)
+        # Apply random spread
+        mc_log = apply_monte_carlo_variance(config, args.variance)
 
-        # 2. Hysteresis Material Parameters (Realistic Soft Magnetic Material e.g., HyMu-80)
-        config["satellite"]["hysteresis"] = {
-            "ms": round(random.uniform(600000, 800000), 1),
-            "a": round(random.uniform(10.0, 30.0), 2),
-            "k": round(random.uniform(1.0, 4.0), 2),
-            "c": round(random.uniform(0.01, 0.1), 3),
-            "alpha": round(random.uniform(1.0e-6, 5.0e-5), 7)
+        # Append to or create history chain
+        if "_mc_history" not in config:
+            config["_mc_history"] =[]
+
+        chain_entry = {
+            "type": "monte_carlo",
+            "base_file": args.input_toml,
+            "variance_applied": args.variance,
+            "generated_values": mc_log,
+            "timestamp": datetime.now(pytz.utc).isoformat()
         }
-
-        # 3. Permanent Magnet Properties
-        magnet = {
-            "remanence": round(random.uniform(1.0, 1.35), 3),
-            "relative_permeability": round(random.uniform(1.02, 1.20), 3),
-            "orientation": [0.0, 0.0, 1.0]
-        }
-
-        if random.choice(["cylindrical", "rectangular"]) == "cylindrical":
-            magnet["cylindrical"] = {
-                "length": round(random.uniform(0.015, 0.05), 4),
-                "radius": round(random.uniform(0.001, 0.003), 4)
-            }
-        else:
-            magnet["rectangular"] = {
-                "length": round(random.uniform(0.015, 0.05), 4),
-                "width": round(random.uniform(0.002, 0.005), 4),
-                "height": round(random.uniform(0.002, 0.005), 4)
-            }
-        config["satellite"]["magnet"] = magnet
-
-        # 4. Hysteresis Rods (2, 4, or 6)
-        num_rods = random.choice([2, 4, 6])
-        rods =[]
-
-        for r in range(num_rods):
-            if r % 2 == 0:
-                orientation =[1.0, 0.0, 0.0]  # X-axis
-            else:
-                orientation =[0.0, 1.0, 0.0]  # Y-axis
-
-            rods.append({
-                "volume": round(random.uniform(5.0e-8, 5.0e-7), 10),
-                "orientation": orientation
-            })
-
-        config["satellite"]["rods"] = rods
+        config["_mc_history"].append(chain_entry)
 
         # Save configuration to disk
         with open(filepath, "w") as f:
@@ -130,7 +124,7 @@ def generate_mc_variants(args, t_end):
 def run_simulation(toml_path):
     """Executes the simulator for a single TOML file."""
     csv_path = toml_path.replace(".toml", ".csv")
-    cmd =["./build/pmaos_run", "-o", csv_path, toml_path]
+    cmd = ["./build/pmaos_run", "-o", csv_path, toml_path]
 
     try:
         # We capture output so threads don't scramble terminal text
@@ -147,10 +141,19 @@ def run_simulation(toml_path):
 
 def main():
     parser = argparse.ArgumentParser(description="Monte Carlo Generator and Runner for AOS Simulation")
+
+    # Positional Argument (The input config file)
+    parser.add_argument("input_toml", type=str, help="Path to the base TOML configuration file")
+
+    # Monte Carlo Settings
     parser.add_argument("-n", "--runs", type=int, default=40, help="Number of Monte Carlo iterations (default: 40)")
+    # FIXED: Replaced "10%" with "10%%" so argparse doesn't crash formatting the help text
+    parser.add_argument("-v", "--variance", type=float, default=0.1, help="Variance range ratio, e.g., 0.1 means +/- 10%% (default: 0.1)")
+
+    # Execution Settings
     parser.add_argument("-j", "--threads", type=int, default=8, help="Maximum number of parallel jobs (default: 8)")
     parser.add_argument("-o", "--output-dir", type=str, default="analysis", help="Output directory (default: 'analysis')")
-    parser.add_argument("-d", "--duration", type=str, choices=["2w", "2y"], default="2w", help="Simulation duration: '2w' for 2 weeks, '2y' for 2 years (default: 2w)")
+    parser.add_argument("-d", "--duration", type=str, choices=["2w", "2y"], default="2w", help="Simulation duration: '2w' or '2y' (default: 2w)")
     parser.add_argument("-c", "--checkpoint", type=float, default=600.0, help="Checkpoint interval in seconds (default: 600.0)")
 
     args = parser.parse_args()

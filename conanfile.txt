@@ -1,0 +1,12 @@
+[requires]
+eigen/3.4.0
+geographiclib/2.5.2
+tomlplusplus/3.4.0
+boost/1.83.0
+
+[generators]
+CMakeDeps
+CMakeToolchain
+
+[layout]
+cmake_layout

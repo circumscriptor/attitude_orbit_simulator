@@ -11,7 +11,6 @@ struct permanent_magnet_cylindrical {
     double radius_m;
 
     void from_toml(const toml_table& table);
-
     void debug_print() const;
 };
 
@@ -21,7 +20,6 @@ struct permanent_magnet_rectangular {
     double length_m;
 
     void from_toml(const toml_table& table);
-
     void debug_print() const;
 };
 
@@ -34,7 +32,6 @@ struct permanent_magnet_properties {
     permanent_magnet_shape shape;
 
     void from_toml(const toml_table& table);
-
     void debug_print() const;
 };
 

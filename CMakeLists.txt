@@ -6,10 +6,7 @@ project(PassiveMagneticAttitudeOrbitSimulator)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(GeographicLib CONFIG REQUIRED)
 find_package(tomlplusplus CONFIG REQUIRED)
-find_package(Boost CONFIG REQUIRED COMPONENTS
-    program_options
-    filesystem
-)
+find_package(Boost CONFIG REQUIRED)
 
 add_subdirectory(third-party)
 
@@ -54,8 +51,6 @@ target_link_libraries(pmaos_core
 target_sources(pmaos_core PRIVATE
     "source/aos/cli.cpp"
     "source/aos/cli.hpp"
-    "source/aos/components/details/spacecraft_impl.cpp"
-    "source/aos/components/details/spacecraft_impl.hpp"
     "source/aos/components/hysteresis_rod.cpp"
     "source/aos/components/hysteresis_rod.hpp"
     "source/aos/components/hysteresis_rods.cpp"
