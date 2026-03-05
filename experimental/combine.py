@@ -1,10 +1,14 @@
 import pandas as pd
 import numpy as np
+import glob
+from scipy.interpolate import make_interp_spline
+
+# Force matplotlib to not use any Xwindows/Qt backend.
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from matplotlib.ticker import MultipleLocator
-import glob
-from scipy.interpolate import make_interp_spline
 
 # Configuration
 materials = {
@@ -54,65 +58,62 @@ for folder, label in materials.items():
 
 res_df = pd.DataFrame(RESULTS)
 
-# Plotting
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 11))
+# --- FIGURE 1: Final Angular Velocity ---
+plt.figure(figsize=(10, 6))
+ax1 = plt.gca()
 
 for label in materials.values():
     m_data = res_df[res_df['Material'] == label].dropna(subset=['Final_W'])
-
-    x = m_data['Volume'].values
-    y = m_data['Final_W'].values
+    x, y = m_data['Volume'].values, m_data['Final_W'].values
     m_color = color_map[label]
 
-    if len(x) > 3: # Need points for spline
+    if len(x) > 3:
         x_smooth = np.linspace(x.min(), x.max(), 300)
         spl = make_interp_spline(x, y, k=3)
-        y_smooth = spl(x_smooth)
-        ax1.plot(x_smooth, y_smooth, label=label, linewidth=1, color=m_color)
+        plt.plot(x_smooth, spl(x_smooth), label=label, linewidth=1, color=m_color)
     else:
-        ax1.plot(x, y, label=label, linewidth=1, color=m_color)
+        plt.plot(x, y, label=label, linewidth=1, color=m_color)
 
-    # ax2.scatter(m_data['Volume'], m_data['Stab_Days'], label=label, s=40, alpha=0.7)
+plt.axhline(y=THRESHOLD, color='black', linestyle='--', alpha=0.6, label=f'Threshold ({THRESHOLD})')
 
-# Add the threshold line to the top axis (ax1)
-ax1.axhline(y=THRESHOLD, color='black', linestyle='--', alpha=0.6, label=f'Threshold ({THRESHOLD})')
+plt.yscale('log') # Applied as requested
+plt.title("Final Angular Velocity Comparison")
+plt.ylabel(r"$|\omega_{final}|$ (rad/s)")
+plt.xlabel(r"Hysteresis Rod Volume ($m^3$)")
+plt.grid(True, which="both", alpha=0.2)
+plt.legend(loc='upper right', fontsize='small', ncol=2)
 
-# Formatting
-ax1.set_title("Final Angular Velocity")
-ax1.set_ylabel(r"$|\omega_{final}|$ (rad/s)")
-ax1.grid(True, alpha=0.2)
-ax1.legend(loc='upper right', fontsize='small', ncol=2)
+plt.tight_layout()
+plt.savefig("hysteresis_materials_final_angular_velocity_comparison.png", dpi=300)
 
-# 1. Filter for runs that stabilized within 14 days
+# --- FIGURE 2: Success Histogram ---
+plt.figure(figsize=(10, 6))
+ax2 = plt.gca()
+
 STAB_LIMIT = 14
 success_counts = res_df[res_df['Stab_Days'] <= STAB_LIMIT].groupby('Material').size()
-
-# Ensure all materials are present in the series (even if count is 0)
 counts = [success_counts.get(label, 0) for label in materials.values()]
+
 material_labels = list(materials.values())
-
-# 2. Plotting (Replace your ax2 code with this)
 bar_colors = [color_map[label] for label in material_labels]
-bars = ax2.bar(material_labels, counts, color=bar_colors, alpha=0.8, edgecolor='black')
+bars = plt.bar(material_labels, counts, color=bar_colors, alpha=0.8, edgecolor='black')
 
-# 3. Formatting
-ax2.set_title(f"Successful Stabilizations (Within {STAB_LIMIT} Days)")
-ax2.set_ylabel("Number of Runs (Max 20)")
-ax2.set_ylim(0, 22) # Extra room for labels
-ax2.grid(axis='y', linestyle='--', alpha=0.6)
+plt.title(f"Successful Stabilizations (Within {STAB_LIMIT} Days)")
+plt.ylabel("Number of Runs (Out of 20)")
+plt.ylim(0, 22) # Leave space for numbers
 
-ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
+# Formatting Y-axis
+from matplotlib.ticker import MultipleLocator
 ax2.yaxis.set_major_locator(MultipleLocator(4))
 
-# Add numeric labels on top of bars
+# Add numeric labels
 for bar in bars:
     height = bar.get_height()
-    ax2.text(bar.get_x() + bar.get_width()/2., height + 0.5,
-             f'{int(height)}', ha='center', va='bottom', fontweight='bold')
+    plt.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+             f'{int(height)}', ha='center', va='bottom')
 
-# Rotate x-labels if they overlap
+plt.grid(axis='y', linestyle='--', alpha=0.6)
 plt.setp(ax2.get_xticklabels(), rotation=15, ha='right')
 
 plt.tight_layout()
-plt.savefig("hysteresis_materials_comparison.png", dpi=300)
-print("Plot saved as 'hysteresis_materials_comparison.png'")
+plt.savefig("hysteresis_materials_stabilization_success_comparison.png", dpi=300)
