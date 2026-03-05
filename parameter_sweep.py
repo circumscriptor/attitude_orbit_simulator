@@ -280,6 +280,8 @@ def analyze_and_plot(args):
             legend_title_text="Sweep Value"
         )
 
+        fig_html.update_traces(hoverlabel_namelength=-1)
+
         html_path = os.path.join(args.output_dir, f"plot_{args.variable}_tumble_interactive.html")
         fig_html.write_html(html_path)
         print(f"Interactive angular velocity plot saved to: {html_path}")
