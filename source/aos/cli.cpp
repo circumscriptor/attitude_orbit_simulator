@@ -35,7 +35,7 @@ auto parse_cli(int argc, char** argv, simulation_properties& properties, std::st
             std::println(
                 "Usage: simulator [config.toml] [options]\n"
                 "Options:\n"
-                "  -o, --output <file>      Output file (default: output.csv)"
+                "  -o, --output <file>      Output file (default: output.csv)\n"
                 "  -d, --details            Print simulation details");
             return false;
         }

@@ -7,7 +7,7 @@ stepper_function = 1                        # 0 = k54, 1 = dp5, 2 = f78
 
 [satellite]
 mass = 1.3
-hysteresis = { ms = 400000, a = 10.0, k = 1.0, c = 0.015, alpha = 1.0e-5 }
+hysteresis = { ms = 6.167e5, a = 1.23, k = 1.15, c = 0.05, alpha = 4e-6 }
 
 [satellite.uniform]
 dimensions = [0.1, 0.1, 0.1]

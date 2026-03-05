@@ -1,6 +1,10 @@
 import sys
 import os
 import pandas as pd
+
+# Force matplotlib to not use any Xwindows/Qt backend.
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 # Check if CSV file path is provided as command line argument
