@@ -1,0 +1,54 @@
+t_start = 0
+t_end = 604800                              # set by scripts
+dt_initial = 0.01
+checkpoint_interval = 60.0                  # set by scripts
+angular_velocity = [0.9069, 0.9069, 0.9069] # 90 deg/s initial tumble
+stepper_function = 1                        # 0 = k54, 1 = dp5, 2 = f78
+
+[satellite]
+mass = 1.3
+
+# Fe50-Ni50
+[satellite.hysteresis]
+ms = 1273239.54
+alpha = 2e-5
+a = 12.7324
+c = 0.05
+k = 4.0
+
+[satellite.uniform]
+dimensions = [0.1, 0.1, 0.1]
+drag_coefficient = 2.2
+specular_reflection_coefficient = 0.1
+diffuse_reflection_coefficient = 0.2
+
+[satellite.magnet]
+remanence = 1.3                                  # N42 Grade Neodymium (1.28 ~ 1.32 T)
+relative_permeability = 1.05
+orientation = [0.0, 0.0, 1.0]                    # Aligned with longitudinal Z-axis
+cylindrical = { length = 0.016, radius = 0.002 } # ~ 200 mm3
+
+[[satellite.rods]]
+volume = 2.0e-7
+orientation = [1.0, 0.0, 0.0]
+
+[[satellite.rods]]
+volume = 2.0e-7
+orientation = [0.0, 1.0, 0.0]
+
+[orbit]
+semi_major_axis = 6778137.0 # 400 km above surface
+eccentricity = 0.001
+inclination = 1.684243      # 96.5 deg
+raan = 0.0
+arg_of_periapsis = 0.0
+mean_anomaly = 0.0
+
+[environment]
+start_year_decimal = 2027.5
+gravity_model_degree = 12
+gravity_model_order = 12
+
+[observer]
+exclude_elements = false
+exclude_magnitudes = false
