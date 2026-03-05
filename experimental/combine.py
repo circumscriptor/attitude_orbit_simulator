@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import MultipleLocator
 import glob
 from scipy.interpolate import make_interp_spline
 
@@ -17,6 +19,11 @@ materials = {
 THRESHOLD = 0.02
 rod_volumes = np.linspace(5e-8, 5e-7, 20)
 RESULTS = []
+
+# Create a fixed color mapping for each material
+prop_cycle = plt.rcParams['axes.prop_cycle']
+colors_list = prop_cycle.by_key()['color']
+color_map = {label: colors_list[i % len(colors_list)] for i, label in enumerate(materials.values())}
 
 # Data Processing
 for folder, label in materials.items():
@@ -55,13 +62,15 @@ for label in materials.values():
 
     x = m_data['Volume'].values
     y = m_data['Final_W'].values
+    m_color = color_map[label]
+
     if len(x) > 3: # Need points for spline
         x_smooth = np.linspace(x.min(), x.max(), 300)
         spl = make_interp_spline(x, y, k=3)
         y_smooth = spl(x_smooth)
-        ax1.plot(x_smooth, y_smooth, label=label, linewidth=1)
+        ax1.plot(x_smooth, y_smooth, label=label, linewidth=1, color=m_color)
     else:
-        ax1.plot(x, y, label=label, linewidth=1)
+        ax1.plot(x, y, label=label, linewidth=1, color=m_color)
 
     # ax2.scatter(m_data['Volume'], m_data['Stab_Days'], label=label, s=40, alpha=0.7)
 
@@ -83,14 +92,17 @@ counts = [success_counts.get(label, 0) for label in materials.values()]
 material_labels = list(materials.values())
 
 # 2. Plotting (Replace your ax2 code with this)
-colors = plt.cm.tab10(np.linspace(0, 1, len(material_labels)))
-bars = ax2.bar(material_labels, counts, color=colors, alpha=0.8, edgecolor='black')
+bar_colors = [color_map[label] for label in material_labels]
+bars = ax2.bar(material_labels, counts, color=bar_colors, alpha=0.8, edgecolor='black')
 
 # 3. Formatting
 ax2.set_title(f"Successful Stabilizations (Within {STAB_LIMIT} Days)")
 ax2.set_ylabel("Number of Runs (Max 20)")
 ax2.set_ylim(0, 22) # Extra room for labels
 ax2.grid(axis='y', linestyle='--', alpha=0.6)
+
+ax2.yaxis.set_major_locator(MaxNLocator(integer=True))
+ax2.yaxis.set_major_locator(MultipleLocator(4))
 
 # Add numeric labels on top of bars
 for bar in bars:
