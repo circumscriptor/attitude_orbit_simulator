@@ -20,7 +20,7 @@ void verify_hysteresis(const std::string& output_filename, const hysteresis_para
     using boost::numeric::odeint::runge_kutta_dopri5;
 
     static constexpr const double t_start = 0.0;
-    static constexpr const double t_end   = 60.0;   // [s] Simulate for 60 seconds.
+    static constexpr const double t_end   = 100.0;  // [s] Simulation time.
     static constexpr const double dt      = 0.001;  // [s] Initial time step.
 
     const hysteresis_rod_properties properties{
