@@ -251,7 +251,7 @@ def analyze_and_plot(args):
             data = time_series_data[val]
 
             # Format the label nicely (use scientific notation for very small numbers like volume)
-            label_str = f"{args.variable}_{i + 1} = {val:.2e}" if val < 1e-3 else f"{args.variable} = {val:.4g}"
+            label_str = f"{args.variable}_{i + 1} = {val:.2e}" if val < 1e-3 else f"{args.variable}_{i + 1} = {val:.4g}"
 
             fig_html.add_trace(go.Scatter(
                 x=data["time_days"],
