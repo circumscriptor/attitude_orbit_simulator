@@ -1,9 +1,81 @@
-import pandas as pd
+import os
+import sys
+import toml
+import copy
+import argparse
+import subprocess
+from pathlib import Path
+
+# Force matplotlib to not use any Xwindows/Qt backend (Headless mode for saving always)
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
-import argparse
-import sys
+import pandas as pd
 
+
+# ---------------------------------------------------------
+# SIMULATION MANAGEMENT
+# ---------------------------------------------------------
+
+def prepare_and_run_simulation(args, t_end):
+    """Prepares the TOML configuration and runs the standard simulator."""
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
+
+    base_name = Path(args.input_toml).stem
+    csv_filename = f"{base_name}.csv"
+    toml_filename = f"{base_name}_run.toml"
+
+    csv_path = os.path.join(args.output_dir, csv_filename)
+    run_toml_path = os.path.join(args.output_dir, toml_filename)
+
+    # 1. Check if output already exists
+    if os.path.exists(csv_path) and not args.force:
+        print(f"Skipping simulation: Output CSV already exists at '{csv_path}'.")
+        print("Use --force to override and re-run.")
+        return csv_path
+
+    # 2. Load the base TOML
+    try:
+        with open(args.input_toml, "r") as f:
+            base_config = toml.load(f)
+    except Exception as e:
+        print(f"Error reading base TOML file '{args.input_toml}': {e}")
+        sys.exit(1)
+
+    # 3. Create a modified config for this run
+    config = copy.deepcopy(base_config)
+    config["t_end"] = t_end
+    config["checkpoint_interval"] = args.checkpoint
+
+    # Save the modified TOML to the output directory
+    with open(run_toml_path, "w") as f:
+        toml.dump(config, f)
+
+    # 4. Run the simulation
+    cmd = ["./build/pmaos_run", "-o", csv_path, run_toml_path]
+    print(f"Running simulation: {' '.join(cmd)}")
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"[SUCCESS] {run_toml_path} -> {csv_path}")
+            return csv_path
+        else:
+            print(f"[FAILED] Error running simulator:\n{result.stderr}")
+            sys.exit(1)
+    except FileNotFoundError:
+        print("[ERROR] './build/pmaos_run' command not found. Ensure it is built.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"[ERROR] Simulation failed: {str(e)}")
+        sys.exit(1)
+
+
+# ---------------------------------------------------------
+# VISUALIZATION UTILITIES
+# ---------------------------------------------------------
 
 def set_axes_equal(ax):
     """
@@ -28,7 +100,7 @@ def set_axes_equal(ax):
     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
 
-def plot_data(filename, plot_types, display_mode, t_start=None, t_end=None):
+def plot_data(filename, output_dir, prefix, plot_types, display_mode, dpi, t_start=None, t_end=None):
     try:
         df = pd.read_csv(filename)
         df.columns = df.columns.str.strip()
@@ -48,15 +120,11 @@ def plot_data(filename, plot_types, display_mode, t_start=None, t_end=None):
         df = df[df["time"] <= t_end]
 
     if df.empty:
-        print(
-            f"Error: No data found in the specified time range ({t_start} to {t_end})."
-        )
+        print(f"Error: No data found in the specified time range ({t_start} to {t_end}).")
         sys.exit(1)
 
     print(f"Loaded {original_count} rows from {filename}")
-    print(
-        f"Plotting {len(df)} rows ({df['time'].iloc[0]:.2f}s to {df['time'].iloc[-1]:.2f}s)"
-    )
+    print(f"Plotting {len(df)} rows ({df['time'].iloc[0]:.2f}s to {df['time'].iloc[-1]:.2f}s)")
 
     t = df["time"]
 
@@ -98,15 +166,7 @@ def plot_data(filename, plot_types, display_mode, t_start=None, t_end=None):
                 ax.plot(t, df["r_y"], label="y", linewidth=1)
                 ax.plot(t, df["r_z"], label="z", linewidth=1)
             if show_mag and "r" in df.columns:
-                ax.plot(
-                    t,
-                    df["r"],
-                    label="|r|",
-                    color="black",
-                    linestyle="--",
-                    linewidth=1,
-                    alpha=0.7,
-                )
+                ax.plot(t, df["r"], label="|r|", color="black", linestyle="--", linewidth=1, alpha=0.7)
 
             ax.set_ylabel("Position [m]")
             ax.set_title("Orbital Position (ECI)")
@@ -122,15 +182,7 @@ def plot_data(filename, plot_types, display_mode, t_start=None, t_end=None):
                 ax.plot(t, df["v_y"], label="vy", linewidth=1)
                 ax.plot(t, df["v_z"], label="vz", linewidth=1)
             if show_mag and "v" in df.columns:
-                ax.plot(
-                    t,
-                    df["v"],
-                    label="|v|",
-                    color="black",
-                    linestyle="--",
-                    linewidth=1,
-                    alpha=0.7,
-                )
+                ax.plot(t, df["v"], label="|v|", color="black", linestyle="--", linewidth=1, alpha=0.7)
 
             ax.set_ylabel("Velocity [m/s]")
             ax.set_title("Orbital Velocity")
@@ -149,18 +201,8 @@ def plot_data(filename, plot_types, display_mode, t_start=None, t_end=None):
                 ax.plot(t, df["q_z"], label="qz", linewidth=1)
 
             if show_mag:
-                q_mag = np.sqrt(
-                    df["q_w"] ** 2 + df["q_x"] ** 2 + df["q_y"] ** 2 + df["q_z"] ** 2
-                )
-                ax.plot(
-                    t,
-                    q_mag,
-                    label="|q|",
-                    color="black",
-                    linestyle="--",
-                    linewidth=1,
-                    alpha=0.7,
-                )
+                q_mag = np.sqrt(df["q_w"] ** 2 + df["q_x"] ** 2 + df["q_y"] ** 2 + df["q_z"] ** 2)
+                ax.plot(t, q_mag, label="|q|", color="black", linestyle="--", linewidth=1, alpha=0.7)
 
             ax.set_ylabel("Quaternion")
             ax.set_title("Attitude (Body -> ECI)")
@@ -176,15 +218,7 @@ def plot_data(filename, plot_types, display_mode, t_start=None, t_end=None):
                 ax.plot(t, df["w_y"], label="wy", linewidth=1)
                 ax.plot(t, df["w_z"], label="wz", linewidth=1)
             if show_mag and "w" in df.columns:
-                ax.plot(
-                    t,
-                    df["w"],
-                    label="|w|",
-                    color="black",
-                    linestyle="--",
-                    linewidth=1,
-                    alpha=0.7,
-                )
+                ax.plot(t, df["w"], label="|w|", color="black", linestyle="--", linewidth=1, alpha=0.7)
 
             ax.set_ylabel("Ang. Vel [rad/s]")
             ax.set_title("Body Angular Velocity")
@@ -209,6 +243,12 @@ def plot_data(filename, plot_types, display_mode, t_start=None, t_end=None):
 
         axes[-1].set_xlabel("Time [s]")
         plt.tight_layout()
+
+        # Save the 2D figure
+        out_2d = os.path.join(output_dir, f"{prefix}_2d_timeseries.png")
+        fig.savefig(out_2d, dpi=dpi)
+        plt.close(fig)
+        print(f"Saved 2D timeseries plot to '{out_2d}'")
 
     # ---------------------------------------------------------
     # 2. 3D ORBIT VISUALIZATION
@@ -236,73 +276,75 @@ def plot_data(filename, plot_types, display_mode, t_start=None, t_end=None):
             )
 
             # Markers relative to the filtered dataset
-            ax3d.scatter(
-                df["r_x"].iloc[0],
-                df["r_y"].iloc[0],
-                df["r_z"].iloc[0],
-                c="g",
-                marker="o",
-                s=50,
-                label="Start",
-            )
-            ax3d.scatter(
-                df["r_x"].iloc[-1],
-                df["r_y"].iloc[-1],
-                df["r_z"].iloc[-1],
-                c="black",
-                marker="x",
-                s=50,
-                label="End",
-            )
+            ax3d.scatter(df["r_x"].iloc[0], df["r_y"].iloc[0], df["r_z"].iloc[0],
+                         c="g", marker="o", s=50, label="Start")
+            ax3d.scatter(df["r_x"].iloc[-1], df["r_y"].iloc[-1], df["r_z"].iloc[-1],
+                         c="black", marker="x", s=50, label="End")
 
             ax3d.set_xlabel("X [m]")
             ax3d.set_ylabel("Y [m]")
             ax3d.set_zlabel("Z [m]")
-            ax3d.set_title(
-                f"3D Orbit Trajectory ({df['time'].iloc[0]:.0f}s - {df['time'].iloc[-1]:.0f}s)"
-            )
+            ax3d.set_title(f"3D Orbit Trajectory ({df['time'].iloc[0]:.0f}s - {df['time'].iloc[-1]:.0f}s)")
             ax3d.legend()
             set_axes_equal(ax3d)
+
+            # Save the 3D figure
+            out_3d = os.path.join(output_dir, f"{prefix}_3d_orbit.png")
+            fig3d.savefig(out_3d, dpi=dpi)
+            plt.close(fig3d)
+            print(f"Saved 3D orbit plot to '{out_3d}'")
         else:
             print("Warning: Cannot plot 3D Orbit. Missing r_x, r_y, or r_z columns.")
 
-    plt.show()
 
-
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Plot AOS Simulation Results")
 
-    parser.add_argument(
-        "filename",
-        nargs="?",
-        default="output.csv",
-        help="CSV file to plot (default: output.csv)",
-    )
+    # Input definition
+    parser.add_argument("input_toml", type=str, help="Path to the TOML configuration file")
 
-    parser.add_argument(
-        "-t",
-        "--types",
-        nargs="+",
-        default=["all"],
-        choices=["pos", "vel", "att", "omega", "mag", "3d", "all"],
-        help="Select which graphs to display (default: all)",
-    )
+    # Simulation Setup
+    parser.add_argument("-o", "--output-dir", type=str, default="run_results", help="Output directory (default: 'run_results')")
+    parser.add_argument("-d", "--duration", type=str, choices=["2w", "2y"], default="2w", help="Simulation duration (default: 2w)")
+    parser.add_argument("-c", "--checkpoint", type=float, default=600.0, help="Checkpoint interval in sec (default: 600.0)")
+    parser.add_argument("--force", action="store_true", help="Force re-run of simulation even if CSV output already exists")
 
-    parser.add_argument(
-        "-d",
-        "--display",
-        default="both",
-        choices=["comp", "mag", "both"],
-        help="Display components (x,y,z), magnitude (|v|), or both (default: both)",
-    )
-
-    parser.add_argument(  #
-        "-s", "--t-start", type=float, help="Start time for plotting [s]"
-    )
-
-    parser.add_argument(  #
-        "-e", "--t-end", type=float, help="End time for plotting [s]"
-    )
+    # Plot Specific Configuration
+    parser.add_argument("-t", "--types", nargs="+", default=["all"],
+                        choices=["pos", "vel", "att", "omega", "mag", "3d", "all"],
+                        help="Select which graphs to display (default: all)")
+    parser.add_argument("-m", "--display", default="both", choices=["comp", "mag", "both"],
+                        help="Display components (x,y,z), magnitude (|v|), or both (default: both)")
+    parser.add_argument("-s", "--t-start", type=float, help="Start time for plotting [s]")
+    parser.add_argument("-e", "--t-end", type=float, help="End time for plotting [s]")
+    parser.add_argument("--dpi", type=int, default=150, help="Resolution for export (default: 150)")
 
     args = parser.parse_args()
-    plot_data(args.filename, args.types, args.display, args.t_start, args.t_end)
+
+    # Parse duration to seconds
+    t_end = 2 * 365 * 24 * 3600 if args.duration == "2y" else 2 * 7 * 24 * 3600
+
+    print(f"\n--- PMAOS Run Mode ---")
+
+    # 1. Run the simulation automatically
+    csv_file = prepare_and_run_simulation(args, t_end)
+
+    # 2. Analyze and Plot
+    base_name = Path(csv_file).stem
+
+    try:
+        plot_data(
+            filename=csv_file,
+            output_dir=args.output_dir,
+            prefix=base_name,
+            plot_types=args.types,
+            display_mode=args.display,
+            dpi=args.dpi,
+            t_start=args.t_start,
+            t_end=args.t_end
+        )
+    except Exception as e:
+        print(f"Error during visualization: {e}")
+
+if __name__ == "__main__":
+    main()

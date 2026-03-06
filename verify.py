@@ -1,54 +1,103 @@
-from pathlib import Path
+import os
+import sys
+import toml
+import copy
 import argparse
+import subprocess
+from pathlib import Path
+import platform
+
+# Force matplotlib to not use any Xwindows/Qt backend (Headless mode for saving)
 import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import platform
-
-# Fix for "QSocketNotifier" and decoration warnings
-matplotlib.use('TkAgg')
 
 # Standardized colors for ECI/Body components
 C_X, C_Y, C_Z, C_NORM = '#d62728', '#2ca02c', '#1f77b4', '#000000'
 
-def maximize_window():
-    """Utility to maximize the matplotlib window based on the OS."""
-    manager = plt.get_current_fig_manager()
-    system = platform.system()
+# --- SIMULATION MANAGEMENT ---
+
+def prepare_and_run_simulation(args, t_end):
+    """Prepares the TOML configuration and runs the verification simulator."""
+    if not os.path.exists(args.output_dir):
+        os.makedirs(args.output_dir)
+
+    base_name = Path(args.input_toml).stem
+    csv_filename = f"{base_name}_vs.csv"
+    toml_filename = f"{base_name}_vs.toml"
+
+    csv_path = os.path.join(args.output_dir, csv_filename)
+    run_toml_path = os.path.join(args.output_dir, toml_filename)
+
+    # 1. Check if output already exists
+    if os.path.exists(csv_path) and not args.force:
+        print(f"Skipping simulation: Output CSV already exists at '{csv_path}'.")
+        print("Use --force to override and re-run.")
+        return csv_path
+
+    # 2. Load the base TOML
     try:
-        if system == "Linux": manager.window.attributes('-zoomed', True)
-        elif system == "Windows": manager.window.state('zoomed')
-        elif system == "Darwin": manager.frame.Maximize(True)
-    except Exception:
-        pass
+        with open(args.input_toml, "r") as f:
+            base_config = toml.load(f)
+    except Exception as e:
+        print(f"Error reading base TOML file '{args.input_toml}': {e}")
+        sys.exit(1)
+
+    # 3. Create a modified config for this run
+    config = copy.deepcopy(base_config)
+    config["t_end"] = t_end
+    config["checkpoint_interval"] = args.checkpoint
+
+    # Save the modified TOML to the output directory
+    with open(run_toml_path, "w") as f:
+        toml.dump(config, f)
+
+    # 4. Run the simulation
+    cmd = ["./build/pmaos_vs", "-o", csv_path, run_toml_path]
+    print(f"Running verification simulation: {' '.join(cmd)}")
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            print(f"[SUCCESS] {run_toml_path} -> {csv_path}")
+            return csv_path
+        else:
+            print(f"[FAILED] Error running simulator:\n{result.stderr}")
+            sys.exit(1)
+    except FileNotFoundError:
+        print("[ERROR] './build/pmaos_vs' command not found. Ensure it is built.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"[ERROR] Simulation failed: {str(e)}")
+        sys.exit(1)
+
+
+# --- VISUALIZATION UTILITIES ---
 
 def quat_to_euler(qw, qx, qy, qz):
     """Convert quaternions to Euler angles (Yaw-Pitch-Roll / Z-Y-X sequence)."""
-    # Roll (X-axis rotation)
     sinr_cosp = 2.0 * (qw * qx + qy * qz)
     cosr_cosp = 1.0 - 2.0 * (qx**2 + qy**2)
     roll = np.arctan2(sinr_cosp, cosr_cosp)
 
-    # Pitch (Y-axis rotation)
     sinp = 2.0 * (qw * qy - qz * qx)
-    # CLIP the values to avoid the 'invalid value encountered in arcsin' warning
     sinp = np.clip(sinp, -1.0, 1.0)
     pitch = np.arcsin(sinp)
 
-    # Yaw (Z-axis rotation)
     siny_cosp = 2.0 * (qw * qz + qx * qy)
     cosy_cosp = 1.0 - 2.0 * (qy**2 + qz**2)
     yaw = np.arctan2(siny_cosp, cosy_cosp)
 
     return np.degrees(roll), np.degrees(pitch), np.degrees(yaw)
 
-def plot_attitude_kinematics(t, df, save=False, prefix="output", dpi=150):
-    """Figure 1: Euler Angles, Quaternions, and Angular Velocity."""
+# --- PLOTTING FUNCTIONS ---
+
+def plot_attitude_kinematics(t, df, prefix="output", dpi=150):
     fig, axs = plt.subplots(3, 1, figsize=(14, 10), sharex=True)
     plt.suptitle("Attitude Kinematics & Rotation Rates", fontsize=14, fontweight='bold')
 
-    # 1. Euler Angles
     roll, pitch, yaw = quat_to_euler(df['q_w'], df['q_x'], df['q_y'], df['q_z'])
     axs[0].plot(t, roll, color=C_X, lw=1, label='Roll (X)')
     axs[0].plot(t, pitch, color=C_Y, lw=1, label='Pitch (Y)')
@@ -57,7 +106,6 @@ def plot_attitude_kinematics(t, df, save=False, prefix="output", dpi=150):
     axs[0].set_ylabel("Angle [deg]")
     axs[0].legend(loc='upper right', ncol=3)
 
-    # 2. Quaternions
     axs[1].plot(t, df['q_w'], color='black', lw=1, label='qw')
     axs[1].plot(t, df['q_x'], color=C_X, lw=1, label='qx')
     axs[1].plot(t, df['q_y'], color=C_Y, lw=1, label='qy')
@@ -66,7 +114,6 @@ def plot_attitude_kinematics(t, df, save=False, prefix="output", dpi=150):
     axs[1].set_ylabel("Value")
     axs[1].legend(loc='upper right', ncol=4)
 
-    # 3. Angular Velocity
     w_norm = np.linalg.norm(df[['w_x', 'w_y', 'w_z']], axis=1)
     axs[2].plot(t, df['w_x'], color=C_X, lw=1, label='ωx')
     axs[2].plot(t, df['w_y'], color=C_Y, lw=1, label='ωy')
@@ -80,13 +127,10 @@ def plot_attitude_kinematics(t, df, save=False, prefix="output", dpi=150):
     plt.xlabel("Time [s]")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-    if save:
-        plt.savefig(f"{prefix}_01_attitude.png", dpi=dpi)
-        plt.close()
-    else: maximize_window()
+    plt.savefig(f"{prefix}_01_attitude.png", dpi=dpi)
+    plt.close()
 
-def plot_adcs_pointing(t, df, save=False, prefix="output", dpi=150):
-    """Figure 2: ADCS Pointing Errors (Nadir, Magnetic Alignment, Sun)."""
+def plot_adcs_pointing(t, df, prefix="output", dpi=150):
     fig, axs = plt.subplots(3, 1, figsize=(14, 10), sharex=True)
     plt.suptitle("ADCS Pointing & Alignment Errors", fontsize=14, fontweight='bold')
 
@@ -135,13 +179,10 @@ def plot_adcs_pointing(t, df, save=False, prefix="output", dpi=150):
     plt.xlabel("Time[s]")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-    if save:
-        plt.savefig(f"{prefix}_02_pointing.png", dpi=dpi)
-        plt.close()
-    else: maximize_window()
+    plt.savefig(f"{prefix}_02_pointing.png", dpi=dpi)
+    plt.close()
 
-def plot_torque_envelopes(t, df, save=False, prefix="output", dpi=150):
-    """Figure 3: Log-scale magnitudes of torques to identify dominant disturbances."""
+def plot_torque_envelopes(t, df, prefix="output", dpi=150):
     fig, axs = plt.subplots(2, 1, figsize=(14, 10), sharex=True)
     plt.suptitle("Disturbance & Control Torque Envelopes", fontsize=14, fontweight='bold')
 
@@ -179,13 +220,10 @@ def plot_torque_envelopes(t, df, save=False, prefix="output", dpi=150):
     plt.xlabel("Time [s]")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-    if save:
-        plt.savefig(f"{prefix}_03_torques.png", dpi=dpi)
-        plt.close()
-    else: maximize_window()
+    plt.savefig(f"{prefix}_03_torques.png", dpi=dpi)
+    plt.close()
 
-def plot_passive_magnetic_system(t, df, save=False, prefix="output", dpi=150):
-    """Figure 4: Detailed view of passive magnetic ADCS elements."""
+def plot_passive_magnetic_system(t, df, prefix="output", dpi=150):
     fig, axs = plt.subplots(4, 1, figsize=(14, 12), sharex=True)
     plt.suptitle("Passive Magnetic System Analysis", fontsize=14, fontweight='bold')
 
@@ -221,13 +259,10 @@ def plot_passive_magnetic_system(t, df, save=False, prefix="output", dpi=150):
     plt.xlabel("Time[s]")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-    if save:
-        plt.savefig(f"{prefix}_04_passive_mag.png", dpi=dpi)
-        plt.close()
-    else: maximize_window()
+    plt.savefig(f"{prefix}_04_passive_mag.png", dpi=dpi)
+    plt.close()
 
-def plot_orbit_and_environment(t, df, save=False, prefix="output", dpi=150):
-    """Figure 5: Environmental factors and aerodynamic forces."""
+def plot_orbit_and_environment(t, df, prefix="output", dpi=150):
     fig, axs = plt.subplots(3, 1, figsize=(14, 10), sharex=True)
     plt.suptitle("External Environment & Aerodynamic Forces", fontsize=14, fontweight='bold')
 
@@ -259,7 +294,6 @@ def plot_orbit_and_environment(t, df, save=False, prefix="output", dpi=150):
         axs[2].plot(t, df['f_face_y'], color=C_Y, lw=1, label='Fy')
         axs[2].plot(t, df['f_face_z'], color=C_Z, lw=1, label='Fz')
         axs[2].plot(t, f_norm, color=C_NORM, lw=1.2, linestyle='--', label='|F| Total')
-        # Updated to reflect new raw struct properties (now in Body Frame)
         axs[2].set_title("Total Aerodynamic / Surface Forces (Body Frame) [N]")
         axs[2].legend(loc='upper right', ncol=4)
         axs[2].set_ylabel("Force [N]")
@@ -268,13 +302,10 @@ def plot_orbit_and_environment(t, df, save=False, prefix="output", dpi=150):
     plt.xlabel("Time [s]")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-    if save:
-        plt.savefig(f"{prefix}_05_environment.png", dpi=dpi)
-        plt.close()
-    else: maximize_window()
+    plt.savefig(f"{prefix}_05_environment.png", dpi=dpi)
+    plt.close()
 
-def plot_orbit_3d(df, save=False, prefix="output", dpi=150):
-    """Figure 6: 3D Orbit color-coded by Eclipse/Sunlight."""
+def plot_orbit_3d(df, prefix="output", dpi=150):
     fig = plt.figure(figsize=(12, 10))
     ax = fig.add_subplot(111, projection='3d')
     plt.suptitle("3D Orbital Path (Color-coded by Sunlight)", fontsize=14, fontweight='bold')
@@ -306,37 +337,27 @@ def plot_orbit_3d(df, save=False, prefix="output", dpi=150):
     ax.legend(loc='upper left')
     plt.tight_layout()
 
-    if save:
-        plt.savefig(f"{prefix}_06_orbit3d.png", dpi=dpi)
-        plt.close()
-    else:
-        maximize_window()
+    plt.savefig(f"{prefix}_06_orbit3d.png", dpi=dpi)
+    plt.close()
 
-def plot_per_face_effects(t, df, save=False, prefix="output", dpi=150):
-    """Figure 7: Per-face aerodynamic and SRP force/torque magnitudes."""
+def plot_per_face_effects(t, df, prefix="output", dpi=150):
     fig, axs = plt.subplots(2, 1, figsize=(14, 10), sharex=True)
     plt.suptitle("Per-Face Surface Effects (Body Frame Magnitudes)", fontsize=14, fontweight='bold')
 
-    # Graceful fallback if older CSVs are loaded
     if 'd_f0_x' not in df.columns:
         axs[0].text(0.5, 0.5, "Per-face data not found in CSV", ha='center', va='center')
-        if save:
-            plt.savefig(f"{prefix}_07_per_face.png", dpi=dpi)
-            plt.close()
-        else: maximize_window()
+        plt.savefig(f"{prefix}_07_per_face.png", dpi=dpi)
+        plt.close()
         return
 
-    # Generate a distinct color map for the 6 faces
     colors = plt.cm.tab10(np.linspace(0, 1, 6))
 
     for i, color in enumerate(colors):
-        # 1. Drag Magnitude per face
         f_cols =[f'd_f{i}_x', f'd_f{i}_y', f'd_f{i}_z']
         if all(col in df.columns for col in f_cols):
             f_mag = np.linalg.norm(df[f_cols], axis=1)
             axs[0].plot(t, f_mag, color=color, lw=1.2, label=f'Face {i}')
 
-        # 2. SRP Magnitude per face
         t_cols =[f's_f{i}_x', f's_f{i}_y', f's_f{i}_z']
         if all(col in df.columns for col in t_cols):
             t_mag = np.linalg.norm(df[t_cols], axis=1)
@@ -355,39 +376,29 @@ def plot_per_face_effects(t, df, save=False, prefix="output", dpi=150):
     plt.xlabel("Time [s]")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-    if save:
-        plt.savefig(f"{prefix}_07_per_face.png", dpi=dpi)
-        plt.close()
-    else: maximize_window()
+    plt.savefig(f"{prefix}_07_per_face.png", dpi=dpi)
+    plt.close()
 
-def plot_position_velocity(t, df, save=False, prefix="output", dpi=150):
-    """Figure 8: Orbital Position and Velocity (ECI Frame)."""
+def plot_position_velocity(t, df, prefix="output", dpi=150):
     fig, axs = plt.subplots(2, 1, figsize=(14, 10), sharex=True)
     plt.suptitle("Orbital Position and Velocity (ECI Frame)", fontsize=14, fontweight='bold')
 
-    # Convert meters to kilometers for better readability
     rx_km, ry_km, rz_km = df['r_x'] / 1000, df['r_y'] / 1000, df['r_z'] / 1000
 
-    # Use the pre-calculated magnitude if it exists, otherwise calculate it
     if 'r' in df.columns:
         r_norm_km = df['r'] / 1000
     else:
         r_norm_km = np.linalg.norm(df[['r_x', 'r_y', 'r_z']], axis=1) / 1000
 
-    # 1. Position Plot
     axs[0].plot(t, rx_km, color=C_X, lw=1.2, label='Rx')
     axs[0].plot(t, ry_km, color=C_Y, lw=1.2, label='Ry')
     axs[0].plot(t, rz_km, color=C_Z, lw=1.2, label='Rz')
-    axs[0].plot(t, r_norm_km, color=C_NORM, lw=1.5, linestyle='--', label='|R| Total (Distance from Earth Center)')
-
-    # Add a subtle line for Earth's average radius (6371 km) to visualize altitude
+    axs[0].plot(t, r_norm_km, color=C_NORM, lw=1.5, linestyle='--', label='|R| Total')
     axs[0].axhline(y=6371, color='green', linestyle=':', lw=1.5, label='Earth Radius (~6371 km)')
-
     axs[0].set_title("ECI Position [km]")
     axs[0].set_ylabel("Position [km]")
     axs[0].legend(loc='upper right', ncol=5)
 
-    # Convert meters/second to kilometers/second
     vx_km, vy_km, vz_km = df['v_x'] / 1000, df['v_y'] / 1000, df['v_z'] / 1000
 
     if 'v' in df.columns:
@@ -395,12 +406,10 @@ def plot_position_velocity(t, df, save=False, prefix="output", dpi=150):
     else:
         v_norm_km = np.linalg.norm(df[['v_x', 'v_y', 'v_z']], axis=1) / 1000
 
-    # 2. Velocity Plot
     axs[1].plot(t, vx_km, color=C_X, lw=1.2, label='Vx')
     axs[1].plot(t, vy_km, color=C_Y, lw=1.2, label='Vy')
     axs[1].plot(t, vz_km, color=C_Z, lw=1.2, label='Vz')
     axs[1].plot(t, v_norm_km, color=C_NORM, lw=1.5, linestyle='--', label='|V| Total')
-
     axs[1].set_title("ECI Velocity [km/s]")
     axs[1].set_ylabel("Velocity [km/s]")
     axs[1].legend(loc='upper right', ncol=4)
@@ -409,39 +418,57 @@ def plot_position_velocity(t, df, save=False, prefix="output", dpi=150):
     plt.xlabel("Time [s]")
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
-    if save:
-        plt.savefig(f"{prefix}_08_pos_vel.png", dpi=dpi)
-        plt.close()
-    else:
-        maximize_window()
+    plt.savefig(f"{prefix}_08_pos_vel.png", dpi=dpi)
+    plt.close()
 
 def main():
-    parser = argparse.ArgumentParser(description="Satellite AOCS Telemetry Plotter")
-    parser.add_argument("csv_file", nargs="?", default="output.csv", help="Path to CSV")
-    parser.add_argument("--save", action="store_true", help="Export to PNG")
-    parser.add_argument("--dpi", type=int, default=150, help="Resolution for export")
+    parser = argparse.ArgumentParser(description="AOS Verification Simulator & Telemetry Plotter")
+
+    # Input definition
+    parser.add_argument("input_toml", type=str, help="Path to the TOML configuration file")
+
+    # Simulation Setup
+    parser.add_argument("-o", "--output-dir", type=str, default="analysis/verify", help="Output directory (default: 'analysis/verify')")
+    parser.add_argument("-d", "--duration", type=str, choices=["2w", "2y"], default="2w", help="Simulation duration (default: 2w)")
+    parser.add_argument("-c", "--checkpoint", type=float, default=600.0, help="Checkpoint interval in sec (default: 600.0)")
+    parser.add_argument("--force", action="store_true", help="Force re-run of simulation even if CSV output already exists")
+
+    # Plotting Settings
+    parser.add_argument("--dpi", type=int, default=150, help="Resolution for export (default: 150)")
+
     args = parser.parse_args()
 
-    base_name = Path(args.csv_file).stem
+    # Parse duration to seconds
+    t_end = 2 * 365 * 24 * 3600 if args.duration == "2y" else 2 * 7 * 24 * 3600
+
+    print(f"\n--- PMAOS Verification Mode ---")
+
+    # 1. Run the simulation automatically
+    csv_file = prepare_and_run_simulation(args, t_end)
+
+    # 2. Analyze and Plot
+    base_name = Path(csv_file).stem
+    save_prefix = os.path.join(args.output_dir, base_name)
 
     try:
-        df = pd.read_csv(args.csv_file)
+        print(f"Loading telemetry from '{csv_file}' for visualization...")
+        df = pd.read_csv(csv_file)
         df.columns = df.columns.str.strip()
         t = df['time']
 
-        plot_attitude_kinematics(t, df, save=args.save, prefix=base_name, dpi=args.dpi)
-        plot_adcs_pointing(t, df, save=args.save, prefix=base_name, dpi=args.dpi)
-        plot_torque_envelopes(t, df, save=args.save, prefix=base_name, dpi=args.dpi)
-        plot_passive_magnetic_system(t, df, save=args.save, prefix=base_name, dpi=args.dpi)
-        plot_orbit_and_environment(t, df, save=args.save, prefix=base_name, dpi=args.dpi)
-        plot_orbit_3d(df, save=args.save, prefix=base_name, dpi=args.dpi)
-        plot_per_face_effects(t, df, save=args.save, prefix=base_name, dpi=args.dpi)
-        plot_position_velocity(t, df, save=args.save, prefix=base_name, dpi=args.dpi)
+        plot_attitude_kinematics(t, df, prefix=save_prefix, dpi=args.dpi)
+        plot_adcs_pointing(t, df, prefix=save_prefix, dpi=args.dpi)
+        plot_torque_envelopes(t, df, prefix=save_prefix, dpi=args.dpi)
+        plot_passive_magnetic_system(t, df, prefix=save_prefix, dpi=args.dpi)
+        plot_orbit_and_environment(t, df, prefix=save_prefix, dpi=args.dpi)
+        plot_orbit_3d(df, prefix=save_prefix, dpi=args.dpi)
+        plot_per_face_effects(t, df, prefix=save_prefix, dpi=args.dpi)
+        plot_position_velocity(t, df, prefix=save_prefix, dpi=args.dpi)
 
-        if not args.save:
-            plt.show()
+        print(f"\nAll plots successfully saved to directory: '{args.output_dir}/'")
+
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"Error during visualization: {e}")
 
 if __name__ == "__main__":
     main()
