@@ -15,7 +15,7 @@
 namespace aos {
 
 struct spacecraft_properties {
-    double                      mass_kg;
+    real_t                      mass_kg;
     spacecraft_shape            shape;
     hysteresis_parameters       hysteresis;
     permanent_magnet_properties magnet;
@@ -49,11 +49,11 @@ public:
 protected:
 
     // sums permanent magnet, gyroscopic, and gravity gradient torques
-    [[nodiscard]] auto compute_torques(const vec3& omega, const vec3& b_body, const vec3& r_body, double earth_mu) const -> vec3;
+    [[nodiscard]] auto compute_torques(const vec3& omega, const vec3& b_body, const vec3& r_body, real_t earth_mu) const -> vec3;
 
 private:
 
-    double           _mass_kg;  // [kg] Mass
+    real_t           _mass_kg;  // [kg] Mass
     inertia_tensor   _inertia;
     spacecraft_faces _faces;
     permanent_magnet _magnet;

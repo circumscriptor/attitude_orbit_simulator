@@ -2,6 +2,7 @@
 
 #include "aos/components/hysteresis_rod.hpp"
 #include "aos/core/constants.hpp"
+#include "aos/core/types.hpp"
 #include "aos/verify/hysteresis_loop_dynamics.hpp"
 #include "aos/verify/hysteresis_observer.hpp"
 
@@ -19,9 +20,9 @@ void verify_hysteresis(const std::string& output_filename, const hysteresis_para
     using boost::numeric::odeint::make_controlled;
     using boost::numeric::odeint::runge_kutta_dopri5;
 
-    static constexpr const double t_start = 0.0;
-    static constexpr const double t_end   = 100.0;  // [s] Simulation time.
-    static constexpr const double dt      = 0.001;  // [s] Initial time step.
+    static constexpr const real_t t_start = 0.0;
+    static constexpr const real_t t_end   = 100.0;  // [s] Simulation time.
+    static constexpr const real_t dt      = 0.001;  // [s] Initial time step.
 
     const hysteresis_rod_properties properties{
         .volume_m3   = 1.0,
@@ -30,7 +31,7 @@ void verify_hysteresis(const std::string& output_filename, const hysteresis_para
     };
     const hysteresis_rod           rod(properties);  // Volume and orientation don't matter here
     const hysteresis_loop_dynamics dynamics(rod);
-    const hysteresis_observer      observer(output_filename);
+    const hysteresis_observer      observer(output_filename, dynamics.h_max(), dynamics.frequency());
 
     hysteresis_state_type m_initial{0.0};
 

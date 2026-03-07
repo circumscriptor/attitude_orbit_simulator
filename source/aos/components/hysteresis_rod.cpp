@@ -96,13 +96,13 @@ auto hysteresis_rod::hysteresis() const noexcept -> const hysteresis_parameters&
     return _hysteresis;
 }
 
-auto hysteresis_rod::calculate_h_eff(double h_along_rod, double m_val) const -> double {
+auto hysteresis_rod::calculate_h_eff(real_t h_along_rod, real_t m_val) const -> real_t {
     // H_eff = H + alpha * M
     return h_along_rod + (_hysteresis.alpha * m_val);
 }
 
-auto hysteresis_rod::calculate_anhysteretic(double h_eff_am) const -> double {
-    const double ratio = h_eff_am / _hysteresis.a;
+auto hysteresis_rod::calculate_anhysteretic(real_t h_eff_am) const -> real_t {
+    const real_t ratio = h_eff_am / _hysteresis.a;
 
     // numerical stability for langevin function near zero
     if (std::abs(ratio) < epsilon_langevin) {
@@ -116,35 +116,35 @@ auto hysteresis_rod::calculate_anhysteretic(double h_eff_am) const -> double {
     return _hysteresis.ms * ((1.0 / std::tanh(ratio)) - (1.0 / ratio));
 }
 
-auto hysteresis_rod::magnetic_moment(double m_irr_am, const vec3& b_body_t) const -> vec3 {
+auto hysteresis_rod::magnetic_moment(real_t m_irr_am, const vec3& b_body_t) const -> vec3 {
     // get H field along the rod
-    const double h_applied = b_body_t.dot(_orientation_body) / vacuum_permeability;
+    const real_t h_applied = b_body_t.dot(_orientation_body) / vacuum_permeability;
 
     // clamp M_irr to physical limits to prevent divergence in H_eff
-    const double m_irr_clamped = std::clamp(m_irr_am, -_hysteresis.ms, _hysteresis.ms);
+    const real_t m_irr_clamped = std::clamp(m_irr_am, -_hysteresis.ms, _hysteresis.ms);
 
     // calculate H_eff based on current M_irr
-    const double h_eff = calculate_h_eff(h_applied, m_irr_clamped);
-    const double m_an  = calculate_anhysteretic(h_eff);
+    const real_t h_eff = calculate_h_eff(h_applied, m_irr_clamped);
+    const real_t m_an  = calculate_anhysteretic(h_eff);
 
     // M_tot = M_irr + M_rev
     // M_rev = c * (M_an - M_irr)
     // => M_tot = (1 - c) * M_irr + c * M_an
-    const double m_total = ((1.0 - _hysteresis.c) * m_irr_clamped) + (_hysteresis.c * m_an);
+    const real_t m_total = ((1.0 - _hysteresis.c) * m_irr_clamped) + (_hysteresis.c * m_an);
 
     // moment: m = M_tot * volume * direction
     return m_total * _volume * _orientation_body;
 }
 
-auto hysteresis_rod::magnetization_derivative(double m_irr_am, const vec3& b_body_t, const vec3& b_dot_body_t) const -> double {
+auto hysteresis_rod::magnetization_derivative(real_t m_irr_am, const vec3& b_body_t, const vec3& b_dot_body_t) const -> real_t {
     // calculate H and dH/dt along the rod
-    const double h_applied = b_body_t.dot(_orientation_body) / vacuum_permeability;
-    const double dh_dt     = b_dot_body_t.dot(_orientation_body) / vacuum_permeability;
+    const real_t h_applied = b_body_t.dot(_orientation_body) / vacuum_permeability;
+    const real_t dh_dt     = b_dot_body_t.dot(_orientation_body) / vacuum_permeability;
     return magnetization_derivative(m_irr_am, h_applied, dh_dt);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto hysteresis_rod::magnetization_derivative(double m_irr_am, double h_along_rod, double dh_dt) const -> double {
+auto hysteresis_rod::magnetization_derivative(real_t m_irr_am, real_t h_along_rod, real_t dh_dt) const -> real_t {
     // If saturated and driving further into saturation, no change possible.
     if (m_irr_am >= _hysteresis.ms && dh_dt > 0.0) {
         return 0.0;
@@ -158,15 +158,15 @@ auto hysteresis_rod::magnetization_derivative(double m_irr_am, double h_along_ro
         return 0.0;
     }
 
-    const double m_irr_clamped = std::clamp(m_irr_am, -_hysteresis.ms, _hysteresis.ms);
-    const double h_eff         = calculate_h_eff(h_along_rod, m_irr_clamped);
-    const double m_an          = calculate_anhysteretic(h_eff);
-    const double delta         = (dh_dt > 0.0) ? 1.0 : -1.0;
-    const double numerator     = m_an - m_irr_clamped;
-    const double denominator   = (_hysteresis.k * delta) - (_hysteresis.alpha * numerator);
-    const double max_chi       = _hysteresis.ms / std::max(_hysteresis.k, min_k_value);
+    const real_t m_irr_clamped = std::clamp(m_irr_am, -_hysteresis.ms, _hysteresis.ms);
+    const real_t h_eff         = calculate_h_eff(h_along_rod, m_irr_clamped);
+    const real_t m_an          = calculate_anhysteretic(h_eff);
+    const real_t delta         = (dh_dt > 0.0) ? 1.0 : -1.0;
+    const real_t numerator     = m_an - m_irr_clamped;
+    const real_t denominator   = (_hysteresis.k * delta) - (_hysteresis.alpha * numerator);
+    const real_t max_chi       = _hysteresis.ms / std::max(_hysteresis.k, min_k_value);
 
-    double dmirr_dh = 0.0;
+    real_t dmirr_dh = 0.0;
     if (std::abs(denominator) < epsilon_denominator) {
         // Singularity Handling (0/0 check)
         if (std::abs(numerator) < epsilon_denominator) {
@@ -185,7 +185,7 @@ auto hysteresis_rod::magnetization_derivative(double m_irr_am, double h_along_ro
         }
     }
 
-    const double dm_irr_dt = dmirr_dh * dh_dt;
+    const real_t dm_irr_dt = dmirr_dh * dh_dt;
 
     // Enforce that magnetization changes in the direction driven by the field.
     // If H increases (dh_dt > 0), M_irr should not decrease.

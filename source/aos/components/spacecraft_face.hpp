@@ -31,10 +31,10 @@ struct face_effects_with_forces {
 struct spacecraft_face {
     vec3   center_of_pressure_m;                        //!< [m] Face center relative to spacecraft center
     vec3   surface_normal;                              //!< [-] Face normal (outward)
-    double surface_area_m2{};                           //!< [m^2] Face surface area
-    double drag_coefficient{default_drag_coefficient};  //!< [-] Face drag coefficient
-    double specular_reflection_coefficient{};           //!< [-] Specular reflection coefficient (0..1)
-    double diffuse_reflection_coefficient{};            //!< [-] Diffuse reflection coefficient (0..1)
+    real_t surface_area_m2{};                           //!< [m^2] Face surface area
+    real_t drag_coefficient{default_drag_coefficient};  //!< [-] Face drag coefficient
+    real_t specular_reflection_coefficient{};           //!< [-] Specular reflection coefficient (0..1)
+    real_t diffuse_reflection_coefficient{};            //!< [-] Diffuse reflection coefficient (0..1)
 
     void from_toml(const toml_table& table);
 
@@ -42,8 +42,8 @@ struct spacecraft_face {
 
     [[nodiscard]] auto compute_force(const environment_effects& data, const vec3& v_body, const vec3& s_body, const vec3& omega_body) const -> vec3;
     [[nodiscard]] auto compute_forces(const environment_effects& data, const vec3& v_body, const vec3& s_body, const vec3& omega_body) const -> face_forces;
-    [[nodiscard]] auto compute_force_srp_body(double pressure, const vec3& s_body, double shadow_factor) const -> vec3;
-    [[nodiscard]] auto compute_force_drag_body(double density, const vec3& v_rel_body) const -> vec3;
+    [[nodiscard]] auto compute_force_srp_body(real_t pressure, const vec3& s_body, real_t shadow_factor) const -> vec3;
+    [[nodiscard]] auto compute_force_drag_body(real_t density, const vec3& v_rel_body) const -> vec3;
     [[nodiscard]] auto compute_v_rel_body(const vec3& v_com_body, const vec3& omega_body) const -> vec3;
 };
 

@@ -1,6 +1,7 @@
 #include "hysteresis_observer.hpp"
 
 #include "aos/core/constants.hpp"
+#include "aos/core/types.hpp"
 #include "aos/verify/hysteresis_loop_dynamics.hpp"
 
 #include <cmath>
@@ -9,13 +10,13 @@
 #include <iomanip>
 #include <ios>
 #include <memory>
-#include <numbers>
 #include <stdexcept>
 #include <string>
 
 namespace aos {
 
-hysteresis_observer::hysteresis_observer(const std::string& filename) {
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+hysteresis_observer::hysteresis_observer(const std::string& filename, real_t h_max, real_t frequency) : _h_max(h_max), _frequency(frequency) {
     std::filesystem::path file_path(filename);
     if (file_path.has_parent_path()) {
         std::filesystem::create_directories(file_path.parent_path());
@@ -30,9 +31,9 @@ hysteresis_observer::hysteresis_observer(const std::string& filename) {
     *_file << "time,H_Am,M_Am,B_T\n";
 }
 
-void hysteresis_observer::operator()(const hysteresis_state_type& m, double t) const {
-    const double h = hysteresis_loop_dynamics::h_max * std::sin(2.0 * std::numbers::pi * hysteresis_loop_dynamics::frequency * t);
-    const double b = vacuum_permeability * (h + m);
+void hysteresis_observer::operator()(const hysteresis_state_type& m, real_t t) const {
+    const real_t h = _h_max * std::sin(2.0 * pi * _frequency * t);
+    const real_t b = vacuum_permeability * (h + m);
     (*_file) << t << "," << h << "," << m << "," << b << "\n";
 }
 

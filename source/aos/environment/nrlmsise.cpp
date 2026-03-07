@@ -1,6 +1,7 @@
 #include "nrlmsise.hpp"
 
 #include "aos/core/constants.hpp"
+#include "aos/core/types.hpp"
 #include "aos/environment/space_weather.hpp"
 
 #include <cmath>
@@ -19,20 +20,20 @@ nrlmsise::nrlmsise(const std::filesystem::path& filepath) : weather(space_weathe
     // flags.switches[9] = 0;
     // flags.switches[0] = 0; // Uncomment to use g/cm3 instead of kg/m3
     // NOLINTEND
-    for (double& d : output.d) {
+    for (auto& d : output.d) {
         d = 0.0;
     }
-    for (double& t : output.t) {
+    for (auto& t : output.t) {
         t = 0.0;
     }
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto nrlmsise::density_at(double year_decimal, double lat_deg, double lon_deg, double alt_m) const -> double {
+auto nrlmsise::density_at(real_t year_decimal, real_t lat_deg, real_t lon_deg, real_t alt_m) const -> real_t {
     const int    year                  = static_cast<int>(std::floor(year_decimal));
     const bool   is_leap               = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
-    const double days_in_year          = is_leap ? 366.0 : 365.0;
-    const double total_seconds_in_year = (year_decimal - year) * days_in_year * 86400.0;
+    const real_t days_in_year          = is_leap ? 366.0 : 365.0;
+    const real_t total_seconds_in_year = (year_decimal - year) * days_in_year * 86400.0;
     const auto&  data                  = weather.get_linear_month_at(year_decimal);
 
     // NOLINTBEGIN(readability-magic-numbers)

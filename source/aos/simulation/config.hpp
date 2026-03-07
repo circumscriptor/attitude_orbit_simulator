@@ -15,13 +15,13 @@ struct simulation_properties {
     environment_properties environment;
 
     vec3   angular_velocity;
-    double t_start{};
-    double t_end{};
-    double dt_initial{};
-    double absolute_error{};
-    double relative_error{};
+    real_t t_start{};
+    real_t t_end{};
+    real_t dt_initial{};
+    real_t absolute_error{};
+    real_t relative_error{};
     int    stepper_function{};
-    double checkpoint_interval{};
+    real_t checkpoint_interval{};
 
     void from_toml(const toml_table& table);
     void debug_print() const;

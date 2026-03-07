@@ -9,9 +9,9 @@ namespace aos {
 
 struct spacecraft_uniform {
     vec3   dimensions_m;
-    double drag_coefficient{};
-    double specular_reflection_coefficient{};
-    double diffuse_reflection_coefficient{};
+    real_t drag_coefficient{};
+    real_t specular_reflection_coefficient{};
+    real_t diffuse_reflection_coefficient{};
 
     void from_toml(const toml_table& table);
     void debug_print() const;

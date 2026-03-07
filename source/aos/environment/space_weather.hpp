@@ -1,5 +1,7 @@
 #pragma once
 
+#include "aos/core/types.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -17,9 +19,9 @@ enum space_weather_type : uint8_t {
 };
 
 struct space_weather_data {
-    double             year_decimal;
-    double             f107;
-    double             f107a;
+    real_t             year_decimal;
+    real_t             f107;
+    real_t             f107a;
     space_weather_type type;
 };
 
@@ -30,13 +32,13 @@ struct space_weather {
     space_weather_data_vec predicted_days;
     space_weather_data_vec predicted_months;
 
-    double observed_cutoff_year_decimal;
-    double predicted_days_cutoff_year_decimal;
-    double predicted_months_cutoff_year_decimal;
+    real_t observed_cutoff_year_decimal;
+    real_t predicted_days_cutoff_year_decimal;
+    real_t predicted_months_cutoff_year_decimal;
 
-    [[nodiscard]] auto get_at(double year_decimal, size_t& hint) const -> const space_weather_data&;
-    [[nodiscard]] auto get_month_at(double year_decimal) const -> const space_weather_data&;
-    [[nodiscard]] auto get_linear_month_at(double year_decimal) const -> space_weather_data;
+    [[nodiscard]] auto get_at(real_t year_decimal, size_t& hint) const -> const space_weather_data&;
+    [[nodiscard]] auto get_month_at(real_t year_decimal) const -> const space_weather_data&;
+    [[nodiscard]] auto get_linear_month_at(real_t year_decimal) const -> space_weather_data;
 };
 
 class space_weather_parser {
@@ -57,7 +59,7 @@ protected:
     static void store(space_weather& result, const space_weather_data& data);
 
     static auto convert_type(std::string_view type) -> space_weather_type;
-    static auto convert_date(std::string_view date) -> double;
+    static auto convert_date(std::string_view date) -> real_t;
 
 private:
 

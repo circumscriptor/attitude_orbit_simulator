@@ -61,33 +61,33 @@ auto spacecraft_face::compute_forces(const environment_effects& data, const vec3
     };
 }
 
-auto spacecraft_face::compute_force_srp_body(double pressure, const vec3& s_body, double shadow_factor) const -> vec3 {
-    const double cos_alpha = surface_normal.dot(s_body);
+auto spacecraft_face::compute_force_srp_body(real_t pressure, const vec3& s_body, real_t shadow_factor) const -> vec3 {
+    const real_t cos_alpha = surface_normal.dot(s_body);
     if (cos_alpha <= 0.0 || shadow_factor <= 0.0) {
         return vec3::Zero();
     }
 
-    const double scalar        = pressure * surface_area_m2 * cos_alpha * shadow_factor;
+    const real_t scalar        = pressure * surface_area_m2 * cos_alpha * shadow_factor;
     const vec3   f_sun_dir     = -s_body * scalar * (1.0 - specular_reflection_coefficient);
-    const double normal_scalar = scalar * (2.0 * specular_reflection_coefficient * cos_alpha + (2.0 / 3.0) * diffuse_reflection_coefficient);
+    const real_t normal_scalar = scalar * (2.0 * specular_reflection_coefficient * cos_alpha + (2.0 / 3.0) * diffuse_reflection_coefficient);
     const vec3   f_normal_dir  = -surface_normal * normal_scalar;
     return f_sun_dir + f_normal_dir;
 }
 
-auto spacecraft_face::compute_force_drag_body(double density, const vec3& v_rel_body) const -> vec3 {
-    const double     v_sq = v_rel_body.squaredNorm();
-    constexpr double eps  = std::numeric_limits<double>::epsilon();
+auto spacecraft_face::compute_force_drag_body(real_t density, const vec3& v_rel_body) const -> vec3 {
+    const real_t     v_sq = v_rel_body.squaredNorm();
+    constexpr real_t eps  = std::numeric_limits<real_t>::epsilon();
     if (v_sq <= (eps * eps)) {
         return vec3::Zero();
     }
 
-    const double v_mag     = std::sqrt(v_sq);
-    const double cos_theta = surface_normal.dot(-v_rel_body / v_mag);
+    const real_t v_mag     = std::sqrt(v_sq);
+    const real_t cos_theta = surface_normal.dot(-v_rel_body / v_mag);
     if (!(cos_theta > 0.0)) {
         return vec3::Zero();
     }
 
-    const double scalar = 0.5 * density * drag_coefficient * surface_area_m2 * cos_theta * v_mag;
+    const real_t scalar = 0.5 * density * drag_coefficient * surface_area_m2 * cos_theta * v_mag;
     return scalar * v_rel_body;
 }
 

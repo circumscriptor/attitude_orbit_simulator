@@ -1,5 +1,6 @@
 #include "dynamics.hpp"
 
+#include "aos/core/types.hpp"
 #include "aos/simulation/details/dynamics_impl.hpp"
 
 #include <memory>
@@ -10,11 +11,11 @@ namespace aos {
 dynamics::dynamics()  = default;
 dynamics::~dynamics() = default;
 
-auto dynamics::get_time_offset() const noexcept -> double {
+auto dynamics::get_time_offset() const noexcept -> real_t {
     return _time_offset;
 }
 
-void dynamics::set_time_offset(double offset_s) {
+void dynamics::set_time_offset(real_t offset_s) {
     _time_offset = offset_s;
 }
 

@@ -9,7 +9,7 @@
 
 namespace aos {
 
-inertia_tensor::inertia_tensor(double mass_kg, const spacecraft_shape& shape) {
+inertia_tensor::inertia_tensor(real_t mass_kg, const spacecraft_shape& shape) {
     std::visit(
         [&](auto&& shape) {
             using shape_type = std::decay_t<decltype(shape)>;
@@ -23,7 +23,7 @@ inertia_tensor::inertia_tensor(double mass_kg, const spacecraft_shape& shape) {
     _inertia_tensor_kg_m2_inverse = _inertia_tensor_kg_m2.inverse();
 }
 
-inertia_tensor::inertia_tensor(double mass_kg, const spacecraft_uniform& shape)
+inertia_tensor::inertia_tensor(real_t mass_kg, const spacecraft_uniform& shape)
     : _inertia_tensor_kg_m2(compute_inertia_tensor(mass_kg, shape.dimensions_m.x(), shape.dimensions_m.y(), shape.dimensions_m.z())),
       _inertia_tensor_kg_m2_inverse(_inertia_tensor_kg_m2.inverse()) {}
 
@@ -41,19 +41,19 @@ auto inertia_tensor::compute_gyroscopic_torque(const vec3& omega) const -> vec3 
     return -omega.cross(_inertia_tensor_kg_m2 * omega);
 }
 
-auto inertia_tensor::compute_gravity_gradient_torque(const vec3& r_body, double earth_mu) const -> vec3 {
-    const double r_sq  = r_body.squaredNorm();
-    const double r_mag = std::sqrt(r_sq);
+auto inertia_tensor::compute_gravity_gradient_torque(const vec3& r_body, real_t earth_mu) const -> vec3 {
+    const real_t r_sq  = r_body.squaredNorm();
+    const real_t r_mag = std::sqrt(r_sq);
 
     // tau_gg = (3 * mu / r^5) * (r_body × (I * r_body))
-    const double coef = (3.0 * earth_mu) / (r_sq * r_sq * r_mag);
+    const real_t coef = (3.0 * earth_mu) / (r_sq * r_sq * r_mag);
     return coef * r_body.cross(_inertia_tensor_kg_m2 * r_body);
 }
 
-auto inertia_tensor::compute_inertia_tensor(double m_kg, double a, double b, double c) -> mat3x3 {
-    const double i_x = (1. / 12.) * m_kg * (b * b + c * c);
-    const double i_y = (1. / 12.) * m_kg * (a * a + c * c);
-    const double i_z = (1. / 12.) * m_kg * (a * a + b * b);
+auto inertia_tensor::compute_inertia_tensor(real_t m_kg, real_t a, real_t b, real_t c) -> mat3x3 {
+    const real_t i_x = (1. / 12.) * m_kg * (b * b + c * c);
+    const real_t i_y = (1. / 12.) * m_kg * (a * a + c * c);
+    const real_t i_z = (1. / 12.) * m_kg * (a * a + b * b);
 
     mat3x3 tensor = mat3x3::Zero();
     tensor(0, 0)  = i_x;

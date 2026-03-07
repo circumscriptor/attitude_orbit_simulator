@@ -74,17 +74,17 @@ void simulation::run() {
     using boost::numeric::odeint::runge_kutta_dopri5;
     using boost::numeric::odeint::runge_kutta_fehlberg78;
     using boost::numeric::odeint::vector_space_algebra;
-    using stepper_type_f78 = runge_kutta_fehlberg78<system_state, double, system_state, double, vector_space_algebra>;
-    using stepper_type_dp5 = runge_kutta_dopri5<system_state, double, system_state, double, vector_space_algebra>;
-    using stepper_type_k54 = runge_kutta_cash_karp54<system_state, double, system_state, double, vector_space_algebra>;
+    using stepper_type_f78 = runge_kutta_fehlberg78<system_state, real_t, system_state, real_t, vector_space_algebra>;
+    using stepper_type_dp5 = runge_kutta_dopri5<system_state, real_t, system_state, real_t, vector_space_algebra>;
+    using stepper_type_k54 = runge_kutta_cash_karp54<system_state, real_t, system_state, real_t, vector_space_algebra>;
 
     _observer->write_header() << '\n';
 
-    auto system = [this](const system_state& current_state, system_state& state_derivative, double t_sec) {
+    auto system = [this](const system_state& current_state, system_state& state_derivative, real_t t_sec) {
         _dynamics->step(current_state, state_derivative, t_sec);
     };
 
-    auto observe = [this](const system_state& state, double time) {
+    auto observe = [this](const system_state& state, real_t time) {
         _observer->write(state, time) << '\n';
 
         if (state.altitude_m() <= reentry_altitude_m) {
@@ -113,7 +113,7 @@ void simulation::run() {
 
             _observer->write(_current_state, _t_start) << '\n';
             while (_t_now < _t_end) {
-                const double section_period = std::min(_checkpoint_interval, _t_end - _t_now);
+                const auto section_period = std::min(_checkpoint_interval, _t_end - _t_now);
 
                 _dynamics->set_time_offset(_t_now);
                 integrate_adaptive(stepper, system, _current_state, 0.0, section_period, _dt_initial);
@@ -125,8 +125,8 @@ void simulation::run() {
                 // observer.flush();  // comment when not needed
                 std::print("Checkpoint: {} s / {} s\r", _t_now, _t_end);
 
-                if (const double altitude_m = _current_state.altitude_m(); altitude_m <= reentry_altitude_m) {
-                    const double altitude_km = altitude_m * meter_to_kilometer;
+                if (const auto altitude_m = _current_state.altitude_m(); altitude_m <= reentry_altitude_m) {
+                    const auto altitude_km = altitude_m * meter_to_kilometer;
                     std::println("\n[Terminated] Satellite deorbited at t = {:.1f} s. Altitude: {:.2f} km", _t_now + section_period, altitude_km);
                     break;
                 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "aos/core/types.hpp"
 #include "aos/environment/space_weather.hpp"
 
 #include <cstddef>
@@ -21,7 +22,7 @@ struct nrlmsise {
     explicit nrlmsise(const std::filesystem::path& filepath);
 
     // compute atmospheric density at a specific spacetime point
-    [[nodiscard]] auto density_at(double year_decimal, double lat_deg, double lon_deg, double alt_m) const -> double;
+    [[nodiscard]] auto density_at(real_t year_decimal, real_t lat_deg, real_t lon_deg, real_t alt_m) const -> real_t;
 };
 
 }  // namespace aos

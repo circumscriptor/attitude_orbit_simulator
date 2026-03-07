@@ -7,11 +7,11 @@
 namespace aos {
 
 struct hysteresis_parameters {
-    double ms;     // [A/m] Saturation Magnetization
-    double a;      // [A/m] Anhysteretic shape parameter
-    double k;      // [A/m] Pinning energy density (coercivity)
-    double c;      // [-] Reversibility coefficient (0..1)
-    double alpha;  // [-] Inter-domain coupling coefficient
+    real_t ms;     // [A/m] Saturation Magnetization
+    real_t a;      // [A/m] Anhysteretic shape parameter
+    real_t k;      // [A/m] Pinning energy density (coercivity)
+    real_t c;      // [-] Reversibility coefficient (0..1)
+    real_t alpha;  // [-] Inter-domain coupling coefficient
 
     void from_toml(const toml_table& table);
     void debug_print() const;
@@ -20,7 +20,7 @@ struct hysteresis_parameters {
 };
 
 struct hysteresis_rod_properties {
-    double volume_m3;
+    real_t volume_m3;
     vec3   orientation;
     // [optional] custom hysteresis for this rod
     std::optional<hysteresis_parameters> hysteresis;
@@ -33,16 +33,16 @@ class hysteresis_rod {
 public:
 
     // Stability thresholds
-    static constexpr double epsilon_langevin = 1e-6;
-    static constexpr double epsilon_vector   = 1e-12;
+    static constexpr real_t epsilon_langevin = 1e-6;
+    static constexpr real_t epsilon_vector   = 1e-12;
     // Threshold below which dh/dt is treated as static
-    static constexpr double epsilon_dh_dt = 1e-9;
+    static constexpr real_t epsilon_dh_dt = 1e-9;
     // Threshold for singularity (denominator -> 0)
-    static constexpr double epsilon_denominator = 1e-9;
+    static constexpr real_t epsilon_denominator = 1e-9;
     // Tolerance for causality checks (preventing noise triggers)
-    static constexpr double tolerance_causality = 1e-12;
+    static constexpr real_t tolerance_causality = 1e-12;
     // Physical floor for 'k' to prevent division by zero in max_chi calculation
-    static constexpr double min_k_value = 1e-3;
+    static constexpr real_t min_k_value = 1e-3;
 
     hysteresis_rod(const hysteresis_rod_properties& properties, const hysteresis_parameters& params);
     explicit hysteresis_rod(const hysteresis_rod_properties& properties);
@@ -59,7 +59,7 @@ public:
      * @param b_body_t The magnetic field vector in the body frame [T].
      * @return Total magnetic dipole moment vector [A*m^2].
      */
-    [[nodiscard]] auto magnetic_moment(double m_irr_am, const vec3& b_body_t) const -> vec3;
+    [[nodiscard]] auto magnetic_moment(real_t m_irr_am, const vec3& b_body_t) const -> vec3;
 
     /**
      * @brief Calculates the time derivative of the irreversible magnetization (dM_irr/dt).
@@ -72,7 +72,7 @@ public:
      * @param b_dot_body_t Rate of change of the magnetic field in the body frame [T/s].
      * @return The rate of change dM_irr/dt [A/m/s].
      */
-    [[nodiscard]] auto magnetization_derivative(double m_irr_am, const vec3& b_body_t, const vec3& b_dot_body_t) const -> double;
+    [[nodiscard]] auto magnetization_derivative(real_t m_irr_am, const vec3& b_body_t, const vec3& b_dot_body_t) const -> real_t;
 
     /**
      * @brief Calculates derivative based on scalar H-Field.
@@ -81,7 +81,7 @@ public:
      * @param h_along_rod H-Field intensity along the rod [A/m].
      * @param dh_dt Rate of change of H-field [A/m/s].
      */
-    [[nodiscard]] auto magnetization_derivative(double m_irr_am, double h_along_rod, double dh_dt) const -> double;
+    [[nodiscard]] auto magnetization_derivative(real_t m_irr_am, real_t h_along_rod, real_t dh_dt) const -> real_t;
 
 protected:
 
@@ -89,16 +89,16 @@ protected:
      * @brief Computes the Anhysteretic Magnetization M_an(H_eff).
      * Uses the Langevin function: M_an = Ms * (coth(Heff/a) - a/Heff)
      */
-    [[nodiscard]] auto calculate_anhysteretic(double h_eff_am) const -> double;
+    [[nodiscard]] auto calculate_anhysteretic(real_t h_eff_am) const -> real_t;
 
     /**
      * @brief Computes Effective Field H_eff = H + alpha * M.
      */
-    [[nodiscard]] auto calculate_h_eff(double h_along_rod, double m_val) const -> double;
+    [[nodiscard]] auto calculate_h_eff(real_t h_along_rod, real_t m_val) const -> real_t;
 
 private:
 
-    double                _volume;
+    real_t                _volume;
     vec3                  _orientation_body;
     hysteresis_parameters _hysteresis;
 };

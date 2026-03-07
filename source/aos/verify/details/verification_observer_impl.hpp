@@ -2,6 +2,7 @@
 
 #include "aos/components/spacecraft.hpp"
 #include "aos/core/state.hpp"
+#include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
 #include "aos/simulation/details/observer_impl.hpp"
 #include "aos/simulation/observer.hpp"
@@ -21,7 +22,7 @@ public:
                                const observer_properties&         props);
 
     auto write_header() -> std::ostream& override;
-    auto write(const system_state& state, double time) -> std::ostream& override;
+    auto write(const system_state& state, real_t time) -> std::ostream& override;
 
 private:
 

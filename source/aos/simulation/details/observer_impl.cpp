@@ -1,6 +1,7 @@
 #include "observer_impl.hpp"
 
 #include "aos/core/state.hpp"
+#include "aos/core/types.hpp"
 #include "aos/simulation/observer.hpp"
 
 #include <cstddef>
@@ -53,7 +54,7 @@ auto observer_impl::write_header() -> std::ostream& {
     return _file;
 }
 
-auto observer_impl::write(const system_state& state, double time) -> std::ostream& {
+auto observer_impl::write(const system_state& state, real_t time) -> std::ostream& {
     _file << time;
 
     if (_include_magnitudes) {

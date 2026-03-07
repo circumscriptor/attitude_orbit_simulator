@@ -2,6 +2,7 @@
 
 #include "aos/components/spacecraft.hpp"
 #include "aos/core/state.hpp"
+#include "aos/core/types.hpp"
 #include "aos/environment/environment.hpp"
 #include "aos/simulation/config.hpp"
 #include "aos/simulation/dynamics.hpp"
@@ -39,13 +40,13 @@ private:
     std::shared_ptr<dynamics>    _dynamics;
     std::shared_ptr<observer>    _observer;
     system_state                 _current_state;
-    double                       _t_start;
-    double                       _t_end;
-    double                       _t_now;
-    double                       _dt_initial;
-    double                       _checkpoint_interval;
-    double                       _absolute_error;
-    double                       _relative_error;
+    real_t                       _t_start;
+    real_t                       _t_end;
+    real_t                       _t_now;
+    real_t                       _dt_initial;
+    real_t                       _checkpoint_interval;
+    real_t                       _absolute_error;
+    real_t                       _relative_error;
     int                          _stepper_function;
 };
 
