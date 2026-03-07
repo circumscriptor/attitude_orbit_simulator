@@ -29,12 +29,12 @@ nrlmsise::nrlmsise(const std::filesystem::path& filepath) : weather(space_weathe
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto nrlmsise::density_at(real_t year_decimal, real_t lat_deg, real_t lon_deg, real_t alt_m) const -> real_t {
-    const int    year                  = static_cast<int>(std::floor(year_decimal));
-    const bool   is_leap               = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
-    const real_t days_in_year          = is_leap ? 366.0 : 365.0;
-    const real_t total_seconds_in_year = (year_decimal - year) * days_in_year * 86400.0;
-    const auto&  data                  = weather.get_linear_month_at(year_decimal);
+auto nrlmsise::density_at(real year_decimal, real lat_deg, real lon_deg, real alt_m) const -> real {
+    const int   year                  = static_cast<int>(std::floor(year_decimal));
+    const bool  is_leap               = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
+    const real  days_in_year          = is_leap ? 366.0 : 365.0;
+    const real  total_seconds_in_year = (year_decimal - year) * days_in_year * 86400.0;
+    const auto& data                  = weather.get_linear_month_at(year_decimal);
 
     // NOLINTBEGIN(readability-magic-numbers)
     input.doy    = static_cast<int>(std::floor(total_seconds_in_year / 86400.0)) + 1;

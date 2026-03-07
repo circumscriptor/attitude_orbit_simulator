@@ -21,7 +21,7 @@ public:
     dynamics_impl(std::shared_ptr<const spacecraft> spacecraft_model, std::shared_ptr<const environment> environment_model);
     ~dynamics_impl() override;
 
-    void step(const system_state& current_state, system_state& state_derivative, real_t t_sec) const override;
+    void step(const system_state& current_state, system_state& state_derivative, real t_sec) const override;
 
     [[nodiscard]] auto get_spacecraft() const -> const spacecraft&;
     [[nodiscard]] auto get_environment() const -> const environment&;
@@ -30,7 +30,7 @@ private:
 
     std::shared_ptr<const spacecraft>  _spacecraft;
     std::shared_ptr<const environment> _environment;
-    real_t                             _time_offset{};
+    real                               _time_offset{};
 };
 
 }  // namespace aos

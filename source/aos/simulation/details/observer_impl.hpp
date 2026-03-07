@@ -23,7 +23,7 @@ public:
     ~observer_impl() override;
 
     auto write_header() -> std::ostream& override;
-    auto write(const system_state& state, real_t time) -> std::ostream& override;
+    auto write(const system_state& state, real time) -> std::ostream& override;
 
 private:
 

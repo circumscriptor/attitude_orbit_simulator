@@ -8,10 +8,10 @@
 namespace aos {
 
 struct spacecraft_uniform {
-    vec3   dimensions_m;
-    real_t drag_coefficient{};
-    real_t specular_reflection_coefficient{};
-    real_t diffuse_reflection_coefficient{};
+    vec3 dimensions_m;
+    real drag_coefficient{};
+    real specular_reflection_coefficient{};
+    real diffuse_reflection_coefficient{};
 
     void from_toml(const toml_table& table);
     void debug_print() const;

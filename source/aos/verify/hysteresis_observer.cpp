@@ -16,7 +16,7 @@
 namespace aos {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-hysteresis_observer::hysteresis_observer(const std::string& filename, real_t h_max, real_t frequency) : _h_max(h_max), _frequency(frequency) {
+hysteresis_observer::hysteresis_observer(const std::string& filename, real h_max, real frequency) : _h_max(h_max), _frequency(frequency) {
     std::filesystem::path file_path(filename);
     if (file_path.has_parent_path()) {
         std::filesystem::create_directories(file_path.parent_path());
@@ -31,9 +31,9 @@ hysteresis_observer::hysteresis_observer(const std::string& filename, real_t h_m
     *_file << "time,H_Am,M_Am,B_T\n";
 }
 
-void hysteresis_observer::operator()(const hysteresis_state_type& m, real_t t) const {
-    const real_t h = _h_max * std::sin(2.0 * pi * _frequency * t);
-    const real_t b = vacuum_permeability * (h + m);
+void hysteresis_observer::operator()(const hysteresis_state_type& m, real t) const {
+    const real h = _h_max * std::sin(2.0 * pi * _frequency * t);
+    const real b = vacuum_permeability * (h + m);
     (*_file) << t << "," << h << "," << m << "," << b << "\n";
 }
 

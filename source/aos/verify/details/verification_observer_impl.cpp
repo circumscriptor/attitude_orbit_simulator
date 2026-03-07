@@ -32,7 +32,7 @@ auto verification_observer_impl::write_header() -> std::ostream& {
                                             "rho,shadow,solar_p,v_rel_x,v_rel_y,v_rel_z";
 }
 
-auto verification_observer_impl::write(const system_state& state, real_t time) -> std::ostream& {
+auto verification_observer_impl::write(const system_state& state, real time) -> std::ostream& {
     const auto env        = _env->compute_effects(time, state.position_m, state.velocity_m_s);
     const quat q_inv      = state.attitude.conjugate();
     const vec3 b_body     = q_inv * env.magnetic_field_eci_T;

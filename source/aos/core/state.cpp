@@ -14,7 +14,7 @@ auto system_state::operator+=(const system_state& other) -> system_state& {
     return *this;
 }
 
-auto system_state::operator+=(real_t scalar) -> system_state& {
+auto system_state::operator+=(real scalar) -> system_state& {
     position_m.array() += scalar;
     velocity_m_s.array() += scalar;
     attitude.coeffs().array() += scalar;
@@ -32,7 +32,7 @@ auto system_state::operator-=(const system_state& other) -> system_state& {
     return *this;
 }
 
-auto system_state::operator*=(real_t scalar) -> system_state& {
+auto system_state::operator*=(real scalar) -> system_state& {
     position_m *= scalar;
     velocity_m_s *= scalar;
     attitude.coeffs() *= scalar;
@@ -50,7 +50,7 @@ auto system_state::operator/=(const system_state& other) -> system_state& {
     return *this;
 }
 
-auto system_state::altitude_m() const -> real_t {
+auto system_state::altitude_m() const -> real {
     return position_m.norm() - earth_radius_m;
 }
 

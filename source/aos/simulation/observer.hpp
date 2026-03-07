@@ -31,8 +31,8 @@ public:
 
     virtual ~observer();
 
-    virtual auto write_header() -> std::ostream&                                = 0;
-    virtual auto write(const system_state& state, real_t time) -> std::ostream& = 0;
+    virtual auto write_header() -> std::ostream&                              = 0;
+    virtual auto write(const system_state& state, real time) -> std::ostream& = 0;
 
     static auto create(const std::string& filename, std::size_t num_rods, const observer_properties& properties) -> std::shared_ptr<observer>;
 };

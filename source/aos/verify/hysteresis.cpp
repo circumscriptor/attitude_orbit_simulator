@@ -20,9 +20,9 @@ void verify_hysteresis(const std::string& output_filename, const hysteresis_para
     using boost::numeric::odeint::make_controlled;
     using boost::numeric::odeint::runge_kutta_dopri5;
 
-    static constexpr const real_t t_start = 0.0;
-    static constexpr const real_t t_end   = 100.0;  // [s] Simulation time.
-    static constexpr const real_t dt      = 0.001;  // [s] Initial time step.
+    static constexpr const real t_start = 0.0;
+    static constexpr const real t_end   = 100.0;  // [s] Simulation time.
+    static constexpr const real dt      = 0.001;  // [s] Initial time step.
 
     const hysteresis_rod_properties properties{
         .volume_m3   = 1.0,

@@ -73,7 +73,7 @@ spacecraft::spacecraft(const spacecraft_properties& properties)
 
 spacecraft::~spacecraft() = default;
 
-auto spacecraft::mass_kg() const -> real_t {
+auto spacecraft::mass_kg() const -> real {
     return _mass_kg;
 }
 
@@ -117,7 +117,7 @@ void spacecraft::derivative(const environment_effects& env, const system_state& 
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto spacecraft::compute_torques(const vec3& omega, const vec3& b_body, const vec3& r_body, real_t earth_mu) const -> vec3 {
+auto spacecraft::compute_torques(const vec3& omega, const vec3& b_body, const vec3& r_body, real earth_mu) const -> vec3 {
     vec3 torque = vec3::Zero();
     torque += _magnet.compute_torque(b_body);
     torque += _inertia.compute_gyroscopic_torque(omega);

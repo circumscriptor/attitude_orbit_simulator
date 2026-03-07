@@ -35,11 +35,11 @@ void keplerian_elements::debug_print() const {
 auto orbital_converter::to_cartesian(const keplerian_elements& el) -> std::pair<vec3, vec3> {
     // Kepler's Equation for Eccentric Anomaly (E)
     // M = E - e*sin(E)
-    real_t e = el.mean_anomaly_rad;  // initial guess: E ~ M
+    real e = el.mean_anomaly_rad;  // initial guess: E ~ M
 
     // Newton-Raphson iteration
     for (int i = 0; i < max_iter; ++i) {
-        const real_t delta = e - (el.eccentricity * std::sin(e)) - el.mean_anomaly_rad;
+        const real delta = e - (el.eccentricity * std::sin(e)) - el.mean_anomaly_rad;
         if (std::abs(delta) < epsilon) {
             break;
         }
@@ -49,14 +49,14 @@ auto orbital_converter::to_cartesian(const keplerian_elements& el) -> std::pair<
 
     // true anomaly (nu)
     // tan(nu/2) = sqrt((1+e)/(1-e)) * tan(E/2)
-    const real_t sqrt_factor = std::sqrt((1.0 + el.eccentricity) / (1.0 - el.eccentricity));
-    const real_t tan_e_2     = std::tan(e / 2.0);
-    const real_t nu          = 2.0 * std::atan(sqrt_factor * tan_e_2);
+    const real sqrt_factor = std::sqrt((1.0 + el.eccentricity) / (1.0 - el.eccentricity));
+    const real tan_e_2     = std::tan(e / 2.0);
+    const real nu          = 2.0 * std::atan(sqrt_factor * tan_e_2);
 
     // perifocal (PQW) coordinates
-    const real_t p        = el.semi_major_axis_m * (1.0 - el.eccentricity * el.eccentricity);  // semi-latus rectum
-    const real_t r        = p / (1.0 + el.eccentricity * std::cos(nu));                        // radial distance
-    const real_t h_factor = std::sqrt(earth_mu / p);                                           // flight path velocity factor
+    const real p        = el.semi_major_axis_m * (1.0 - el.eccentricity * el.eccentricity);  // semi-latus rectum
+    const real r        = p / (1.0 + el.eccentricity * std::cos(nu));                        // radial distance
+    const real h_factor = std::sqrt(earth_mu / p);                                           // flight path velocity factor
 
     const vec3 r_pqw(r * std::cos(nu), r * std::sin(nu), 0.0);
     const vec3 v_pqw(-h_factor * std::sin(nu), h_factor * (el.eccentricity + std::cos(nu)), 0.0);

@@ -102,46 +102,43 @@ auto permanent_magnet::compute_torque(const vec3& b_field_body) const -> vec3 {
     return _magnetic_moment_body.cross(b_field_body);
 }
 
-auto permanent_magnet::compute_potential_energy(const vec3& b_field_body) const -> real_t {
+auto permanent_magnet::compute_potential_energy(const vec3& b_field_body) const -> real {
     return -_magnetic_moment_body.dot(b_field_body);
 }
 
-auto permanent_magnet::compute_magnetic_moment_at_temperature(real_t temp_celsius, real_t temp_coeff, real_t temp_ref) -> vec3 {
-    const real_t temp_factor        = 1.0 + (temp_coeff * (temp_celsius - temp_ref));
-    const real_t adjusted_remanence = _remanence_t * temp_factor;
+auto permanent_magnet::compute_magnetic_moment_at_temperature(real temp_celsius, real temp_coeff, real temp_ref) -> vec3 {
+    const real temp_factor        = 1.0 + (temp_coeff * (temp_celsius - temp_ref));
+    const real adjusted_remanence = _remanence_t * temp_factor;
     return compute_magnetic_moment(adjusted_remanence, _volume_m3, _demagnetization_factor, _relative_permeability, _orientation_body);
 }
 
 void permanent_magnet::set_rectangular(const permanent_magnet_rectangular& shape) {
     _volume_m3 = shape.width_m * shape.height_m * shape.length_m;
 
-    const real_t area_z     = shape.width_m * shape.height_m;
-    const real_t area_x     = shape.height_m * shape.length_m;
-    const real_t area_y     = shape.width_m * shape.length_m;
+    const real area_z       = shape.width_m * shape.height_m;
+    const real area_x       = shape.height_m * shape.length_m;
+    const real area_y       = shape.width_m * shape.length_m;
     _demagnetization_factor = area_z / (area_z + area_x + area_y);
 }
 
 void permanent_magnet::set_cylindrical(const permanent_magnet_cylindrical& shape) {
-    const real_t r = shape.radius_m;
-    const real_t h = shape.length_m;
-    _volume_m3     = pi * (r * r) * h;
+    const real r = shape.radius_m;
+    const real h = shape.length_m;
+    _volume_m3   = pi * (r * r) * h;
 
-    const real_t area_face  = pi * (r * r);
-    const real_t area_side  = 2.0 * pi * r * h;
+    const real area_face    = pi * (r * r);
+    const real area_side    = 2.0 * pi * r * h;
     _demagnetization_factor = area_face / (area_face + area_side);
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-auto permanent_magnet::compute_magnetic_moment(real_t      remanence,
-                                               real_t      volume,
-                                               real_t      demagnitization_factor,
-                                               real_t      relative_permeability,
-                                               const vec3& orientation) -> vec3 {
+auto permanent_magnet::compute_magnetic_moment(real remanence, real volume, real demagnitization_factor, real relative_permeability, const vec3& orientation)
+    -> vec3 {
     // M_eff = (Br / mu0) / (1 + N * (mu_r - 1))
-    const real_t magnetization_raw = remanence / vacuum_permeability;
-    const real_t chi_m             = relative_permeability - 1.0;
-    const real_t magnetization_eff = magnetization_raw / (1.0 + demagnitization_factor * chi_m);
-    const real_t moment_mag        = magnetization_eff * volume;
+    const real magnetization_raw = remanence / vacuum_permeability;
+    const real chi_m             = relative_permeability - 1.0;
+    const real magnetization_eff = magnetization_raw / (1.0 + demagnitization_factor * chi_m);
+    const real moment_mag        = magnetization_eff * volume;
     return moment_mag * orientation;
 }
 

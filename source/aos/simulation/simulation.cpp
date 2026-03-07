@@ -74,17 +74,17 @@ void simulation::run() {
     using boost::numeric::odeint::runge_kutta_dopri5;
     using boost::numeric::odeint::runge_kutta_fehlberg78;
     using boost::numeric::odeint::vector_space_algebra;
-    using stepper_type_f78 = runge_kutta_fehlberg78<system_state, real_t, system_state, real_t, vector_space_algebra>;
-    using stepper_type_dp5 = runge_kutta_dopri5<system_state, real_t, system_state, real_t, vector_space_algebra>;
-    using stepper_type_k54 = runge_kutta_cash_karp54<system_state, real_t, system_state, real_t, vector_space_algebra>;
+    using stepper_type_f78 = runge_kutta_fehlberg78<system_state, real, system_state, real, vector_space_algebra>;
+    using stepper_type_dp5 = runge_kutta_dopri5<system_state, real, system_state, real, vector_space_algebra>;
+    using stepper_type_k54 = runge_kutta_cash_karp54<system_state, real, system_state, real, vector_space_algebra>;
 
     _observer->write_header() << '\n';
 
-    auto system = [this](const system_state& current_state, system_state& state_derivative, real_t t_sec) {
+    auto system = [this](const system_state& current_state, system_state& state_derivative, real t_sec) {
         _dynamics->step(current_state, state_derivative, t_sec);
     };
 
-    auto observe = [this](const system_state& state, real_t time) {
+    auto observe = [this](const system_state& state, real time) {
         _observer->write(state, time) << '\n';
 
         if (state.altitude_m() <= reentry_altitude_m) {

@@ -8,8 +8,8 @@ namespace aos {
 class inertia_tensor {
 public:
 
-    inertia_tensor(real_t mass_kg, const spacecraft_shape& shape);
-    inertia_tensor(real_t mass_kg, const spacecraft_uniform& shape);
+    inertia_tensor(real mass_kg, const spacecraft_shape& shape);
+    inertia_tensor(real mass_kg, const spacecraft_uniform& shape);
     explicit inertia_tensor(const spacecraft_custom& shape);
 
     [[nodiscard]] auto value() const -> const mat3x3&;
@@ -19,11 +19,11 @@ public:
     [[nodiscard]] auto compute_gyroscopic_torque(const vec3& omega) const -> vec3;
 
     // compute gravity gradient torque
-    [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_body, real_t earth_mu) const -> vec3;
+    [[nodiscard]] auto compute_gravity_gradient_torque(const vec3& r_body, real earth_mu) const -> vec3;
 
 protected:
 
-    [[nodiscard]] static auto compute_inertia_tensor(real_t m_kg, real_t a, real_t b, real_t c) -> mat3x3;
+    [[nodiscard]] static auto compute_inertia_tensor(real m_kg, real a, real b, real c) -> mat3x3;
 
 private:
 

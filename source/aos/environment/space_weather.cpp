@@ -17,7 +17,7 @@
 
 namespace aos {
 
-auto space_weather::get_at(real_t year_decimal, size_t& hint) const -> const space_weather_data& {
+auto space_weather::get_at(real year_decimal, size_t& hint) const -> const space_weather_data& {
     const space_weather_data_vec* target = nullptr;
 
     if (year_decimal <= observed_cutoff_year_decimal) {
@@ -49,21 +49,21 @@ auto space_weather::get_at(real_t year_decimal, size_t& hint) const -> const spa
     return *it;
 }
 
-auto space_weather::get_month_at(real_t year_decimal) const -> const space_weather_data& {
-    const auto&  target = predicted_months;
-    const real_t month  = (year_decimal - target.front().year_decimal) * 12.0;
-    const auto   index  = static_cast<size_t>(std::floor(month));
+auto space_weather::get_month_at(real year_decimal) const -> const space_weather_data& {
+    const auto& target = predicted_months;
+    const real  month  = (year_decimal - target.front().year_decimal) * 12.0;
+    const auto  index  = static_cast<size_t>(std::floor(month));
     if (index >= target.size() - 1) {
         return target.back();
     }
     return target[index];
 }
 
-auto space_weather::get_linear_month_at(real_t year_decimal) const -> space_weather_data {
-    const auto&  target   = predicted_months;
-    const real_t month    = (year_decimal - target.front().year_decimal) * 12.0;
-    const auto   index    = static_cast<size_t>(std::floor(month));
-    const real_t fraction = month - std::floor(month);
+auto space_weather::get_linear_month_at(real year_decimal) const -> space_weather_data {
+    const auto& target   = predicted_months;
+    const real  month    = (year_decimal - target.front().year_decimal) * 12.0;
+    const auto  index    = static_cast<size_t>(std::floor(month));
+    const real  fraction = month - std::floor(month);
 
     if (index >= target.size() - 1) {
         return target.back();
@@ -212,7 +212,7 @@ void space_weather_parser::store(space_weather& result, const space_weather_data
     }
 }
 
-auto space_weather_parser::convert_date(std::string_view date) -> real_t {
+auto space_weather_parser::convert_date(std::string_view date) -> real {
     static constexpr std::array days_before_month = std::to_array({0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334});
 
     // Format: YYYY-MM-DD
@@ -233,10 +233,10 @@ auto space_weather_parser::convert_date(std::string_view date) -> real_t {
         std::from_chars(date_day.begin(), date_day.end(), day);
     }
 
-    const bool   is_leap     = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
-    const int    day_of_year = days_before_month.at(month - 1) + day + static_cast<int>(is_leap && month > 2);
-    const real_t total_days  = is_leap ? 366. : 365.;
-    return static_cast<real_t>(year) + (static_cast<real_t>(day_of_year - 1) / total_days);
+    const bool is_leap     = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+    const int  day_of_year = days_before_month.at(month - 1) + day + static_cast<int>(is_leap && month > 2);
+    const real total_days  = is_leap ? 366. : 365.;
+    return static_cast<real>(year) + (static_cast<real>(day_of_year - 1) / total_days);
 }
 
 }  // namespace aos

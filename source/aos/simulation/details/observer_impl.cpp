@@ -54,7 +54,7 @@ auto observer_impl::write_header() -> std::ostream& {
     return _file;
 }
 
-auto observer_impl::write(const system_state& state, real_t time) -> std::ostream& {
+auto observer_impl::write(const system_state& state, real time) -> std::ostream& {
     _file << time;
 
     if (_include_magnitudes) {

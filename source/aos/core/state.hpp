@@ -23,19 +23,19 @@ struct system_state {
     vecX rod_magnetizations;    //!< [?] Hysteresis rod magnetization state (array)
 
     auto operator+=(const system_state& other) -> system_state&;
-    auto operator+=(real_t scalar) -> system_state&;
+    auto operator+=(real scalar) -> system_state&;
     auto operator-=(const system_state& other) -> system_state&;
-    auto operator*=(real_t scalar) -> system_state&;
+    auto operator*=(real scalar) -> system_state&;
     auto operator/=(const system_state& other) -> system_state&;
 
-    [[nodiscard]] auto altitude_m() const -> real_t;
+    [[nodiscard]] auto altitude_m() const -> real;
     [[nodiscard]] auto has_nan() const -> bool;
 
     // quaternion derivative: 0.5 * q * omega
     [[nodiscard]] static auto compute_attitude_derivative(const quat& q_att, const vec3& omega) -> vec4;
 };
 
-inline auto operator+(real_t scalar, const system_state& state) -> system_state {
+inline auto operator+(real scalar, const system_state& state) -> system_state {
     return system_state{state} += scalar;
 }
 
@@ -43,11 +43,11 @@ inline auto operator+(const system_state& lhs, const system_state& rhs) -> syste
     return system_state{lhs} += rhs;
 }
 
-inline auto operator*(const system_state& state, real_t scalar) -> system_state {
+inline auto operator*(const system_state& state, real scalar) -> system_state {
     return system_state{state} *= scalar;
 }
 
-inline auto operator*(real_t scalar, const system_state& state) -> system_state {
+inline auto operator*(real scalar, const system_state& state) -> system_state {
     return state * scalar;
 }
 
@@ -91,14 +91,14 @@ struct resize_impl<aos::system_state, aos::system_state> {
 // Define the "norm" used by adaptive steppers for error control
 template <>
 struct vector_space_norm_inf<aos::system_state> {
-    using result_type = aos::real_t;
-    auto operator()(const aos::system_state& s) const -> aos::real_t {
+    using result_type = aos::real;
+    auto operator()(const aos::system_state& s) const -> aos::real {
         return std::max({
             s.position_m.cwiseAbs().maxCoeff(),
             s.velocity_m_s.cwiseAbs().maxCoeff(),
             s.attitude.coeffs().cwiseAbs().maxCoeff(),
             s.angular_velocity_m_s.cwiseAbs().maxCoeff(),
-            s.rod_magnetizations.size() > 0 ? s.rod_magnetizations.cwiseAbs().maxCoeff() : std::numeric_limits<aos::real_t>::min(),
+            s.rod_magnetizations.size() > 0 ? s.rod_magnetizations.cwiseAbs().maxCoeff() : std::numeric_limits<aos::real>::min(),
         });
     }
 };
