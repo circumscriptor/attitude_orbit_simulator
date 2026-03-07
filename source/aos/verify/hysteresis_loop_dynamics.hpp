@@ -11,8 +11,8 @@ using hysteresis_state_type = real;
 class hysteresis_loop_dynamics {
 public:
 
-    static constexpr const real default_h_max     = 1000.0;  // [A/m] Max applied field. Must be > coercivity to see the full loop.
-    static constexpr const real default_frequency = 1.0;     // [Hz] Frequency of the applied H-field.
+    static constexpr const real default_h_max     = 100.0;  // [A/m] Max applied field. Must be > coercivity to see the full loop.
+    static constexpr const real default_frequency = 1.0;    // [Hz] Frequency of the applied H-field.
 
     explicit hysteresis_loop_dynamics(const hysteresis_rod& rod, real h_max = default_h_max, real frequency = default_frequency);
 
