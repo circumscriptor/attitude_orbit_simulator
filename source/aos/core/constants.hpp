@@ -2,6 +2,7 @@
 
 #include "aos/core/types.hpp"
 
+#include <limits>
 #include <numbers>
 
 namespace aos {
@@ -18,6 +19,7 @@ static constexpr real au_to_m                   = 149597870700.;
 inline constexpr real au_to_m_2                 = au_to_m * au_to_m;
 static constexpr real gram_to_kilogram          = 0.001;
 static constexpr real pi                        = std::numbers::pi_v<real>;
+static constexpr real eps                       = std::numeric_limits<real>::epsilon();
 static constexpr real deg_to_rad                = pi / 180.;
 static constexpr real rad_to_deg                = 180.0 / pi;
 static constexpr real nanotesla_to_tesla        = 1e-9;

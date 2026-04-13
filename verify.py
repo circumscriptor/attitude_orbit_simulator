@@ -25,8 +25,8 @@ def prepare_and_run_simulation(args, t_end):
         os.makedirs(args.output_dir)
 
     base_name = Path(args.input_toml).stem
-    csv_filename = f"{base_name}_vs.csv"
-    toml_filename = f"{base_name}_vs.toml"
+    csv_filename = f"{base_name}_vs_{args.duration}.csv"
+    toml_filename = f"{base_name}_vs_{args.duration}.toml"
 
     csv_path = os.path.join(args.output_dir, csv_filename)
     run_toml_path = os.path.join(args.output_dir, toml_filename)
@@ -429,7 +429,7 @@ def main():
 
     # Simulation Setup
     parser.add_argument("-o", "--output-dir", type=str, default="analysis/verify", help="Output directory (default: 'analysis/verify')")
-    parser.add_argument("-d", "--duration", type=str, choices=["2w", "2y"], default="2w", help="Simulation duration (default: 2w)")
+    parser.add_argument("-d", "--duration", type=str, choices=["1d", "2d", "1w", "2w", "2y"], default="2w", help="Simulation duration (default: 2w)")
     parser.add_argument("-c", "--checkpoint", type=float, default=600.0, help="Checkpoint interval in sec (default: 600.0)")
     parser.add_argument("--force", action="store_true", help="Force re-run of simulation even if CSV output already exists")
 
@@ -439,7 +439,19 @@ def main():
     args = parser.parse_args()
 
     # Parse duration to seconds
-    t_end = 2 * 365 * 24 * 3600 if args.duration == "2y" else 2 * 7 * 24 * 3600
+    if args.duration == "2y":
+        t_end = 2 * 365 * 24 * 3600
+    elif args.duration == "2w":
+        t_end = 2 * 7 * 24 * 3600
+    elif args.duration == "1w":
+        t_end = 7 * 24 * 3600
+    elif args.duration == "2d":
+        t_end = 2 * 24 * 3600
+    elif args.duration == "1d":
+        t_end = 24 * 3600
+    else:
+        print('unsupported duration')
+        return
 
     print(f"\n--- PMAOS Verification Mode ---")
 

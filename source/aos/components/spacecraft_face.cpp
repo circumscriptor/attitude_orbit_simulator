@@ -8,7 +8,6 @@
 
 #include <cmath>
 #include <iostream>
-#include <limits>
 
 namespace aos {
 
@@ -75,9 +74,8 @@ auto spacecraft_face::compute_force_srp_body(real pressure, const vec3& s_body, 
 }
 
 auto spacecraft_face::compute_force_drag_body(real density, const vec3& v_rel_body) const -> vec3 {
-    const real     v_sq = v_rel_body.squaredNorm();
-    constexpr real eps  = std::numeric_limits<real>::epsilon();
-    if (v_sq <= (eps * eps)) {
+    const real v_sq = v_rel_body.squaredNorm();
+    if (v_sq <= eps) {
         return vec3::Zero();
     }
 
@@ -88,7 +86,7 @@ auto spacecraft_face::compute_force_drag_body(real density, const vec3& v_rel_bo
     }
 
     const real scalar = 0.5 * density * drag_coefficient * surface_area_m2 * cos_theta * v_mag;
-    return scalar * v_rel_body;
+    return -scalar * v_rel_body;
 }
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
